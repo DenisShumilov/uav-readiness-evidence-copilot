@@ -32,6 +32,26 @@ This project must never help with:
 - strike optimization;
 - battlefield use instructions.
 
+## Keyword Context Rule
+
+Unsafe keywords such as `mission`, `payload`, `targeting`, `route`, `waypoint`, and `telemetry` are blocked in user/demo input artifacts.
+
+Input artifact means a file the app will later read as project data, such as `BOM.csv`, `demo_manual.md`, `wiring_notes.yaml`, `config_dump.txt`, `test_log.csv`, or `qa_notes.md`.
+
+Safety documentation may mention unsafe keywords only as prohibited items.
+
+Allowed safety documentation example:
+
+`No mission planning.`
+
+Blocked demo/input example:
+
+`mission plan details`
+
+Simple meaning:
+
+Docs may say what is forbidden. Demo data must not contain operational content.
+
 ## Sensitive Data Rule
 
 Do not include:
