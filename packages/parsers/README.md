@@ -12,11 +12,14 @@ Future safe parsers may read:
 - test logs, meaning test tables;
 - QA notes, meaning quality notes.
 
-Phase 4 step 1:
+Phase 4:
 
-Only `parseBOMCsv` exists.
+Implemented safe parsers:
 
-It reads the synthetic `BOM.csv` fixture and returns schema-checked data.
+- `parseBOMCsv`
+- `parseManualMd`
+- `parseTestLogCsv`
+- `parseQaNotesMd`
 
 Safety rule:
 
