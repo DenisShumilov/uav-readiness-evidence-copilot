@@ -1,19 +1,10 @@
 # packages/evidence
 
-Evidence package placeholder.
-
-Evidence means proof.
-
-This future package will build:
-
-- evidence graph, meaning a map of claims and proof;
-- evidence locks, meaning blocked claims without proof;
-- traceability links, meaning requirement -> evidence -> check.
+Evidence graph builder for the parsed demo bundle.
 
 Implemented:
 
-- `buildEvidenceGraphFromBundle`, which builds a detective-board style evidence map from the safe demo bundle.
+- `buildEvidenceGraphFromBundle`
 
-Core rule:
+The graph connects artifacts, evidence sources, evidence claims, and evidence locks. Core rule: `No evidence -> locked`.
 
-No evidence -> locked.

@@ -2,28 +2,23 @@
 
 Synthetic demo data only. Not operationally valid.
 
-Synthetic means fake and created only for learning.
+## Active Parsed Inputs
 
-Operationally valid means usable for real-world operation. This demo must never be usable that way.
+The MVP currently reads these files:
 
-This folder will later contain safe example artifacts:
+- `BOM.csv`
+- `demo_manual.md`
+- `test_log.csv`
+- `qa_notes.md`
 
-- `BOM.csv` = fake list of parts;
-- `demo_manual.md` = fake instruction document;
-- `wiring_notes.yaml` = fake wiring notes only when safe and clearly non-operational;
-- `config_dump.txt` = fake settings file;
-- `test_log.csv` = fake test table;
-- `qa_notes.md` = fake quality notes.
+## Planned Future Fixtures
 
-Blocked content:
+These files are kept for future documentation-only parser work and are not read by the current MVP:
 
-- real location details;
-- real movement plans;
-- live system streams;
-- real control links;
-- tactical notes;
-- blocked operational topics.
+- `future-fixtures/wiring_notes.yaml`
+- `future-fixtures/config_dump.txt`
 
-Phase 1 creates the folder only.
+## Safety
 
-Demo files come later after another safety check.
+This folder must not contain real UAV data, live telemetry, real control links, operational routes, payload handling, targeting, tactical notes, or real-world deployment details.
+

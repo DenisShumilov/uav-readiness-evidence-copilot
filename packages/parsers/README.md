@@ -1,26 +1,16 @@
 # packages/parsers
 
-Parsers package placeholder.
+Safe parsers for the active synthetic demo inputs.
 
-Parser means code that reads a file and extracts structured data.
-
-Future safe parsers may read:
-
-- BOM files, meaning lists of parts;
-- manual files, meaning instruction documents;
-- config dumps, meaning settings files;
-- test logs, meaning test tables;
-- QA notes, meaning quality notes.
-
-Phase 4:
-
-Implemented safe parsers:
+Active parsers:
 
 - `parseBOMCsv`
 - `parseManualMd`
 - `parseTestLogCsv`
 - `parseQaNotesMd`
+- `parseDemoBundle`
 
-Safety rule:
+The current MVP does not parse `future-fixtures/wiring_notes.yaml` or `future-fixtures/config_dump.txt`.
 
-No live system files, operational files, or real equipment data.
+Safety rule: unsupported evidence stays `locked`; parsers must not infer missing proof or read real operational UAV data.
+

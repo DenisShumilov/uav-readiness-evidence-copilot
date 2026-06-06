@@ -1,15 +1,6 @@
 # packages/deck
 
-Deck package placeholder.
+Reserved for a future documentation-only presentation export.
 
-Deck means presentation slides, usually a PowerPoint file.
+No deck generator is active in the current MVP. Future deck work must stay limited to QA, evidence, traceability, safety boundaries, and portfolio presentation.
 
-Future safe output:
-
-- `training-deck.pptx`, meaning a PowerPoint training deck.
-
-Phase 1 rule:
-
-No deck generator code yet.
-
-Slides must teach QA, evidence, traceability, and safety boundaries only.

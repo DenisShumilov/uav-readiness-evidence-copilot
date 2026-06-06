@@ -14,13 +14,17 @@ If there is no proof, the system must block the claim instead of guessing.
 
 Artifact means a file we receive or generate.
 
-Examples:
+Active parsed input examples:
 
 - `BOM.csv` = list of parts;
 - `demo_manual.md` = instruction text;
-- `config_dump.txt` = settings text;
 - `test_log.csv` = test table;
 - `qa_notes.md` = quality notes.
+
+Planned future fixtures, not read by the current MVP:
+
+- `future-fixtures/wiring_notes.yaml` = documentation-only wiring notes;
+- `future-fixtures/config_dump.txt` = fake settings text.
 
 ## Evidence Source
 

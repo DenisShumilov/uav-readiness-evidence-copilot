@@ -1,16 +1,6 @@
 # packages/qa
 
-QA package placeholder.
+Smoke tests for the demo readiness CLI flow.
 
-QA means quality assurance, or checking that the project works correctly.
+This package verifies that the demo command generates the expected report, evidence graph, readiness assessment, traceability matrix, artifact hashes, and portfolio demo outputs.
 
-Future checks may verify:
-
-- missing evidence becomes locked;
-- unsafe keywords are blocked;
-- synthetic demo data stays safe;
-- outputs are generated as expected.
-
-Phase 1 rule:
-
-No test code yet.

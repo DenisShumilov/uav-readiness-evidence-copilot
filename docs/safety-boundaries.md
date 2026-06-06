@@ -36,7 +36,9 @@ This project must never help with:
 
 Unsafe keywords such as `mission`, `payload`, `targeting`, `route`, `waypoint`, and `telemetry` are blocked in user/demo input artifacts.
 
-Input artifact means a file the app will later read as project data, such as `BOM.csv`, `demo_manual.md`, `wiring_notes.yaml`, `config_dump.txt`, `test_log.csv`, or `qa_notes.md`.
+Active input artifact means a file the current MVP reads as project data, such as `BOM.csv`, `demo_manual.md`, `test_log.csv`, or `qa_notes.md`.
+
+Future fixtures such as `future-fixtures/wiring_notes.yaml` and `future-fixtures/config_dump.txt` are kept for later documentation-only parser work and are not read by the current MVP.
 
 Safety documentation may mention unsafe keywords only as prohibited items.
 

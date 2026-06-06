@@ -1,19 +1,13 @@
 # packages/reports
 
-Reports package placeholder.
+Report and export generators for the safe demo flow.
 
-Report means generated documentation.
+Implemented outputs:
 
-Future safe reports may include:
+- markdown readiness report;
+- portfolio demo page;
+- traceability matrix CSV;
+- artifact hash manifest.
 
-- readiness report;
-- QA checklist;
-- traceability matrix;
-- evidence locks;
-- artifact hashes.
+Reports describe documentation readiness only and must not claim operational readiness.
 
-Implemented:
-
-- `generateReadinessReportMarkdown`, a simple Markdown readiness report for the safe demo flow.
-
-Reports must explain documentation readiness only, not operational readiness.

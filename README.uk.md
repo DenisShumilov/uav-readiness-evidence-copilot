@@ -90,6 +90,22 @@ demo-video/videos/final/uav-readiness-demo.uk.final.mp4
 
 GIF лишається тільки optional preview.
 
+## Inputs
+
+Active parsed inputs:
+
+- `BOM.csv`
+- `demo_manual.md`
+- `test_log.csv`
+- `qa_notes.md`
+
+Planned future fixtures:
+
+- `future-fixtures/wiring_notes.yaml`
+- `future-fixtures/config_dump.txt`
+
+Поточний MVP читає тільки documentation-safe synthetic inputs зі списку active parsed inputs.
+
 ## Portfolio Materials
 
 - [Final interview pack українською](docs/final-interview-pack.uk.md)

@@ -1,13 +1,6 @@
 # packages/core
 
-Core package placeholder.
+Shared TypeScript/Zod schemas and safe synthetic examples for the documentation-readiness data model.
 
-Package means a separate part of the project.
+This package defines the allowed shapes for artifacts, evidence, locks, QA items, traceability rows, readiness reports, and demo bundles.
 
-This future package will hold shared types and small helper functions.
-
-Phase 1 rule:
-
-No runtime logic here yet.
-
-Runtime logic means code that actually performs actions.

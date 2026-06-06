@@ -100,14 +100,17 @@ Synthetic demo inputs live in:
 examples/demo-uav-readiness/
 ```
 
-Current inputs:
+Active parsed inputs:
 
 - `BOM.csv`
 - `demo_manual.md`
 - `test_log.csv`
 - `qa_notes.md`
-- `wiring_notes.yaml`
-- `config_dump.txt`
+
+Planned future fixtures:
+
+- `future-fixtures/wiring_notes.yaml`
+- `future-fixtures/config_dump.txt`
 
 Only documentation-safe synthetic inputs are parsed in the current MVP.
 
