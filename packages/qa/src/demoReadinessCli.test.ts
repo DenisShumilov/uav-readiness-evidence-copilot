@@ -16,11 +16,15 @@ describe("demo readiness CLI", () => {
     expect(result.files).toEqual([
       "readiness-report.md",
       "evidence-graph.json",
-      "readiness-assessment.json"
+      "readiness-assessment.json",
+      "traceability-matrix.csv",
+      "artifact-hashes.json"
     ]);
     expect(existsSync(join(outputDir, "readiness-report.md"))).toBe(true);
     expect(existsSync(join(outputDir, "evidence-graph.json"))).toBe(true);
     expect(existsSync(join(outputDir, "readiness-assessment.json"))).toBe(true);
+    expect(existsSync(join(outputDir, "traceability-matrix.csv"))).toBe(true);
+    expect(existsSync(join(outputDir, "artifact-hashes.json"))).toBe(true);
   });
 
   it("keeps generated report inside safe wording", () => {
@@ -30,5 +34,21 @@ describe("demo readiness CLI", () => {
 
     expect(report).not.toMatch(unsafePattern);
     expect(report).toContain("documentation readiness only");
+  });
+
+  it("writes traceability and hash content", () => {
+    const outputDir = mkdtempSync(join(tmpdir(), "readiness-output-"));
+    runReadinessDemo({ fixtureDir, outputDir });
+    const traceability = readFileSync(
+      join(outputDir, "traceability-matrix.csv"),
+      "utf8"
+    );
+    const hashes = JSON.parse(
+      readFileSync(join(outputDir, "artifact-hashes.json"), "utf8")
+    ) as { artifacts: Array<{ sha256: string }> };
+
+    expect(traceability).toContain("requirement,evidence,check,status,risk");
+    expect(hashes.artifacts).toHaveLength(4);
+    expect(hashes.artifacts[0].sha256).toMatch(/^[a-f0-9]{64}$/);
   });
 });

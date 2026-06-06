@@ -3,7 +3,9 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { buildEvidenceGraphFromBundle } from "../packages/evidence/src/evidenceGraph";
 import { parseDemoBundle } from "../packages/parsers/src/demoBundle";
+import { generateArtifactHashes } from "../packages/reports/src/artifactHashes";
 import { generateReadinessReportMarkdown } from "../packages/reports/src/markdownReport";
+import { generateTraceabilityMatrix } from "../packages/reports/src/traceabilityMatrix";
 import { evaluateReadiness } from "../packages/rules/src/readiness";
 
 export type RunReadinessDemoOptions = {
@@ -19,6 +21,11 @@ export function runReadinessDemo(options: RunReadinessDemoOptions = {}) {
   const bundle = parseDemoBundle(fixtureDir);
   const evidenceGraph = buildEvidenceGraphFromBundle(bundle);
   const readinessAssessment = evaluateReadiness(bundle);
+  const traceabilityMatrix = generateTraceabilityMatrix(
+    bundle,
+    readinessAssessment
+  );
+  const artifactHashes = generateArtifactHashes(fixtureDir);
   const markdown = generateReadinessReportMarkdown(
     bundle,
     evidenceGraph,
@@ -37,6 +44,16 @@ export function runReadinessDemo(options: RunReadinessDemoOptions = {}) {
     JSON.stringify(readinessAssessment, null, 2),
     "utf8"
   );
+  writeFileSync(
+    join(outputDir, "traceability-matrix.csv"),
+    traceabilityMatrix,
+    "utf8"
+  );
+  writeFileSync(
+    join(outputDir, "artifact-hashes.json"),
+    JSON.stringify(artifactHashes, null, 2),
+    "utf8"
+  );
 
   return {
     outputDir,
@@ -44,7 +61,9 @@ export function runReadinessDemo(options: RunReadinessDemoOptions = {}) {
     files: [
       "readiness-report.md",
       "evidence-graph.json",
-      "readiness-assessment.json"
+      "readiness-assessment.json",
+      "traceability-matrix.csv",
+      "artifact-hashes.json"
     ]
   };
 }
