@@ -136,6 +136,10 @@ Read [docs/interview-cheat-sheet.md](docs/interview-cheat-sheet.md) before shari
 
 It explains the project, the main terms, a short interview pitch, and 10 likely questions with simple answers.
 
+For copy-ready portfolio material, use [docs/final-portfolio-package.md](docs/final-portfolio-package.md).
+
+For short interview answers, use [docs/final-interview-pack.md](docs/final-interview-pack.md).
+
 ## How To Run
 
 Install dependencies:
