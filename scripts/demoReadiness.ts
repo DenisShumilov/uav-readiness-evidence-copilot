@@ -5,6 +5,7 @@ import { buildEvidenceGraphFromBundle } from "../packages/evidence/src/evidenceG
 import { parseDemoBundle } from "../packages/parsers/src/demoBundle";
 import { generateArtifactHashes } from "../packages/reports/src/artifactHashes";
 import { generateReadinessReportMarkdown } from "../packages/reports/src/markdownReport";
+import { generatePortfolioDemoMarkdown } from "../packages/reports/src/portfolioDemo";
 import { generateTraceabilityMatrix } from "../packages/reports/src/traceabilityMatrix";
 import { evaluateReadiness } from "../packages/rules/src/readiness";
 
@@ -31,6 +32,20 @@ export function runReadinessDemo(options: RunReadinessDemoOptions = {}) {
     evidenceGraph,
     readinessAssessment
   );
+  const files = [
+    "readiness-report.md",
+    "evidence-graph.json",
+    "readiness-assessment.json",
+    "traceability-matrix.csv",
+    "artifact-hashes.json",
+    "portfolio-demo.md"
+  ];
+  const portfolioDemo = generatePortfolioDemoMarkdown(
+    bundle,
+    evidenceGraph,
+    readinessAssessment,
+    files
+  );
 
   mkdirSync(outputDir, { recursive: true });
   writeFileSync(join(outputDir, "readiness-report.md"), markdown, "utf8");
@@ -54,17 +69,12 @@ export function runReadinessDemo(options: RunReadinessDemoOptions = {}) {
     JSON.stringify(artifactHashes, null, 2),
     "utf8"
   );
+  writeFileSync(join(outputDir, "portfolio-demo.md"), portfolioDemo, "utf8");
 
   return {
     outputDir,
     readinessScore: readinessAssessment.readinessScore,
-    files: [
-      "readiness-report.md",
-      "evidence-graph.json",
-      "readiness-assessment.json",
-      "traceability-matrix.csv",
-      "artifact-hashes.json"
-    ]
+    files
   };
 }
 

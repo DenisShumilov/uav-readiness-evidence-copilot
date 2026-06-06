@@ -10,6 +10,24 @@ Simple meaning:
 - traceability = the link "requirement -> evidence -> check".
 - readiness = documentation readiness, not flight permission.
 
+## 30-second demo
+
+Run:
+
+```powershell
+npm run demo:readiness
+```
+
+Open:
+
+```text
+examples/demo-uav-readiness/output/portfolio-demo.md
+```
+
+This page shows the project name, readiness score, evidence status, warnings, locked items, generated output files, and why the demo matters to an employer.
+
+Simple meaning: the recruiter can see in one page that this project checks files, connects evidence to claims, refuses unsupported claims, and produces useful documentation.
+
 ## What This Project Is
 
 This project is an offline workspace for organizing engineering artifacts and producing readiness documentation.

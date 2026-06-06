@@ -18,13 +18,15 @@ describe("demo readiness CLI", () => {
       "evidence-graph.json",
       "readiness-assessment.json",
       "traceability-matrix.csv",
-      "artifact-hashes.json"
+      "artifact-hashes.json",
+      "portfolio-demo.md"
     ]);
     expect(existsSync(join(outputDir, "readiness-report.md"))).toBe(true);
     expect(existsSync(join(outputDir, "evidence-graph.json"))).toBe(true);
     expect(existsSync(join(outputDir, "readiness-assessment.json"))).toBe(true);
     expect(existsSync(join(outputDir, "traceability-matrix.csv"))).toBe(true);
     expect(existsSync(join(outputDir, "artifact-hashes.json"))).toBe(true);
+    expect(existsSync(join(outputDir, "portfolio-demo.md"))).toBe(true);
   });
 
   it("keeps generated report inside safe wording", () => {
@@ -50,5 +52,18 @@ describe("demo readiness CLI", () => {
     expect(traceability).toContain("requirement,evidence,check,status,risk");
     expect(hashes.artifacts).toHaveLength(4);
     expect(hashes.artifacts[0].sha256).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it("writes a portfolio demo page", () => {
+    const outputDir = mkdtempSync(join(tmpdir(), "readiness-output-"));
+    runReadinessDemo({ fixtureDir, outputDir });
+    const portfolioDemo = readFileSync(
+      join(outputDir, "portfolio-demo.md"),
+      "utf8"
+    );
+
+    expect(portfolioDemo).toContain("# UAV Readiness & Evidence Copilot");
+    expect(portfolioDemo).toContain("## What This Shows Employers");
+    expect(portfolioDemo).toContain("portfolio-demo.md");
   });
 });
