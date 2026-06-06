@@ -12,8 +12,8 @@ Future safe reports may include:
 - evidence locks;
 - artifact hashes.
 
-Phase 1 rule:
+Implemented:
 
-No report generator code yet.
+- `generateReadinessReportMarkdown`, a simple Markdown readiness report for the safe demo flow.
 
 Reports must explain documentation readiness only, not operational readiness.
