@@ -14,8 +14,16 @@ Future safe rules may check:
 - unsafe keywords;
 - locked critical claims.
 
-Phase 1 rule:
+Implemented:
 
-No rules engine code yet.
+- `evaluateReadiness`, a simple documentation readiness rules engine.
+
+Scoring formula:
+
+- Start at 100.
+- Subtract 6 points for each locked critical evidence item.
+- Subtract 3 points for each partial evidence claim.
+- Subtract 2 points for each warning.
+- Subtract 10 points for each missing safe artifact.
 
 The rules must never become mission, route, payload, or tactical rules.
