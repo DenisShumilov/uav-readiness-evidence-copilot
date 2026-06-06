@@ -1,5 +1,7 @@
 # UAV Readiness & Evidence Copilot
 
+[![CI](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/actions/workflows/ci.yml)
+
 Evidence-first documentation readiness tool for safe UAV and robotics engineering QA.
 
 Simple meaning:
@@ -237,8 +239,8 @@ All demo data is synthetic, static, and educational.
 
 ## Roadmap
 
-- Add safer parsers for remaining documentation-only files.
-- Add stronger traceability views and evidence lock summaries.
-- Add a simple static HTML portfolio page.
-- Add GitHub screenshots or short demo video.
-- Later: build a small dashboard UI only if it stays documentation-only and safe.
+- Demo video or GIF for the GitHub README.
+- GitHub Actions CI for automatic typecheck, tests, and audit.
+- Optional dashboard UI if it stays documentation-only and safe.
+- Safer documentation-only parsers for remaining synthetic inputs.
+- Portfolio outreach package for recruiters and engineering teams.
