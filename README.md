@@ -1,14 +1,49 @@
 # UAV Readiness & Evidence Copilot
 
-Safe portfolio project for UAV engineering QA, evidence tracking, traceability, and readiness documentation.
+Evidence-first documentation readiness tool for safe UAV and robotics engineering QA.
 
 Simple meaning:
 
-- UAV = drone or unmanned aerial vehicle.
-- QA = quality assurance, meaning checking that engineering work is complete and reliable.
+- UAV = unmanned aerial vehicle, or drone.
+- QA = quality assurance, meaning checking that work is complete and reliable.
 - evidence = proof, such as a document, note, table, or log.
-- traceability = the link "requirement -> evidence -> check".
-- readiness = documentation readiness, not flight permission.
+- readiness = documentation readiness, not permission to operate equipment.
+- locked = blocked because proof is missing.
+
+## What This Project Is
+
+UAV Readiness & Evidence Copilot is an offline TypeScript tool that turns safe demo engineering files into a documentation readiness report.
+
+It reads synthetic input files, checks whether claims have evidence, marks unsupported claims as `locked`, builds an evidence graph, calculates a readiness score, and writes recruiter-friendly output files.
+
+## Why It Helps UAV / Miltech Engineering Teams
+
+Engineering teams often need to prove that documentation, QA checks, and review records are complete before a product review or audit.
+
+This project shows a safe workflow for:
+
+- organizing engineering evidence;
+- finding missing proof early;
+- connecting requirements to evidence and checks;
+- creating clear review reports;
+- keeping unsafe operational scope out of the tool.
+
+Simple meaning: it helps a team see what paperwork is ready, what is weak, and what is blocked.
+
+## What This Project Does Not Do
+
+This project does not:
+
+- control drones or robots;
+- plan missions;
+- generate routes or waypoints;
+- process live telemetry;
+- select or control payloads;
+- support targeting;
+- provide tactical advice;
+- connect to real aircraft, radios, sensors, or field systems.
+
+It is a documentation, QA, evidence, and portfolio demo only.
 
 ## 30-second demo
 
@@ -24,98 +59,120 @@ Open:
 examples/demo-uav-readiness/output/portfolio-demo.md
 ```
 
-This page shows the project name, readiness score, evidence status, warnings, locked items, generated output files, and why the demo matters to an employer.
+In one page, the demo shows:
 
-Simple meaning: the recruiter can see in one page that this project checks files, connects evidence to claims, refuses unsupported claims, and produces useful documentation.
+- project name and purpose;
+- readiness score;
+- verified / partial / locked evidence counts;
+- warnings;
+- locked items;
+- generated output files;
+- why the project is useful to an employer.
 
-## What This Project Is
+## How To Run
 
-This project is an offline workspace for organizing engineering artifacts and producing readiness documentation.
+Install dependencies:
 
-Artifact means a file we receive or generate, such as a BOM, manual, QA note, report, or checklist.
-
-Planned safe inputs:
-
-- `BOM.csv` = list of parts;
-- `demo_manual.md` = safe demo instruction document;
-- `wiring_notes.yaml` = structured wiring notes, only if supported by evidence;
-- `config_dump.txt` = settings file;
-- `test_log.csv` = test record;
-- `qa_notes.md` = quality notes.
-
-Planned safe outputs:
-
-- `readiness-report.md` = written readiness summary;
-- `qa-checklist.md` = quality checklist;
-- `traceability-matrix.csv` = table linking requirement, evidence, and check;
-- `evidence-graph.json` = map of evidence links;
-- `evidence-locks.json` = list of blocked claims;
-- `wiring-manifest.yaml` = wiring summary only when evidence supports it;
-- `artifact-hashes.json` = file hashes for integrity;
-- `training-deck.pptx` = simple training slides.
-
-## What This Project Is Not
-
-This project is not:
-
-- a drone control tool;
-- a mission planning tool;
-- a route planner;
-- a targeting tool;
-- a payload tool;
-- a live telemetry tool;
-- a tactical assistant;
-- a weapon system.
-
-If evidence is missing, the system must say `locked`, meaning blocked because there is no proof.
-
-## Phase 1 Status
-
-Phase 1 creates only the safe foundation:
-
-- persistent rules in `AGENTS.md`;
-- documentation in `docs/`;
-- project-level Claude agents in `.claude/agents/`;
-- project-level Claude skills in `.claude/skills/`;
-- placeholder package folders in `packages/`;
-- a safe demo folder in `examples/demo-uav-readiness/`.
-
-There is no app logic yet.
-
-## Repository Structure
-
-```text
-.
-|-- AGENTS.md
-|-- README.md
-|-- docs/
-|-- .claude/
-|   |-- agents/
-|   `-- skills/
-|-- packages/
-|   |-- core/
-|   |-- parsers/
-|   |-- evidence/
-|   |-- rules/
-|   |-- reports/
-|   |-- deck/
-|   `-- qa/
-`-- examples/
-    `-- demo-uav-readiness/
+```powershell
+npm install
 ```
 
-Repo means the project folder that can later be tracked with Git.
+Generate the demo outputs:
 
-Package means a separate project module. In Phase 1, packages are only placeholders.
+```powershell
+npm run demo:readiness
+```
 
-## Core Safety Rule
+Run checks:
 
+```powershell
+npm run typecheck
+npm test
+npm audit --audit-level=moderate
+```
+
+## Input Files
+
+Safe demo inputs live in:
+
+```text
+examples/demo-uav-readiness/
+```
+
+Current inputs:
+
+- `BOM.csv` = bill of materials, meaning a list of parts.
+- `demo_manual.md` = synthetic manual, meaning a fake instruction document for learning.
+- `test_log.csv` = QA test log, meaning a table of review checks.
+- `qa_notes.md` = QA notes, meaning written quality review notes.
+- `wiring_notes.yaml` = documentation-only wiring notes, not real instructions.
+- `config_dump.txt` = fake config dump, meaning a fake settings file.
+
+Only the safer documentation inputs are parsed in the current MVP.
+
+## Output Files
+
+Generated outputs live in:
+
+```text
+examples/demo-uav-readiness/output/
+```
+
+Current outputs:
+
+- `portfolio-demo.md` = one-page recruiter demo.
+- `readiness-report.md` = markdown readiness report.
+- `evidence-graph.json` = evidence graph, meaning a map of claims and proof.
+- `readiness-assessment.json` = readiness score and findings.
+- `traceability-matrix.csv` = table linking requirement -> evidence -> check -> status -> risk.
+- `artifact-hashes.json` = file hashes, meaning digital fingerprints for input files.
+
+## Architecture Overview
+
+```text
+safe demo files
+  -> parsers
+  -> schemas
+  -> evidence graph
+  -> readiness rules
+  -> reports and demo outputs
+```
+
+Main folders:
+
+- `packages/core/` = schemas, meaning rules for valid data.
+- `packages/parsers/` = parsers, meaning code that reads files and extracts data.
+- `packages/evidence/` = evidence graph builder.
+- `packages/rules/` = readiness scoring rules.
+- `packages/reports/` = markdown, CSV, hash, and portfolio output generators.
+- `packages/qa/` = CLI smoke tests, meaning quick tests that prove the command works.
+- `examples/demo-uav-readiness/` = safe synthetic demo files.
+- `docs/` = portfolio, safety, and demo documentation.
+
+## Safety Boundaries
+
+Core rule:
+
+```text
 No evidence -> locked.
+```
 
-Simple meaning: if the project cannot point to a source file, it must not pretend that a claim is true.
+The project may discuss prohibited topics only as safety boundaries. It must not provide operational steps, real-world control logic, real coordinates, live telemetry handling, route generation, payload handling, targeting help, or tactical recommendations.
 
-## Next Phase
+All demo data is synthetic, static, and educational.
 
-Phase 2 should add schemas, meaning rules for what the data must look like, using TypeScript and Zod.
+## Tech Stack
 
-No parser, dashboard, report generator, or deck generator should be added until the safety and evidence rules stay clear.
+- TypeScript = JavaScript with type rules.
+- Zod = validation library, meaning it checks that data has the expected shape.
+- Vitest = test runner, meaning it runs automated checks.
+- tsx = TypeScript runner, meaning it runs TypeScript scripts directly.
+- Node.js = JavaScript runtime, meaning the tool that runs the project on your computer.
+
+## Roadmap
+
+- Add safer parsers for remaining documentation-only files.
+- Add stronger traceability views and evidence lock summaries.
+- Add a simple static HTML portfolio page.
+- Add GitHub screenshots or short demo video.
+- Later: build a small dashboard UI only if it stays documentation-only and safe.
