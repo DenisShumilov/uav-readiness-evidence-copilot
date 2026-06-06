@@ -53,8 +53,23 @@ describe("generatePortfolioDemoMarkdown", () => {
     expect(html).toContain("<title>UAV Readiness & Evidence Copilot</title>");
     expect(html).toContain(`aria-label="Readiness score ${assessment.readinessScore} out of 100"`);
     expect(html).toContain("Traceability Preview");
-    expect(html).toContain("Locked Items");
+    expect(html).toContain("Locked Steps");
     expect(html).toContain("Safety Boundary");
+    expect(html).toContain("No mission planning. No payload. No live drone control.");
     expect(html).toContain("portfolio-demo.html");
+  });
+
+  it("renders score and counters from the assessment data", () => {
+    const bundle = parseDemoBundle();
+    const graph = buildEvidenceGraphFromBundle(bundle);
+    const assessment = evaluateReadiness(bundle);
+    const html = generatePortfolioDemoHtml(bundle, graph, assessment, [
+      "portfolio-demo.html"
+    ]);
+
+    expect(html).toContain(`aria-label="Readiness score ${assessment.readinessScore} out of 100"`);
+    expect(html).toContain(`<b class="verified">${graph.summary.verifiedCount}</b>`);
+    expect(html).toContain(`<b class="partial">${graph.summary.partialCount}</b>`);
+    expect(html).toContain(`<b class="locked">${graph.summary.lockedCount}</b>`);
   });
 });

@@ -53,6 +53,13 @@ Say:
 
 Locked means the project refuses to pretend something is true when proof is missing.
 
+Point out:
+
+- Before: messy artifacts.
+- After: readiness package.
+- What this demonstrates: AI-assisted engineering workflow, QA automation, traceability, and safe human-reviewed support tooling.
+- Technical pipeline: input artifacts -> parsers -> evidence graph -> rules engine -> readiness report -> portfolio demo.
+
 ## Optional - make a README screenshot
 
 First generate the HTML page:

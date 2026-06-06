@@ -76,15 +76,16 @@ export function generatePortfolioDemoHtml(
   <style>
     :root {
       color-scheme: light;
-      --bg: #f6f7f9;
+      --bg: #f4f6f8;
       --panel: #ffffff;
-      --ink: #1c2430;
+      --ink: #18212f;
       --muted: #5f6b7a;
       --line: #d9dee6;
       --verified: #1d7f58;
       --partial: #b26900;
       --locked: #b3261e;
-      --accent: #2357d6;
+      --accent: #2556c7;
+      --accent-soft: #e9eefc;
     }
 
     * {
@@ -102,22 +103,22 @@ export function generatePortfolioDemoHtml(
     main {
       max-width: 1120px;
       margin: 0 auto;
-      padding: 32px 20px 48px;
+      padding: 28px 20px 48px;
     }
 
     .hero {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 220px;
+      grid-template-columns: minmax(0, 1fr) 240px;
       gap: 24px;
       align-items: stretch;
       border-bottom: 1px solid var(--line);
-      padding-bottom: 24px;
+      padding: 18px 0 24px;
       margin-bottom: 24px;
     }
 
     h1 {
-      margin: 0 0 10px;
-      font-size: 34px;
+      margin: 0 0 12px;
+      font-size: 42px;
       line-height: 1.1;
       letter-spacing: 0;
     }
@@ -133,10 +134,25 @@ export function generatePortfolioDemoHtml(
       color: var(--muted);
     }
 
+    .eyebrow {
+      margin-bottom: 10px;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .one-liner {
+      color: var(--ink);
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
     .score {
       display: grid;
       place-items: center;
-      min-height: 180px;
+      min-height: 200px;
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -144,7 +160,7 @@ export function generatePortfolioDemoHtml(
 
     .score strong {
       display: block;
-      font-size: 48px;
+      font-size: 56px;
       line-height: 1;
     }
 
@@ -164,6 +180,11 @@ export function generatePortfolioDemoHtml(
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 16px;
+    }
+
+    .panel.soft {
+      background: var(--accent-soft);
+      border-color: #c8d4f7;
     }
 
     .metric {
@@ -192,6 +213,27 @@ export function generatePortfolioDemoHtml(
 
     .locked {
       color: var(--locked);
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .flow span {
+      display: grid;
+      min-height: 64px;
+      align-items: center;
+      justify-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+      padding: 8px;
     }
 
     ul {
@@ -236,9 +278,14 @@ export function generatePortfolioDemoHtml(
       border-left: 4px solid var(--accent);
     }
 
+    .boundary {
+      border-left-color: var(--locked);
+    }
+
     @media (max-width: 760px) {
       .hero,
-      .grid {
+      .grid,
+      .flow {
         grid-template-columns: 1fr;
       }
 
@@ -252,8 +299,10 @@ export function generatePortfolioDemoHtml(
   <main>
     <section class="hero">
       <div>
+        <div class="eyebrow">Portfolio demo</div>
         <h1>UAV Readiness & Evidence Copilot</h1>
-        <p>Evidence-first documentation readiness demo for safe engineering QA. It checks synthetic files, connects proof to claims, and keeps missing proof locked.</p>
+        <p class="one-liner">AI-assisted QA workspace for UAV engineering artifacts.</p>
+        <p>Turns messy synthetic documents into a clear readiness package: evidence status, locked steps, traceability, hashes, and reports.</p>
       </div>
       <div class="score" aria-label="Readiness score ${score} out of 100">
         <div>
@@ -265,25 +314,27 @@ export function generatePortfolioDemoHtml(
 
     <section class="grid" aria-label="Evidence summary">
       <div class="panel">
-        <h2>Evidence Status</h2>
+        <h2>Evidence Counters</h2>
         <div class="metric"><span>Verified</span><b class="verified">${graph.summary.verifiedCount}</b></div>
         <div class="metric"><span>Partial</span><b class="partial">${graph.summary.partialCount}</b></div>
         <div class="metric"><span>Locked</span><b class="locked">${graph.summary.lockedCount}</b></div>
       </div>
 
-      <div class="panel">
-        <h2>What Employers See</h2>
+      <div class="panel soft">
+        <h2>Before</h2>
         <ul>
-          <li>Safe AI-assisted engineering workflow.</li>
-          <li>No evidence means locked.</li>
-          <li>Clear TypeScript CLI with tests.</li>
+          <li>Messy artifacts.</li>
+          <li>Scattered notes and logs.</li>
+          <li>Unclear proof status.</li>
         </ul>
       </div>
 
-      <div class="panel">
-        <h2>Output Files</h2>
+      <div class="panel soft">
+        <h2>After</h2>
         <ul>
-          ${outputFiles.map((file) => `<li><a href="${escapeAttribute(file)}">${escapeHtml(file)}</a></li>`).join("\n          ")}
+          <li>Readiness package.</li>
+          <li>Evidence graph and locks.</li>
+          <li>Clear review outputs.</li>
         </ul>
       </div>
 
@@ -295,13 +346,44 @@ export function generatePortfolioDemoHtml(
       </div>
 
       <div class="panel">
-        <h2>Locked Items</h2>
+        <h2>Locked Steps</h2>
         <ul>
           ${formatHtmlList(lockedItems.map((item) => `${item.id}: ${item.reason}`))}
         </ul>
       </div>
 
       <div class="panel">
+        <h2>Generated Outputs</h2>
+        <ul>
+          ${outputFiles.map((file) => `<li><a href="${escapeAttribute(file)}">${escapeHtml(file)}</a></li>`).join("\n          ")}
+        </ul>
+      </div>
+
+      <div class="panel wide">
+        <h2>What This Demonstrates</h2>
+        <ul>
+          <li>AI-assisted engineering workflow.</li>
+          <li>Evidence tracking.</li>
+          <li>QA automation.</li>
+          <li>Traceability.</li>
+          <li>Readiness reporting.</li>
+          <li>Safe human-reviewed UAV support tooling.</li>
+        </ul>
+      </div>
+
+      <div class="panel wide">
+        <h2>Technical Pipeline</h2>
+        <div class="flow" aria-label="Technical pipeline">
+          <span>input artifacts</span>
+          <span>parsers</span>
+          <span>evidence graph</span>
+          <span>rules engine</span>
+          <span>readiness report</span>
+          <span>portfolio demo</span>
+        </div>
+      </div>
+
+      <div class="panel wide">
         <h2>Artifact Summary</h2>
         <ul>
           ${bundle.artifacts.map((artifact) => `<li>${escapeHtml(artifact.filename)} - ${escapeHtml(artifact.kind)}</li>`).join("\n          ")}
@@ -334,8 +416,9 @@ export function generatePortfolioDemoHtml(
         </table>
       </div>
 
-      <div class="panel wide note">
+      <div class="panel wide note boundary">
         <h2>Safety Boundary</h2>
+        <p>No mission planning. No payload. No live drone control.</p>
         <p>This static demo is for synthetic documentation review only. It does not connect to live systems or operate real equipment.</p>
       </div>
     </section>

@@ -69,6 +69,23 @@ In one page, the demo shows:
 - generated output files;
 - why the project is useful to an employer.
 
+## Live / Local Demo
+
+Run:
+
+```powershell
+npm install
+npm run demo:readiness
+```
+
+Open:
+
+```text
+examples/demo-uav-readiness/output/portfolio-demo.html
+```
+
+The page shows a product-style overview: score, evidence counters, warnings, locked steps, generated outputs, before/after workflow, safety boundary, and technical pipeline.
+
 ## Demo Screenshot
 
 ![Portfolio demo screenshot](docs/assets/demo-screenshot.png)
@@ -86,6 +103,30 @@ Then open:
 ```text
 examples/demo-uav-readiness/output/portfolio-demo.html
 ```
+
+## Explain Like I Am New
+
+Seven key ideas:
+
+- Parser = code that reads a file and pulls useful data from it.
+- Schema = rules for what valid data must look like.
+- Evidence = proof from a file, note, table, or log.
+- Evidence graph = a map that connects claims to proof.
+- Locked step = a claim or check that stays blocked because proof is missing.
+- Readiness score = documentation readiness score, not permission to operate equipment.
+- Artifact hash = a digital fingerprint that helps show which file was reviewed.
+
+1-minute pitch:
+
+> This project is a safe AI-assisted QA workspace for UAV engineering documentation. It reads synthetic demo artifacts, checks which claims have evidence, marks missing proof as locked, builds traceability, calculates a documentation readiness score, and generates portfolio-ready reports. It proves I can build useful engineering tooling while keeping strict safety boundaries.
+
+30-second pitch:
+
+> It is a documentation QA tool for UAV engineering artifacts. It turns messy files into an evidence-backed readiness package and refuses to verify anything without proof.
+
+10-second pitch:
+
+> It is a safe evidence checker for engineering documents.
 
 ## How To Run
 

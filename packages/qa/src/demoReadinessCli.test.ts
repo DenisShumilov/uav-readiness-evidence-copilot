@@ -7,6 +7,8 @@ import { runReadinessDemo } from "../../../scripts/demoReadiness";
 const fixtureDir = join(process.cwd(), "examples", "demo-uav-readiness");
 const unsafePattern =
   /\b(mission|payload|targeting|weapon|route|waypoint|telemetry|target|coordinates|coordinate|gps|frequency|frequencies|mavlink|px4|ardupilot|strike|attack|evasion|evade|countermeasure)\b/i;
+const allowedSafetyBoundary =
+  /<div class="panel wide note boundary">[\s\S]*?<\/div>/;
 
 describe("demo readiness CLI", () => {
   it("writes demo readiness outputs", () => {
@@ -79,8 +81,14 @@ describe("demo readiness CLI", () => {
 
     expect(portfolioDemoHtml).toContain("<!doctype html>");
     expect(portfolioDemoHtml).toContain("Readiness score");
-    expect(portfolioDemoHtml).toContain("Locked Items");
+    expect(portfolioDemoHtml).toContain("Locked Steps");
     expect(portfolioDemoHtml).toContain("Safety Boundary");
-    expect(portfolioDemoHtml).not.toMatch(unsafePattern);
+    expect(portfolioDemoHtml).toContain("No mission planning. No payload. No live drone control.");
+
+    const htmlWithoutSafetyBoundary = portfolioDemoHtml.replace(
+      allowedSafetyBoundary,
+      ""
+    );
+    expect(htmlWithoutSafetyBoundary).not.toMatch(unsafePattern);
   });
 });
