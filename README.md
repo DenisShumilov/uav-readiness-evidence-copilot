@@ -4,205 +4,62 @@
 
 [Українська версія](README.uk.md)
 
-Evidence-first documentation readiness tool for safe UAV and robotics engineering QA.
+Evidence-first QA workspace for UAV and robotics engineering documentation.
 
-Simple meaning:
+UAV Readiness & Evidence Copilot turns synthetic engineering artifacts into an evidence-backed readiness package: parsed inputs, evidence graph, locked findings, traceability CSV, artifact hashes, markdown report, and recruiter-friendly portfolio demo.
 
-- UAV = unmanned aerial vehicle, or drone.
-- QA = quality assurance, meaning checking that work is complete and reliable.
-- evidence = proof, such as a document, note, table, or log.
-- readiness = documentation readiness, not permission to operate equipment.
-- locked = blocked because proof is missing.
+## Demo Video
 
-## What This Project Is
+Final demo videos are published through GitHub Releases, not committed as binary files.
 
-UAV Readiness & Evidence Copilot is an offline TypeScript tool that turns safe demo engineering files into a documentation readiness report.
-
-It reads synthetic input files, checks whether claims have evidence, marks unsupported claims as `locked`, builds an evidence graph, calculates a readiness score, and writes recruiter-friendly output files.
-
-## Why It Helps UAV / Miltech Engineering Teams
-
-Engineering teams often need to prove that documentation, QA checks, and review records are complete before a product review or audit.
-
-This project shows a safe workflow for:
-
-- organizing engineering evidence;
-- finding missing proof early;
-- connecting requirements to evidence and checks;
-- creating clear review reports;
-- keeping unsafe operational scope out of the tool.
-
-Simple meaning: it helps a team see what paperwork is ready, what is weak, and what is blocked.
-
-## What This Project Does Not Do
-
-This project does not:
-
-- control drones or robots;
-- plan missions;
-- generate routes or waypoints;
-- process live telemetry;
-- select or control payloads;
-- support targeting;
-- provide tactical advice;
-- connect to real aircraft, radios, sensors, or field systems.
-
-It is a documentation, QA, evidence, and portfolio demo only.
-
-## 30-second demo
-
-Run:
-
-```powershell
-npm run demo:readiness
-```
-
-Open:
-
-```text
-examples/demo-uav-readiness/output/portfolio-demo.html
-```
-
-In one page, the demo shows:
-
-- project name and purpose;
-- readiness score;
-- verified / partial / locked evidence counts;
-- warnings;
-- locked items;
-- generated output files;
-- why the project is useful to an employer.
-
-## Live / Local Demo
-
-Run:
-
-```powershell
-npm install
-npm run demo:readiness
-```
-
-Open:
-
-```text
-examples/demo-uav-readiness/output/portfolio-demo.html
-```
-
-The page shows a product-style overview: score, evidence counters, warnings, locked steps, generated outputs, before/after workflow, safety boundary, and technical pipeline.
+- [English MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.1.0-demo-video/uav-readiness-demo.en.final.mp4)
+- [Ukrainian MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.1.0-demo-video/uav-readiness-demo.uk.final.mp4)
+- [Release page](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.1.0-demo-video)
 
 ## Demo Screenshot
 
 ![Portfolio demo screenshot](docs/assets/demo-screenshot.png)
 
-This screenshot shows the browser-friendly demo page with the readiness score, evidence status, warnings, locked items, output files, and traceability preview.
+## What It Demonstrates
 
-## Demo Video
+- Evidence-first engineering QA workflow
+- TypeScript data modeling with Zod schemas
+- Safe parsers for synthetic documentation artifacts
+- Evidence graph and locked-step handling
+- Readiness scoring with explainable rules
+- Traceability matrix and artifact hash generation
+- Markdown and static HTML portfolio outputs
+- GitHub Actions CI for typecheck, tests, and audit
 
-![Demo GIF preview](demo-video/videos/uav-readiness-demo.en.gif)
+## Why It Matters
 
-The GIF is only an optional README preview. The final recruiter-facing demo format is MP4.
+Engineering teams need fast ways to see which documentation claims are supported, incomplete, or blocked. This project demonstrates a safe internal-tool workflow for documentation readiness, audit preparation, and handoff review.
 
-Local final MP4 outputs:
-
-```text
-demo-video/videos/final/uav-readiness-demo.en.final.mp4
-demo-video/videos/final/uav-readiness-demo.uk.final.mp4
-```
-
-Generate static demo pages first:
-
-```powershell
-npm run demo:readiness
-```
-
-Then follow [demo-video/README.md](demo-video/README.md).
-
-Quick preview commands:
-
-```powershell
-npm run demo:video:screenshots
-npm run demo:video:record
-```
-
-High-quality MP4 commands:
-
-```powershell
-npm run demo:readiness
-npm run demo:video:record:hq
-npm run demo:video:build
-npm run demo:video:voiceover
-npm run demo:video:merge
-npm run demo:video:qa
-```
-
-Silent fallback outputs:
+The core rule is:
 
 ```text
-demo-video/videos/silent/uav-readiness-demo.en.silent.mp4
-demo-video/videos/silent/uav-readiness-demo.uk.silent.mp4
+No evidence -> locked.
 ```
 
-Optional GIF previews:
+## Safety Boundaries
 
-```text
-demo-video/videos/uav-readiness-demo.en.gif
-demo-video/videos/uav-readiness-demo.uk.gif
-```
+This is a documentation, QA, and portfolio project only.
 
-Large MP4 files are ignored by Git. Upload final videos to LinkedIn, YouTube, Google Drive, or a GitHub Release after manual review.
+It does not control drones or robots, process live telemetry, generate routes or waypoints, support payload operation, support targeting, provide tactical advice, or connect to real aircraft, radios, sensors, or field systems.
 
-## Explain Like I Am New
+All demo data is synthetic, static, and educational.
 
-Seven key ideas:
-
-- Parser = code that reads a file and pulls useful data from it.
-- Schema = rules for what valid data must look like.
-- Evidence = proof from a file, note, table, or log.
-- Evidence graph = a map that connects claims to proof.
-- Locked step = a claim or check that stays blocked because proof is missing.
-- Readiness score = documentation readiness score, not permission to operate equipment.
-- Artifact hash = a digital fingerprint that helps show which file was reviewed.
-
-1-minute pitch:
-
-> This project is a safe AI-assisted QA workspace for UAV engineering documentation. It reads synthetic demo artifacts, checks which claims have evidence, marks missing proof as locked, builds traceability, calculates a documentation readiness score, and generates portfolio-ready reports. It proves I can build useful engineering tooling while keeping strict safety boundaries.
-
-30-second pitch:
-
-> It is a documentation QA tool for UAV engineering artifacts. It turns messy files into an evidence-backed readiness package and refuses to verify anything without proof.
-
-10-second pitch:
-
-> It is a safe evidence checker for engineering documents.
-
-## Interview Prep
-
-Read [docs/interview-cheat-sheet.md](docs/interview-cheat-sheet.md) before sharing the GitHub link or talking to a recruiter.
-
-It explains the project, the main terms, a short interview pitch, and 10 likely questions with simple answers.
-
-For copy-ready portfolio material, use:
-
-- [docs/final-portfolio-package.en.md](docs/final-portfolio-package.en.md)
-- [docs/final-portfolio-package.uk.md](docs/final-portfolio-package.uk.md)
-
-For short interview answers, use:
-
-- [docs/final-interview-pack.en.md](docs/final-interview-pack.en.md)
-- [docs/final-interview-pack.uk.md](docs/final-interview-pack.uk.md)
-
-## How To Run
-
-Install dependencies:
+## Quick Start
 
 ```powershell
 npm install
+npm run demo:readiness
 ```
 
-Generate the demo outputs:
+Open:
 
-```powershell
-npm run demo:readiness
+```text
+examples/demo-uav-readiness/output/portfolio-demo.html
 ```
 
 Run checks:
@@ -213,9 +70,31 @@ npm test
 npm audit --audit-level=moderate
 ```
 
-## Input Files
+## Video Pipeline
 
-Safe demo inputs live in:
+Regenerate the local MP4 demo:
+
+```powershell
+npm run demo:readiness
+npm run demo:video:record:hq
+npm run demo:video:build
+npm run demo:video:voiceover
+npm run demo:video:merge
+npm run demo:video:qa
+```
+
+Local generated MP4 files are ignored by Git:
+
+```text
+demo-video/videos/final/uav-readiness-demo.en.final.mp4
+demo-video/videos/final/uav-readiness-demo.uk.final.mp4
+```
+
+GIF previews are optional and are not the primary demo format.
+
+## Inputs
+
+Synthetic demo inputs live in:
 
 ```text
 examples/demo-uav-readiness/
@@ -223,16 +102,16 @@ examples/demo-uav-readiness/
 
 Current inputs:
 
-- `BOM.csv` = bill of materials, meaning a list of parts.
-- `demo_manual.md` = synthetic manual, meaning a fake instruction document for learning.
-- `test_log.csv` = QA test log, meaning a table of review checks.
-- `qa_notes.md` = QA notes, meaning written quality review notes.
-- `wiring_notes.yaml` = documentation-only wiring notes, not real instructions.
-- `config_dump.txt` = fake config dump, meaning a fake settings file.
+- `BOM.csv`
+- `demo_manual.md`
+- `test_log.csv`
+- `qa_notes.md`
+- `wiring_notes.yaml`
+- `config_dump.txt`
 
-Only the safer documentation inputs are parsed in the current MVP.
+Only documentation-safe synthetic inputs are parsed in the current MVP.
 
-## Output Files
+## Outputs
 
 Generated outputs live in:
 
@@ -242,62 +121,61 @@ examples/demo-uav-readiness/output/
 
 Current outputs:
 
-- `portfolio-demo.md` = one-page recruiter demo.
-- `portfolio-demo.html` = browser-friendly recruiter demo page.
-- `portfolio-demo.en.html` = English browser-friendly recruiter demo page.
-- `portfolio-demo.uk.html` = Ukrainian browser-friendly recruiter demo page.
-- `readiness-report.md` = markdown readiness report.
-- `evidence-graph.json` = evidence graph, meaning a map of claims and proof.
-- `readiness-assessment.json` = readiness score and findings.
-- `traceability-matrix.csv` = table linking requirement -> evidence -> check -> status -> risk.
-- `artifact-hashes.json` = file hashes, meaning digital fingerprints for input files.
+- `portfolio-demo.html`
+- `portfolio-demo.en.html`
+- `portfolio-demo.uk.html`
+- `readiness-report.md`
+- `evidence-graph.json`
+- `readiness-assessment.json`
+- `traceability-matrix.csv`
+- `artifact-hashes.json`
 
-## Architecture Overview
+## Architecture
 
 ```text
-safe demo files
+synthetic demo artifacts
   -> parsers
   -> schemas
   -> evidence graph
   -> readiness rules
-  -> reports and demo outputs
+  -> reports and portfolio outputs
 ```
 
 Main folders:
 
-- `packages/core/` = schemas, meaning rules for valid data.
-- `packages/parsers/` = parsers, meaning code that reads files and extracts data.
-- `packages/evidence/` = evidence graph builder.
-- `packages/rules/` = readiness scoring rules.
-- `packages/reports/` = markdown, CSV, hash, and portfolio output generators.
-- `packages/qa/` = CLI smoke tests, meaning quick tests that prove the command works.
-- `examples/demo-uav-readiness/` = safe synthetic demo files.
-- `docs/` = portfolio, safety, and demo documentation.
-
-## Safety Boundaries
-
-Core rule:
-
-```text
-No evidence -> locked.
-```
-
-The project may discuss prohibited topics only as safety boundaries. It must not provide operational steps, real-world control logic, real coordinates, live telemetry handling, route generation, payload handling, targeting help, or tactical recommendations.
-
-All demo data is synthetic, static, and educational.
+- `packages/core/`
+- `packages/parsers/`
+- `packages/evidence/`
+- `packages/rules/`
+- `packages/reports/`
+- `packages/qa/`
+- `examples/demo-uav-readiness/`
+- `demo-video/`
+- `docs/`
 
 ## Tech Stack
 
-- TypeScript = JavaScript with type rules.
-- Zod = validation library, meaning it checks that data has the expected shape.
-- Vitest = test runner, meaning it runs automated checks.
-- tsx = TypeScript runner, meaning it runs TypeScript scripts directly.
-- Node.js = JavaScript runtime, meaning the tool that runs the project on your computer.
+- TypeScript
+- Zod
+- Vitest
+- tsx
+- Node.js
+- Playwright
+- ffmpeg
+- GitHub Actions
+
+## Portfolio Materials
+
+- [Final interview pack](docs/final-interview-pack.en.md)
+- [Portfolio package](docs/final-portfolio-package.en.md)
+- [Beginner-friendly notes](docs/explain-like-new.md)
+- [Demo video pipeline](demo-video/README.md)
 
 ## Roadmap
 
-- Publish final reviewed MP4 demo through GitHub Release or LinkedIn.
-- Add an optional dashboard UI if it stays documentation-only and safe.
-- Add safer documentation-only parsers for remaining synthetic inputs.
-- Add GitHub Release notes for portfolio sharing.
-- Keep improving recruiter-facing examples and outreach material.
+- Publish MP4 demo in LinkedIn/GitHub portfolio posts
+- Optional documentation-only dashboard UI
+- Additional safe parsers for synthetic documentation inputs
+- GitHub Release notes for future portfolio milestones
+- Continued safety and evidence-quality hardening
+

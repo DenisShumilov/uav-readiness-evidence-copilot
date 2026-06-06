@@ -2,92 +2,75 @@
 
 [English README](README.md)
 
-Evidence-first інструмент для безпечної UAV/robotics документації, QA, evidence tracking і readiness reporting.
+Evidence-first QA workspace для безпечної UAV/robotics інженерної документації.
 
-Простими словами:
+Проєкт перетворює synthetic demo artifacts (фейкові навчальні файли) у readiness package (пакет готовності): parsed inputs, evidence graph, locked findings, traceability CSV, artifact hashes, markdown report і portfolio demo.
 
-- UAV = безпілотник або дрон.
-- QA = перевірка якості.
-- evidence = доказ, наприклад документ, таблиця, log або note.
-- readiness = готовність документації, не дозвіл на роботу реальної системи.
-- locked = заблоковано, бо доказу немає.
+## Demo Video
 
-## Що це за проєкт
+Фінальний demo формат — MP4, не GIF. Відео доступні через GitHub Release, а не зберігаються як важкі binary files у repo.
 
-UAV Readiness & Evidence Copilot — це offline TypeScript tool, який бере synthetic demo files і створює зрозумілий readiness package.
+- [English MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.1.0-demo-video/uav-readiness-demo.en.final.mp4)
+- [Ukrainian MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.1.0-demo-video/uav-readiness-demo.uk.final.mp4)
+- [Release page](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.1.0-demo-video)
 
-Він читає demo-файли, перевіряє докази, будує evidence graph, показує locked steps, рахує documentation readiness score і генерує звіти.
+## Demo Screenshot
 
-Це не drone control. Це QA-інспектор для документації.
+![Portfolio demo screenshot українською](docs/assets/demo-screenshot.uk.png)
+
+## Що показує проєкт
+
+- evidence-first QA workflow;
+- TypeScript data modeling із Zod schemas;
+- safe parsers для synthetic documentation artifacts;
+- evidence graph і locked-step logic;
+- readiness score з простими правилами;
+- traceability matrix і artifact hashes;
+- markdown/static HTML portfolio outputs;
+- GitHub Actions CI для typecheck, tests і audit.
 
 ## Чому це корисно
 
-У UAV/miltech engineering командах часто є багато документів, logs, lists, notes і review comments.
+Команді треба швидко бачити, які твердження підтверджені доказами, які неповні, а які заблоковані. Проєкт показує безпечний internal-tool workflow для documentation readiness, audit preparation і handoff review.
 
-Проблема: швидко зрозуміти, що підтверджено доказом, що partial, а що треба заблокувати.
+Головне правило:
 
-Цей проєкт показує safe workflow:
+```text
+No evidence -> locked.
+```
 
-- зібрати evidence;
-- показати verified / partial / locked;
-- зробити traceability matrix;
-- створити readiness report;
-- не вигадувати proof.
+## Safety Boundaries
 
-## 30-second demo
+Це тільки documentation, QA і portfolio project.
 
-Запусти:
+Проєкт не керує дронами або роботами, не обробляє live telemetry, не генерує маршрути, не працює з payload, targeting, tactical advice або реальними польовими системами.
+
+Усі demo data synthetic, static і educational.
+
+## Quick Start
 
 ```powershell
 npm install
 npm run demo:readiness
 ```
 
-Відкрий:
+Відкрити:
 
 ```text
 examples/demo-uav-readiness/output/portfolio-demo.uk.html
 ```
 
-Також є English demo:
-
-```text
-examples/demo-uav-readiness/output/portfolio-demo.en.html
-```
-
-## Demo screenshot
-
-![Portfolio demo screenshot українською](docs/assets/demo-screenshot.uk.png)
-
-На screenshot видно score, evidence counters, warnings, locked steps і generated outputs.
-
-## Demo video
-
-![Demo GIF preview українською](demo-video/videos/uav-readiness-demo.uk.gif)
-
-GIF — це тільки optional preview для GitHub. Фінальний формат для рекрутерів — MP4.
-
-Сценарій і voiceover (текст озвучки) лежать тут:
-
-- [demo-video/storyboard.uk.md](demo-video/storyboard.uk.md)
-- [demo-video/voiceover.uk.txt](demo-video/voiceover.uk.txt)
-- [demo-video/README.md](demo-video/README.md)
-
-Локальні final MP4:
-
-```text
-demo-video/videos/final/uav-readiness-demo.en.final.mp4
-demo-video/videos/final/uav-readiness-demo.uk.final.mp4
-```
-
-Швидкий capture:
+Перевірки:
 
 ```powershell
-npm run demo:video:screenshots
-npm run demo:video:record
+npm run typecheck
+npm test
+npm audit --audit-level=moderate
 ```
 
-Якісний MP4 без голосу:
+## Video Pipeline
+
+Перегенерувати локальні MP4:
 
 ```powershell
 npm run demo:readiness
@@ -98,53 +81,19 @@ npm run demo:video:merge
 npm run demo:video:qa
 ```
 
-Silent MP4 outputs (відео без голосу):
+Локальні MP4 ignored by Git:
 
 ```text
-demo-video/videos/silent/uav-readiness-demo.en.silent.mp4
-demo-video/videos/silent/uav-readiness-demo.uk.silent.mp4
+demo-video/videos/final/uav-readiness-demo.en.final.mp4
+demo-video/videos/final/uav-readiness-demo.uk.final.mp4
 ```
 
-Optional GIF preview:
+GIF лишається тільки optional preview.
 
-```text
-demo-video/videos/uav-readiness-demo.en.gif
-demo-video/videos/uav-readiness-demo.uk.gif
-```
+## Portfolio Materials
 
-Великі MP4 не комітяться в Git. Їх краще завантажити в LinkedIn, YouTube, Google Drive або GitHub Release після ручної перевірки.
+- [Final interview pack українською](docs/final-interview-pack.uk.md)
+- [Portfolio package українською](docs/final-portfolio-package.uk.md)
+- [Прості пояснення для навчання](docs/explain-like-new.md)
+- [Demo video pipeline](demo-video/README.md)
 
-## Що я маю сказати рекрутеру
-
-Коротко:
-
-> Я зробив safe TypeScript QA tool для UAV engineering documentation. Він читає synthetic demo files, будує карту доказів, показує locked steps, рахує documentation readiness score і генерує звіти.
-
-Ще коротше:
-
-> Це QA-інспектор для UAV-документації, не система керування дроном.
-
-## Чого проєкт НЕ робить
-
-Він не:
-
-- керує дронами;
-- працює з real equipment;
-- аналізує live data;
-- будує маршрути;
-- працює з бойовими сценаріями;
-- є production tool.
-
-## Основні команди
-
-```powershell
-npm run demo:readiness
-npm run typecheck
-npm test
-npm audit --audit-level=moderate
-```
-
-## Де підготуватися до співбесіди
-
-- [docs/final-interview-pack.uk.md](docs/final-interview-pack.uk.md)
-- [docs/final-portfolio-package.uk.md](docs/final-portfolio-package.uk.md)
