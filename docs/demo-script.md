@@ -53,6 +53,42 @@ Say:
 
 Locked means the project refuses to pretend something is true when proof is missing.
 
+## Optional - make a README screenshot
+
+First generate the HTML page:
+
+```powershell
+npm run demo:readiness
+```
+
+Then open:
+
+```text
+examples/demo-uav-readiness/output/portfolio-demo.html
+```
+
+Manual screenshot steps:
+
+1. Open the HTML file in a browser.
+2. Make the browser window wide enough to show the score and cards.
+3. Take a screenshot.
+4. Save it as:
+
+```text
+docs/assets/demo-screenshot.png
+```
+
+Automatic screenshot command on Windows with Microsoft Edge:
+
+```powershell
+$html = (Resolve-Path -LiteralPath 'examples\demo-uav-readiness\output\portfolio-demo.html').Path
+$png = Join-Path (Resolve-Path -LiteralPath 'docs\assets').Path 'demo-screenshot.png'
+$url = [System.Uri]::new($html).AbsoluteUri
+& 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe' --headless --disable-gpu --hide-scrollbars --window-size=1440,1100 --screenshot="$png" $url
+```
+
+Headless means the browser runs without showing a normal window.
+
 ## 1:35-1:55 - Show traceability and hashes
 
 Show:

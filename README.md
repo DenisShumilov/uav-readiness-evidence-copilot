@@ -69,6 +69,24 @@ In one page, the demo shows:
 - generated output files;
 - why the project is useful to an employer.
 
+## Demo Screenshot
+
+![Portfolio demo screenshot](docs/assets/demo-screenshot.png)
+
+This screenshot shows the browser-friendly demo page with the readiness score, evidence status, warnings, locked items, output files, and traceability preview.
+
+Generate the latest HTML demo:
+
+```powershell
+npm run demo:readiness
+```
+
+Then open:
+
+```text
+examples/demo-uav-readiness/output/portfolio-demo.html
+```
+
 ## How To Run
 
 Install dependencies:
