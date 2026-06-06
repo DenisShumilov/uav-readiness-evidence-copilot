@@ -100,23 +100,13 @@ This screenshot shows the browser-friendly demo page with the readiness score, e
 
 ![Demo GIF preview](demo-video/videos/uav-readiness-demo.en.gif)
 
-Video scripts and capture helpers live in [demo-video/](demo-video/).
+The GIF is a small README preview. For a cleaner recruiter-facing video, use the high-quality MP4 pipeline in [demo-video/](demo-video/).
 
-Future video/GIF outputs:
+Current GIF previews:
 
 ```text
-demo-video/videos/uav-readiness-demo.en.mp4
-demo-video/videos/uav-readiness-demo.uk.mp4
 demo-video/videos/uav-readiness-demo.en.gif
 demo-video/videos/uav-readiness-demo.uk.gif
-```
-
-Until the MP4/GIF is created, use [docs/assets/demo-video-gif.placeholder.md](docs/assets/demo-video-gif.placeholder.md).
-
-Current GIF preview:
-
-```text
-demo-video/videos/uav-readiness-demo.en.gif
 ```
 
 Generate static demo pages first:
@@ -127,24 +117,37 @@ npm run demo:readiness
 
 Then follow [demo-video/README.md](demo-video/README.md).
 
-Automated capture commands:
+Quick preview commands:
 
 ```powershell
 npm run demo:video:screenshots
 npm run demo:video:record
 ```
 
-Generate the latest HTML demo:
+High-quality MP4 commands:
 
 ```powershell
 npm run demo:readiness
+npm run demo:video:record:hq
+npm run demo:video:build
+npm run demo:video:qa
 ```
 
-Then open:
+Silent MP4 outputs:
 
 ```text
-examples/demo-uav-readiness/output/portfolio-demo.html
+demo-video/videos/silent/uav-readiness-demo.en.silent.mp4
+demo-video/videos/silent/uav-readiness-demo.uk.silent.mp4
 ```
+
+Final voiceover MP4 outputs, after adding WAV voiceover files:
+
+```text
+demo-video/videos/final/uav-readiness-demo.en.final.mp4
+demo-video/videos/final/uav-readiness-demo.uk.final.mp4
+```
+
+Large MP4 files are ignored by Git. Upload final videos to LinkedIn, YouTube, Google Drive, or a GitHub Release after manual review.
 
 ## Explain Like I Am New
 
@@ -291,8 +294,8 @@ All demo data is synthetic, static, and educational.
 
 ## Roadmap
 
-- Demo video or GIF for the GitHub README.
-- GitHub Actions CI for automatic typecheck, tests, and audit.
-- Optional dashboard UI if it stays documentation-only and safe.
-- Safer documentation-only parsers for remaining synthetic inputs.
-- Portfolio outreach package for recruiters and engineering teams.
+- Publish final reviewed MP4 demo through GitHub Release or LinkedIn.
+- Add an optional dashboard UI if it stays documentation-only and safe.
+- Add safer documentation-only parsers for remaining synthetic inputs.
+- Add GitHub Release notes for portfolio sharing.
+- Keep improving recruiter-facing examples and outreach material.

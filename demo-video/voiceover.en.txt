@@ -1,12 +1,14 @@
-Engineering projects often have scattered artifacts, notes, logs, and claims.
-Before a review or handoff, the key question is simple: what is actually supported by evidence?
+Engineering projects often collect scattered files: parts lists, notes, review logs, and claims.
+Before a handoff, the practical question is simple: what is actually backed by evidence?
 
-This is UAV Readiness & Evidence Copilot, a safe documentation QA demo, not a drone control tool.
+This is UAV Readiness & Evidence Copilot, a safe documentation QA demo.
+It is not a drone control tool and it does not work with live aircraft data.
 
-The demo page shows a documentation readiness score and evidence counters: verified, partial, and locked.
+The demo page shows a documentation readiness score, plus evidence counters for verified, partial, and locked items.
+Verified means there is proof. Partial means the proof is incomplete. Locked means the tool refuses to approve the item because evidence is missing.
 
-Locked means missing proof stays blocked. The tool does not invent confidence.
+Behind the page, a TypeScript CLI reads synthetic demo artifacts, builds an evidence graph, runs simple readiness rules, and generates useful handoff files.
+Those outputs include a markdown report, evidence graph JSON, traceability CSV, artifact hashes, and a portfolio demo page.
 
-The CLI generates a readiness report, evidence graph JSON, traceability CSV, artifact hashes, and static portfolio pages.
-
-The value is safe engineering QA: evidence tracking, traceability, and readiness reporting for documentation workflows.
+The value is safe engineering QA: evidence tracking, traceability, and readiness reporting without operational UAV features.
+For a recruiter or engineering team, this shows practical internal-tool thinking, safety boundaries, and testable TypeScript implementation.

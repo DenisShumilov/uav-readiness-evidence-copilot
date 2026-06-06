@@ -38,6 +38,14 @@ generated/
 exports/
 examples/demo-uav-readiness/output/
 demo-video/output/frames/
+demo-video/frames/
 demo-video/videos/*.mp4
 demo-video/videos/*.webm
 demo-video/videos/*.mov
+demo-video/videos/silent/*.mp4
+demo-video/videos/silent/*.json
+demo-video/videos/final/*.mp4
+demo-video/videos/final/*.json
+demo-video/audio/*.wav
+demo-video/audio/*.mp3
+demo-video/qa/qa-*.png

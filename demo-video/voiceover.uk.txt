@@ -1,12 +1,14 @@
-В інженерних проєктах часто є багато розкиданих artifacts, notes, logs і claims.
-Перед review або handoff головне питання просте: що реально підтверджено доказом?
+В інженерних проєктах часто є багато розкиданих файлів: списки деталей, нотатки, журнали перевірок і твердження.
+Перед передачею роботи головне питання просте: що реально підтверджено доказом?
 
-Це UAV Readiness & Evidence Copilot, safe documentation QA demo, не drone control tool.
+Це UAV Readiness & Evidence Copilot, безпечне demo для QA документації.
+Це не система керування дроном і не інструмент для живих даних з реальної техніки.
 
-Demo page показує documentation readiness score і evidence counters: verified, partial та locked.
+Demo page показує readiness score, тобто оцінку готовності документації, і counters доказів: verified, partial та locked.
+Verified означає, що доказ є. Partial означає, що доказ неповний. Locked означає, що система не дозволяє “підтвердити” пункт без доказу.
 
-Locked означає: якщо proof немає, claim лишається заблокованим. Система не вигадує впевненість.
+За сторінкою працює TypeScript CLI: він читає fake demo-файли, будує evidence graph, запускає прості правила готовності й генерує файли для handoff.
+Серед результатів є markdown report, evidence graph JSON, traceability CSV, artifact hashes і portfolio demo page.
 
-CLI генерує readiness report, evidence graph JSON, traceability CSV, artifact hashes і static portfolio pages.
-
-Цінність у safe engineering QA: evidence tracking, traceability і readiness reporting для документаційних workflows.
+Цінність проста: safe engineering QA, evidence tracking, traceability і readiness reporting без небезпечних UAV-функцій.
+Для рекрутера або інженерної команди це показує практичне мислення, safety boundaries і перевірений TypeScript implementation.
