@@ -12,8 +12,12 @@ Future safe parsers may read:
 - test logs, meaning test tables;
 - QA notes, meaning quality notes.
 
-Phase 1 rule:
+Phase 4 step 1:
 
-No parser code yet.
+Only `parseBOMCsv` exists.
 
-No live telemetry, route files, mission files, or drone-control formats.
+It reads the synthetic `BOM.csv` fixture and returns schema-checked data.
+
+Safety rule:
+
+No live system files, operational files, or real equipment data.
