@@ -63,6 +63,8 @@ examples/demo-uav-readiness/output/portfolio-demo.en.html
 
 ## Demo video
 
+![Demo GIF preview українською](demo-video/videos/uav-readiness-demo.uk.gif)
+
 Сценарій і voiceover лежать тут:
 
 - [demo-video/storyboard.uk.md](demo-video/storyboard.uk.md)
@@ -72,11 +74,24 @@ examples/demo-uav-readiness/output/portfolio-demo.en.html
 Майбутній video/GIF шлях:
 
 ```text
-demo-video/output/uav-readiness-demo.uk.mp4
-demo-video/output/uav-readiness-demo.uk.gif
+demo-video/videos/uav-readiness-demo.uk.mp4
+demo-video/videos/uav-readiness-demo.uk.gif
 ```
 
 Поки MP4/GIF ще не створений, використай [docs/assets/demo-video-gif.placeholder.md](docs/assets/demo-video-gif.placeholder.md).
+
+Поточний GIF preview:
+
+```text
+demo-video/videos/uav-readiness-demo.uk.gif
+```
+
+Автоматичний capture:
+
+```powershell
+npm run demo:video:screenshots
+npm run demo:video:record
+```
 
 ## Що я маю сказати рекрутеру
 

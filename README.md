@@ -98,18 +98,26 @@ This screenshot shows the browser-friendly demo page with the readiness score, e
 
 ## Demo Video
 
+![Demo GIF preview](demo-video/videos/uav-readiness-demo.en.gif)
+
 Video scripts and capture helpers live in [demo-video/](demo-video/).
 
 Future video/GIF outputs:
 
 ```text
-demo-video/output/uav-readiness-demo.en.mp4
-demo-video/output/uav-readiness-demo.uk.mp4
-demo-video/output/uav-readiness-demo.en.gif
-demo-video/output/uav-readiness-demo.uk.gif
+demo-video/videos/uav-readiness-demo.en.mp4
+demo-video/videos/uav-readiness-demo.uk.mp4
+demo-video/videos/uav-readiness-demo.en.gif
+demo-video/videos/uav-readiness-demo.uk.gif
 ```
 
 Until the MP4/GIF is created, use [docs/assets/demo-video-gif.placeholder.md](docs/assets/demo-video-gif.placeholder.md).
+
+Current GIF preview:
+
+```text
+demo-video/videos/uav-readiness-demo.en.gif
+```
 
 Generate static demo pages first:
 
@@ -118,6 +126,13 @@ npm run demo:readiness
 ```
 
 Then follow [demo-video/README.md](demo-video/README.md).
+
+Automated capture commands:
+
+```powershell
+npm run demo:video:screenshots
+npm run demo:video:record
+```
 
 Generate the latest HTML demo:
 

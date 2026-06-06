@@ -51,6 +51,17 @@ Try frame/video preparation:
 npm run demo:video:record
 ```
 
+If ffmpeg is available, this creates:
+
+```text
+demo-video/videos/uav-readiness-demo.en.mp4
+demo-video/videos/uav-readiness-demo.uk.mp4
+demo-video/videos/uav-readiness-demo.en.gif
+demo-video/videos/uav-readiness-demo.uk.gif
+```
+
+Large MP4 files are ignored by Git. Commit only small GIFs/screenshots when they are useful for README preview.
+
 ## Playwright note
 
 Playwright is optional.
@@ -68,7 +79,7 @@ Playwright = a tool that opens a browser automatically for screenshots or tests.
 
 ffmpeg is optional.
 
-If ffmpeg is missing, the scripts still prepare instructions and screenshots where possible.
+If ffmpeg is missing, the scripts still prepare frames and screenshots where possible.
 
 ffmpeg = a tool that can assemble images into video or GIF.
 

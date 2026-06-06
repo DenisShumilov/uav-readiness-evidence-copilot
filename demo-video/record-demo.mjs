@@ -1,4 +1,4 @@
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -16,7 +16,9 @@ try {
 
 const root = process.cwd();
 const frameRoot = join(root, "demo-video", "output", "frames");
+const videoRoot = join(root, "demo-video", "videos");
 mkdirSync(frameRoot, { recursive: true });
+mkdirSync(videoRoot, { recursive: true });
 
 const pages = [
   {
@@ -29,6 +31,8 @@ const pages = [
   }
 ];
 
+const scrollSteps = [0, 420, 840, 1260, 1680];
+
 const browser = await chromium.launch();
 
 for (const item of pages) {
@@ -36,11 +40,16 @@ for (const item of pages) {
   mkdirSync(dir, { recursive: true });
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   await page.goto(pathToFileURL(item.file).href);
-  await page.screenshot({ path: join(dir, "frame-001.png") });
-  await page.evaluate(() => window.scrollTo(0, 520));
-  await page.screenshot({ path: join(dir, "frame-002.png") });
-  await page.evaluate(() => window.scrollTo(0, 1040));
-  await page.screenshot({ path: join(dir, "frame-003.png") });
+
+  for (let index = 0; index < scrollSteps.length; index += 1) {
+    const scrollY = scrollSteps[index];
+    await page.evaluate((value) => window.scrollTo(0, value), scrollY);
+    await page.waitForTimeout(250);
+    await page.screenshot({
+      path: join(dir, `frame-${String(index + 1).padStart(3, "0")}.png`)
+    });
+  }
+
   await page.close();
   console.log(`Captured frames for ${item.name}`);
 }
@@ -53,6 +62,52 @@ if (ffmpeg.status !== 0) {
   process.exit(0);
 }
 
-console.log("ffmpeg is available. Assemble manually from frames if needed:");
-console.log("ffmpeg -framerate 1 -i demo-video/output/frames/en/frame-%03d.png demo-video/output/uav-readiness-demo.en.mp4");
-console.log("ffmpeg -framerate 1 -i demo-video/output/frames/uk/frame-%03d.png demo-video/output/uav-readiness-demo.uk.mp4");
+for (const item of pages) {
+  const input = join(frameRoot, item.name, "frame-%03d.png");
+  const mp4 = join(videoRoot, `uav-readiness-demo.${item.name}.mp4`);
+  const gif = join(videoRoot, `uav-readiness-demo.${item.name}.gif`);
+
+  const mp4Result = spawnSync(
+    "ffmpeg",
+    [
+      "-y",
+      "-framerate",
+      "1",
+      "-i",
+      input,
+      "-vf",
+      "scale=1280:-2,format=yuv420p",
+      "-movflags",
+      "+faststart",
+      mp4
+    ],
+    { encoding: "utf8" }
+  );
+
+  if (mp4Result.status === 0 && existsSync(mp4)) {
+    console.log(`Assembled MP4 for ${item.name}: ${mp4}`);
+  } else {
+    console.log(`MP4 assembly failed for ${item.name}. Frames are still available.`);
+  }
+
+  const gifResult = spawnSync(
+    "ffmpeg",
+    [
+      "-y",
+      "-framerate",
+      "1",
+      "-i",
+      input,
+      "-vf",
+      "scale=960:-1:flags=lanczos",
+      gif
+    ],
+    { encoding: "utf8" }
+  );
+
+  if (gifResult.status === 0 && existsSync(gif)) {
+    console.log(`Assembled GIF for ${item.name}: ${gif}`);
+  } else {
+    console.log(`GIF assembly failed for ${item.name}. Frames are still available.`);
+  }
+}
