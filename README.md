@@ -168,14 +168,13 @@ Main folders:
 
 - [Final interview pack](docs/final-interview-pack.en.md)
 - [Portfolio package](docs/final-portfolio-package.en.md)
-- [Beginner-friendly notes](docs/explain-like-new.md)
+- [Concept glossary](docs/explain-like-new.md)
 - [Demo video pipeline](demo-video/README.md)
 
 ## Roadmap
 
-- Publish MP4 demo in LinkedIn/GitHub portfolio posts
-- Optional documentation-only dashboard UI
-- Additional safe parsers for synthetic documentation inputs
-- GitHub Release notes for future portfolio milestones
-- Continued safety and evidence-quality hardening
-
+- Publish demo video and outreach package
+- Add optional static dashboard view
+- Add remaining safe documentation-only parsers
+- Add richer traceability and evidence-quality reports
+- Keep safety boundaries and synthetic-data policy strict

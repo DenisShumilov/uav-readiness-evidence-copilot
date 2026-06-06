@@ -94,6 +94,5 @@ GIF лишається тільки optional preview.
 
 - [Final interview pack українською](docs/final-interview-pack.uk.md)
 - [Portfolio package українською](docs/final-portfolio-package.uk.md)
-- [Прості пояснення для навчання](docs/explain-like-new.md)
+- [Словник понять](docs/explain-like-new.md)
 - [Demo video pipeline](demo-video/README.md)
-
