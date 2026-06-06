@@ -353,6 +353,47 @@ export const ExportBundleSchema = z
   })
   .strict();
 
+export const DemoBundleSchema = z
+  .object({
+    artifacts: z.array(ArtifactSchema),
+    bomItems: z.array(BOMItemSchema),
+    evidenceSources: z.array(EvidenceSourceSchema),
+    evidenceClaims: z.array(EvidenceClaimSchema),
+    evidenceLocks: z.array(EvidenceLockSchema),
+    qaItems: z.array(QAItemSchema),
+    readinessFindings: z.array(ReadinessFindingSchema)
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    addUniqueIdIssues("artifacts", value.artifacts, ctx);
+    addUniqueIdIssues("bomItems", value.bomItems, ctx);
+    addUniqueIdIssues("evidenceSources", value.evidenceSources, ctx);
+    addUniqueIdIssues("evidenceClaims", value.evidenceClaims, ctx);
+    addUniqueIdIssues("evidenceLocks", value.evidenceLocks, ctx);
+    addUniqueIdIssues("qaItems", value.qaItems, ctx);
+    addUniqueIdIssues("readinessFindings", value.readinessFindings, ctx);
+  });
+
+function addUniqueIdIssues(
+  path: string,
+  items: Array<{ id: string }>,
+  ctx: z.RefinementCtx
+) {
+  const seen = new Set<string>();
+
+  items.forEach((item, index) => {
+    if (seen.has(item.id)) {
+      ctx.addIssue({
+        code: "custom",
+        path: [path, index, "id"],
+        message: `Duplicate id: ${item.id}`
+      });
+    }
+
+    seen.add(item.id);
+  });
+}
+
 export type Artifact = z.infer<typeof ArtifactSchema>;
 export type BOMItem = z.infer<typeof BOMItemSchema>;
 export type EvidenceSource = z.infer<typeof EvidenceSourceSchema>;
@@ -365,3 +406,4 @@ export type QAItem = z.infer<typeof QAItemSchema>;
 export type TraceabilityRow = z.infer<typeof TraceabilityRowSchema>;
 export type ReadinessReport = z.infer<typeof ReadinessReportSchema>;
 export type ExportBundle = z.infer<typeof ExportBundleSchema>;
+export type DemoBundle = z.infer<typeof DemoBundleSchema>;
