@@ -44,7 +44,7 @@ CLI means command-line interface, or running the project by typing a command.
 Open:
 
 ```text
-examples/demo-uav-readiness/output/portfolio-demo.md
+examples/demo-uav-readiness/output/portfolio-demo.html
 ```
 
 Say:

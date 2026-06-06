@@ -1,7 +1,10 @@
 import { buildEvidenceGraphFromBundle } from "../../evidence/src/evidenceGraph";
 import { parseDemoBundle } from "../../parsers/src/demoBundle";
 import { evaluateReadiness } from "../../rules/src/readiness";
-import { generatePortfolioDemoMarkdown } from "./portfolioDemo";
+import {
+  generatePortfolioDemoHtml,
+  generatePortfolioDemoMarkdown
+} from "./portfolioDemo";
 import { describe, expect, it } from "vitest";
 
 describe("generatePortfolioDemoMarkdown", () => {
@@ -35,5 +38,23 @@ describe("generatePortfolioDemoMarkdown", () => {
     expect(assessment.lockedCriticalItems.length).toBeGreaterThan(0);
     expect(markdown).toContain("## Locked Items");
     expect(markdown).toContain(assessment.lockedCriticalItems[0].id);
+  });
+
+  it("renders a static HTML demo page for a browser", () => {
+    const bundle = parseDemoBundle();
+    const graph = buildEvidenceGraphFromBundle(bundle);
+    const assessment = evaluateReadiness(bundle);
+    const html = generatePortfolioDemoHtml(bundle, graph, assessment, [
+      "readiness-report.md",
+      "portfolio-demo.html"
+    ]);
+
+    expect(html).toContain("<!doctype html>");
+    expect(html).toContain("<title>UAV Readiness & Evidence Copilot</title>");
+    expect(html).toContain(`aria-label="Readiness score ${assessment.readinessScore} out of 100"`);
+    expect(html).toContain("Traceability Preview");
+    expect(html).toContain("Locked Items");
+    expect(html).toContain("Safety Boundary");
+    expect(html).toContain("portfolio-demo.html");
   });
 });

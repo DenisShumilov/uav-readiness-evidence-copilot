@@ -56,7 +56,7 @@ npm run demo:readiness
 Open:
 
 ```text
-examples/demo-uav-readiness/output/portfolio-demo.md
+examples/demo-uav-readiness/output/portfolio-demo.html
 ```
 
 In one page, the demo shows:
@@ -121,6 +121,7 @@ examples/demo-uav-readiness/output/
 Current outputs:
 
 - `portfolio-demo.md` = one-page recruiter demo.
+- `portfolio-demo.html` = browser-friendly recruiter demo page.
 - `readiness-report.md` = markdown readiness report.
 - `evidence-graph.json` = evidence graph, meaning a map of claims and proof.
 - `readiness-assessment.json` = readiness score and findings.
