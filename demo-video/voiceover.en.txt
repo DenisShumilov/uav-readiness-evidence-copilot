@@ -1,14 +1,20 @@
-Engineering projects often collect scattered files: parts lists, notes, review logs, and claims.
-Before a handoff, the practical question is simple: what is actually backed by evidence?
+Engineering projects often have scattered files: parts lists, notes, review logs, and claims.
+Before a handoff, the simple question is: what is actually backed by evidence?
 
-This is UAV Readiness & Evidence Copilot, a safe documentation QA demo.
-It is not a drone control tool and it does not work with live aircraft data.
+This is UAV Readiness & Evidence Copilot.
+This is not drone control.
+This is QA and documentation readiness.
+It does not use live aircraft data, routes, or operational systems.
 
-The demo page shows a documentation readiness score, plus evidence counters for verified, partial, and locked items.
-Verified means there is proof. Partial means the proof is incomplete. Locked means the tool refuses to approve the item because evidence is missing.
+The demo shows a readiness score, evidence counters, warnings, and locked items.
+Readiness score means documentation readiness, not permission to operate equipment.
+Verified means there is proof.
+Partial means the proof is incomplete.
+Locked means the tool refuses to approve an item when evidence is missing.
 
-Behind the page, a TypeScript CLI reads synthetic demo artifacts, builds an evidence graph, runs simple readiness rules, and generates useful handoff files.
-Those outputs include a markdown report, evidence graph JSON, traceability CSV, artifact hashes, and a portfolio demo page.
+Behind the page, a TypeScript CLI reads synthetic demo files.
+It builds an evidence graph, which is a map of claims and proof.
+Then it creates a report, traceability CSV, artifact hashes, and portfolio pages.
 
-The value is safe engineering QA: evidence tracking, traceability, and readiness reporting without operational UAV features.
-For a recruiter or engineering team, this shows practical internal-tool thinking, safety boundaries, and testable TypeScript implementation.
+The value is safe engineering QA: evidence tracking, traceability, and readiness reporting.
+For a recruiter, this shows practical internal-tool thinking, clear safety boundaries, and testable TypeScript.

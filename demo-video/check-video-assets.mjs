@@ -22,12 +22,15 @@ const ffmpeg = spawnSync("ffmpeg", ["-version"], { encoding: "utf8" });
 const ffmpegAvailable = ffmpeg.status === 0;
 const ffprobe = spawnSync("ffprobe", ["-version"], { encoding: "utf8" });
 const ffprobeAvailable = ffprobe.status === 0;
+const edgeTts = spawnSync("python", ["-m", "edge_tts", "--help"], { encoding: "utf8" });
+const edgeTtsAvailable = edgeTts.status === 0;
 const missingPages = pages.filter((page) => !existsSync(join(outputDir, page)));
 
 console.log("Demo video asset check");
 console.log(`Playwright: ${playwrightAvailable ? "available" : "missing"}`);
 console.log(`ffmpeg: ${ffmpegAvailable ? "available" : "missing"}`);
 console.log(`ffprobe: ${ffprobeAvailable ? "available" : "missing"}`);
+console.log(`Edge TTS: ${edgeTtsAvailable ? "available" : "missing"}`);
 console.log(
   `Portfolio pages: ${missingPages.length === 0 ? "available" : `missing ${missingPages.join(", ")}`}`
 );
@@ -49,6 +52,12 @@ if (!ffprobeAvailable) {
   console.log("ffprobe is needed for video QA metadata. It usually installs together with ffmpeg.");
 }
 
+if (!edgeTtsAvailable) {
+  console.log("");
+  console.log("To enable generated voiceover:");
+  console.log("python -m pip install --user edge-tts");
+}
+
 if (missingPages.length > 0) {
   console.log("");
   console.log("Run this first:");
@@ -59,4 +68,6 @@ console.log("");
 console.log("High-quality MP4 pipeline:");
 console.log("npm run demo:video:record:hq");
 console.log("npm run demo:video:build");
+console.log("npm run demo:video:voiceover");
+console.log("npm run demo:video:merge");
 console.log("npm run demo:video:qa");

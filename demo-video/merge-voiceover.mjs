@@ -19,6 +19,16 @@ if (ffmpegCheck.error || ffmpegCheck.status !== 0) {
   process.exit(1);
 }
 
+function durationOf(path) {
+  const result = spawnSync(
+    "ffprobe",
+    ["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", path],
+    { encoding: "utf8" }
+  );
+  if (result.status !== 0) return 0;
+  return Number(result.stdout.trim());
+}
+
 for (const language of languages) {
   const video = join(silentRoot, `uav-readiness-demo.${language}.silent.mp4`);
   const audio = join(audioRoot, `voiceover.${language}.wav`);
@@ -35,9 +45,40 @@ for (const language of languages) {
     continue;
   }
 
-  const result = spawnSync(
-    "ffmpeg",
-    [
+  const videoDuration = durationOf(video);
+  const audioDuration = durationOf(audio);
+  const extensionSeconds = Math.max(0, audioDuration - videoDuration + 0.5);
+
+  const args =
+    extensionSeconds > 0.2
+      ? [
+          "-y",
+          "-i",
+          video,
+          "-i",
+          audio,
+          "-filter_complex",
+          `[0:v]tpad=stop_mode=clone:stop_duration=${extensionSeconds.toFixed(2)},format=yuv420p[v];[1:a]loudnorm=I=-16:TP=-1.5:LRA=11,aresample=48000[a]`,
+          "-map",
+          "[v]",
+          "-map",
+          "[a]",
+          "-c:v",
+          "libx264",
+          "-crf",
+          "12",
+          "-preset",
+          "slow",
+          "-pix_fmt",
+          "yuv420p",
+          "-c:a",
+          "aac",
+          "-b:a",
+          "192k",
+          "-shortest",
+          output
+        ]
+      : [
       "-y",
       "-i",
       video,
@@ -53,9 +94,9 @@ for (const language of languages) {
       "192k",
       "-shortest",
       output
-    ],
-    { encoding: "utf8" }
-  );
+    ];
+
+  const result = spawnSync("ffmpeg", args, { encoding: "utf8" });
 
   if (result.status !== 0) {
     console.error(result.stderr);
@@ -65,6 +106,9 @@ for (const language of languages) {
 
   mergedAny = true;
   console.log(`Merged final video for ${language}: ${output}`);
+  console.log(`Video duration: ${videoDuration.toFixed(2)}s`);
+  console.log(`Audio duration: ${audioDuration.toFixed(2)}s`);
+  console.log(`Video extension: ${extensionSeconds.toFixed(2)}s`);
 }
 
 if (!mergedAny) {

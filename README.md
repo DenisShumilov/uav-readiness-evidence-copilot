@@ -100,13 +100,13 @@ This screenshot shows the browser-friendly demo page with the readiness score, e
 
 ![Demo GIF preview](demo-video/videos/uav-readiness-demo.en.gif)
 
-The GIF is a small README preview. For a cleaner recruiter-facing video, use the high-quality MP4 pipeline in [demo-video/](demo-video/).
+The GIF is only an optional README preview. The final recruiter-facing demo format is MP4.
 
-Current GIF previews:
+Local final MP4 outputs:
 
 ```text
-demo-video/videos/uav-readiness-demo.en.gif
-demo-video/videos/uav-readiness-demo.uk.gif
+demo-video/videos/final/uav-readiness-demo.en.final.mp4
+demo-video/videos/final/uav-readiness-demo.uk.final.mp4
 ```
 
 Generate static demo pages first:
@@ -130,21 +130,23 @@ High-quality MP4 commands:
 npm run demo:readiness
 npm run demo:video:record:hq
 npm run demo:video:build
+npm run demo:video:voiceover
+npm run demo:video:merge
 npm run demo:video:qa
 ```
 
-Silent MP4 outputs:
+Silent fallback outputs:
 
 ```text
 demo-video/videos/silent/uav-readiness-demo.en.silent.mp4
 demo-video/videos/silent/uav-readiness-demo.uk.silent.mp4
 ```
 
-Final voiceover MP4 outputs, after adding WAV voiceover files:
+Optional GIF previews:
 
 ```text
-demo-video/videos/final/uav-readiness-demo.en.final.mp4
-demo-video/videos/final/uav-readiness-demo.uk.final.mp4
+demo-video/videos/uav-readiness-demo.en.gif
+demo-video/videos/uav-readiness-demo.uk.gif
 ```
 
 Large MP4 files are ignored by Git. Upload final videos to LinkedIn, YouTube, Google Drive, or a GitHub Release after manual review.

@@ -4,6 +4,10 @@ This folder creates English and Ukrainian portfolio demo videos.
 
 Simple meaning: it turns the static portfolio demo page into recruiter-friendly MP4/GIF assets.
 
+Final format: MP4.
+
+GIF is only an optional README preview.
+
 ## Safety
 
 The video shows only static portfolio pages generated from synthetic demo data.
@@ -35,6 +39,8 @@ Use this when you want a cleaner 1920x1080 MP4:
 npm run demo:readiness
 npm run demo:video:record:hq
 npm run demo:video:build
+npm run demo:video:voiceover
+npm run demo:video:merge
 npm run demo:video:qa
 ```
 
@@ -55,9 +61,30 @@ demo-video/qa/video-qa-report.md
 
 ## Voiceover
 
-Do not use poor robotic TTS just to have sound.
+Current selected TTS:
 
-If you have clean WAV voiceover files, put them here:
+- Ukrainian: Edge TTS `uk-UA-PolinaNeural`
+- English: Edge TTS `en-US-EmmaNeural`
+
+TTS means text-to-speech, or generated voice from text.
+
+Edge TTS is online and needs no API key or login.
+
+Only public demo narration text should be sent to it.
+
+Install if missing:
+
+```powershell
+python -m pip install --user edge-tts
+```
+
+Generate WAV voiceover:
+
+```powershell
+npm run demo:video:voiceover
+```
+
+This writes:
 
 ```text
 demo-video/audio/voiceover.en.wav
@@ -84,6 +111,7 @@ Read:
 - `demo-video/voiceover.en.txt`
 - `demo-video/voiceover.uk.txt`
 - `demo-video/video-quality-audit.md`
+- `demo-video/tts-bakeoff.md`
 
 ## Tool Checks
 
@@ -98,10 +126,10 @@ Needed tools:
 - Playwright = browser automation tool for screenshots and capture.
 - ffmpeg = video assembly tool.
 - ffprobe = video inspection tool.
+- Edge TTS = generated voice tool for final voiceover.
 
 ## Git Rule
 
 Large MP4 and WAV files are ignored by Git.
 
 Commit scripts, docs, screenshots, GIF previews, contact sheets, and QA reports. Do not commit large final videos unless you intentionally publish them through a GitHub Release or external video hosting.
-

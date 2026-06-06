@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
 
 let chromium;
@@ -75,7 +75,7 @@ for (const language of languages) {
     await page.waitForTimeout(300);
     const path = join(outputDir, `${scene.id}.png`);
     await page.screenshot({ path, fullPage: false, animations: "disabled" });
-    captured.push({ ...scene, file: path.replaceAll("\\", "/") });
+    captured.push({ ...scene, file: relative(root, path).replaceAll("\\", "/") });
     console.log(`Captured ${language.code}: ${scene.id}`);
   }
 

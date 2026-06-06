@@ -65,7 +65,7 @@ examples/demo-uav-readiness/output/portfolio-demo.en.html
 
 ![Demo GIF preview українською](demo-video/videos/uav-readiness-demo.uk.gif)
 
-GIF — це маленьке preview для GitHub. Для якісного MP4 використовуй pipeline (послідовність команд) у [demo-video/](demo-video/).
+GIF — це тільки optional preview для GitHub. Фінальний формат для рекрутерів — MP4.
 
 Сценарій і voiceover (текст озвучки) лежать тут:
 
@@ -73,10 +73,11 @@ GIF — це маленьке preview для GitHub. Для якісного MP4
 - [demo-video/voiceover.uk.txt](demo-video/voiceover.uk.txt)
 - [demo-video/README.md](demo-video/README.md)
 
-Поточний GIF preview:
+Локальні final MP4:
 
 ```text
-demo-video/videos/uav-readiness-demo.uk.gif
+demo-video/videos/final/uav-readiness-demo.en.final.mp4
+demo-video/videos/final/uav-readiness-demo.uk.final.mp4
 ```
 
 Швидкий capture:
@@ -92,6 +93,8 @@ npm run demo:video:record
 npm run demo:readiness
 npm run demo:video:record:hq
 npm run demo:video:build
+npm run demo:video:voiceover
+npm run demo:video:merge
 npm run demo:video:qa
 ```
 
@@ -102,11 +105,11 @@ demo-video/videos/silent/uav-readiness-demo.en.silent.mp4
 demo-video/videos/silent/uav-readiness-demo.uk.silent.mp4
 ```
 
-Final MP4 outputs після додавання WAV voiceover (озвучки):
+Optional GIF preview:
 
 ```text
-demo-video/videos/final/uav-readiness-demo.en.final.mp4
-demo-video/videos/final/uav-readiness-demo.uk.final.mp4
+demo-video/videos/uav-readiness-demo.en.gif
+demo-video/videos/uav-readiness-demo.uk.gif
 ```
 
 Великі MP4 не комітяться в Git. Їх краще завантажити в LinkedIn, YouTube, Google Drive або GitHub Release після ручної перевірки.

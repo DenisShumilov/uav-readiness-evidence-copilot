@@ -1,27 +1,31 @@
 # Video QA report
 
 ## EN
-- Source: silent MP4
+- Source: final voiceover MP4
 - Resolution: 1920x1080
-- Duration: 65.03s
+- Duration: 71.00s
 - FPS: 30/1
 - Video codec: h264
 - Pixel format: yuv420p
-- Audio codec: none
-- Voiceover: no
+- Audio codec: aac
+- Audio sample rate: 48000 Hz
+- Voiceover: yes
+- Final MP4 path: demo-video/videos/final/uav-readiness-demo.en.final.mp4
 - QA frames sampled: 8/8
 - Visual checks: text clarity, no flicker, no black frames, smooth fades, safe static portfolio content.
 - Contact sheet: demo-video/qa/contact-sheet.en.png
 
 ## UK
-- Source: silent MP4
+- Source: final voiceover MP4
 - Resolution: 1920x1080
-- Duration: 65.03s
+- Duration: 74.00s
 - FPS: 30/1
 - Video codec: h264
 - Pixel format: yuv420p
-- Audio codec: none
-- Voiceover: no
+- Audio codec: aac
+- Audio sample rate: 48000 Hz
+- Voiceover: yes
+- Final MP4 path: demo-video/videos/final/uav-readiness-demo.uk.final.mp4
 - QA frames sampled: 8/8
 - Visual checks: text clarity, no flicker, no black frames, smooth fades, safe static portfolio content.
 - Contact sheet: demo-video/qa/contact-sheet.uk.png

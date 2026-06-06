@@ -48,4 +48,6 @@ demo-video/videos/final/*.mp4
 demo-video/videos/final/*.json
 demo-video/audio/*.wav
 demo-video/audio/*.mp3
+demo-video/audio/**/*.wav
+demo-video/audio/**/*.mp3
 demo-video/qa/qa-*.png

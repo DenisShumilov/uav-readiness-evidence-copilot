@@ -96,7 +96,15 @@ for (const language of languages) {
   report.push(`- Video codec: ${videoStream?.codec_name ?? "unknown"}`);
   report.push(`- Pixel format: ${videoStream?.pix_fmt ?? "unknown"}`);
   report.push(`- Audio codec: ${audioStream?.codec_name ?? "none"}`);
+  report.push(`- Audio sample rate: ${audioStream?.sample_rate ? `${audioStream.sample_rate} Hz` : "none"}`);
   report.push(`- Voiceover: ${hasVoiceover ? "yes" : "no"}`);
+  report.push(
+    `- Final MP4 path: ${
+      hasVoiceover
+        ? `demo-video/videos/final/uav-readiness-demo.${language}.final.mp4`
+        : "not created yet"
+    }`
+  );
   report.push(`- QA frames sampled: ${extractedFrames.length}/${timestamps.length}`);
   report.push("- Visual checks: text clarity, no flicker, no black frames, smooth fades, safe static portfolio content.");
   report.push(`- Contact sheet: demo-video/qa/contact-sheet.${language}.png`, "");
