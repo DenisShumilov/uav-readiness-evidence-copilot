@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/actions/workflows/ci.yml)
 
+[Українська версія](README.uk.md)
+
 Evidence-first documentation readiness tool for safe UAV and robotics engineering QA.
 
 Simple meaning:
@@ -94,6 +96,29 @@ The page shows a product-style overview: score, evidence counters, warnings, loc
 
 This screenshot shows the browser-friendly demo page with the readiness score, evidence status, warnings, locked items, output files, and traceability preview.
 
+## Demo Video
+
+Video scripts and capture helpers live in [demo-video/](demo-video/).
+
+Future video/GIF outputs:
+
+```text
+demo-video/output/uav-readiness-demo.en.mp4
+demo-video/output/uav-readiness-demo.uk.mp4
+demo-video/output/uav-readiness-demo.en.gif
+demo-video/output/uav-readiness-demo.uk.gif
+```
+
+Until the MP4/GIF is created, use [docs/assets/demo-video-gif.placeholder.md](docs/assets/demo-video-gif.placeholder.md).
+
+Generate static demo pages first:
+
+```powershell
+npm run demo:readiness
+```
+
+Then follow [demo-video/README.md](demo-video/README.md).
+
 Generate the latest HTML demo:
 
 ```powershell
@@ -136,9 +161,15 @@ Read [docs/interview-cheat-sheet.md](docs/interview-cheat-sheet.md) before shari
 
 It explains the project, the main terms, a short interview pitch, and 10 likely questions with simple answers.
 
-For copy-ready portfolio material, use [docs/final-portfolio-package.md](docs/final-portfolio-package.md).
+For copy-ready portfolio material, use:
 
-For short interview answers, use [docs/final-interview-pack.md](docs/final-interview-pack.md).
+- [docs/final-portfolio-package.en.md](docs/final-portfolio-package.en.md)
+- [docs/final-portfolio-package.uk.md](docs/final-portfolio-package.uk.md)
+
+For short interview answers, use:
+
+- [docs/final-interview-pack.en.md](docs/final-interview-pack.en.md)
+- [docs/final-interview-pack.uk.md](docs/final-interview-pack.uk.md)
 
 ## How To Run
 
@@ -193,6 +224,8 @@ Current outputs:
 
 - `portfolio-demo.md` = one-page recruiter demo.
 - `portfolio-demo.html` = browser-friendly recruiter demo page.
+- `portfolio-demo.en.html` = English browser-friendly recruiter demo page.
+- `portfolio-demo.uk.html` = Ukrainian browser-friendly recruiter demo page.
 - `readiness-report.md` = markdown readiness report.
 - `evidence-graph.json` = evidence graph, meaning a map of claims and proof.
 - `readiness-assessment.json` = readiness score and findings.

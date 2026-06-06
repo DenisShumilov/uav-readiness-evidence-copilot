@@ -22,7 +22,9 @@ describe("demo readiness CLI", () => {
       "traceability-matrix.csv",
       "artifact-hashes.json",
       "portfolio-demo.md",
-      "portfolio-demo.html"
+      "portfolio-demo.html",
+      "portfolio-demo.en.html",
+      "portfolio-demo.uk.html"
     ]);
     expect(existsSync(join(outputDir, "readiness-report.md"))).toBe(true);
     expect(existsSync(join(outputDir, "evidence-graph.json"))).toBe(true);
@@ -31,6 +33,8 @@ describe("demo readiness CLI", () => {
     expect(existsSync(join(outputDir, "artifact-hashes.json"))).toBe(true);
     expect(existsSync(join(outputDir, "portfolio-demo.md"))).toBe(true);
     expect(existsSync(join(outputDir, "portfolio-demo.html"))).toBe(true);
+    expect(existsSync(join(outputDir, "portfolio-demo.en.html"))).toBe(true);
+    expect(existsSync(join(outputDir, "portfolio-demo.uk.html"))).toBe(true);
   });
 
   it("keeps generated report inside safe wording", () => {
@@ -90,5 +94,29 @@ describe("demo readiness CLI", () => {
       ""
     );
     expect(htmlWithoutSafetyBoundary).not.toMatch(unsafePattern);
+  });
+
+  it("writes bilingual portfolio HTML pages", () => {
+    const outputDir = mkdtempSync(join(tmpdir(), "readiness-output-"));
+    runReadinessDemo({ fixtureDir, outputDir });
+    const english = readFileSync(
+      join(outputDir, "portfolio-demo.en.html"),
+      "utf8"
+    );
+    const ukrainian = readFileSync(
+      join(outputDir, "portfolio-demo.uk.html"),
+      "utf8"
+    );
+
+    expect(english).toContain('<html lang="en">');
+    expect(english).toContain("Plain-English Meaning");
+    expect(ukrainian).toContain('<html lang="uk">');
+    expect(ukrainian).toContain("Простими словами");
+
+    const ukrainianWithoutSafetyBoundary = ukrainian.replace(
+      allowedSafetyBoundary,
+      ""
+    );
+    expect(ukrainianWithoutSafetyBoundary).not.toMatch(unsafePattern);
   });
 });

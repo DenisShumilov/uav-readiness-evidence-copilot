@@ -59,6 +59,22 @@ describe("generatePortfolioDemoMarkdown", () => {
     expect(html).toContain("portfolio-demo.html");
   });
 
+  it("renders a Ukrainian static HTML demo page", () => {
+    const bundle = parseDemoBundle();
+    const graph = buildEvidenceGraphFromBundle(bundle);
+    const assessment = evaluateReadiness(bundle);
+    const html = generatePortfolioDemoHtml(bundle, graph, assessment, [
+      "portfolio-demo.uk.html"
+    ], "uk");
+
+    expect(html).toContain('<html lang="uk">');
+    expect(html).toContain("Простими словами");
+    expect(html).toContain("Readiness score = оцінка готовності документації");
+    expect(html).toContain("Evidence = доказ");
+    expect(html).toContain("Locked = заблоковано");
+    expect(html).toContain("portfolio-demo.en.html");
+  });
+
   it("renders score and counters from the assessment data", () => {
     const bundle = parseDemoBundle();
     const graph = buildEvidenceGraphFromBundle(bundle);

@@ -1,0 +1,12 @@
+Engineering projects often have scattered artifacts, notes, logs, and claims.
+Before a review or handoff, the key question is simple: what is actually supported by evidence?
+
+This is UAV Readiness & Evidence Copilot, a safe documentation QA demo, not a drone control tool.
+
+The demo page shows a documentation readiness score and evidence counters: verified, partial, and locked.
+
+Locked means missing proof stays blocked. The tool does not invent confidence.
+
+The CLI generates a readiness report, evidence graph JSON, traceability CSV, artifact hashes, and static portfolio pages.
+
+The value is safe engineering QA: evidence tracking, traceability, and readiness reporting for documentation workflows.

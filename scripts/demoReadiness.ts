@@ -42,7 +42,9 @@ export function runReadinessDemo(options: RunReadinessDemoOptions = {}) {
     "traceability-matrix.csv",
     "artifact-hashes.json",
     "portfolio-demo.md",
-    "portfolio-demo.html"
+    "portfolio-demo.html",
+    "portfolio-demo.en.html",
+    "portfolio-demo.uk.html"
   ];
   const portfolioDemo = generatePortfolioDemoMarkdown(
     bundle,
@@ -55,6 +57,20 @@ export function runReadinessDemo(options: RunReadinessDemoOptions = {}) {
     evidenceGraph,
     readinessAssessment,
     files
+  );
+  const portfolioDemoHtmlEn = generatePortfolioDemoHtml(
+    bundle,
+    evidenceGraph,
+    readinessAssessment,
+    files,
+    "en"
+  );
+  const portfolioDemoHtmlUk = generatePortfolioDemoHtml(
+    bundle,
+    evidenceGraph,
+    readinessAssessment,
+    files,
+    "uk"
   );
 
   mkdirSync(outputDir, { recursive: true });
@@ -83,6 +99,16 @@ export function runReadinessDemo(options: RunReadinessDemoOptions = {}) {
   writeFileSync(
     join(outputDir, "portfolio-demo.html"),
     portfolioDemoHtml,
+    "utf8"
+  );
+  writeFileSync(
+    join(outputDir, "portfolio-demo.en.html"),
+    portfolioDemoHtmlEn,
+    "utf8"
+  );
+  writeFileSync(
+    join(outputDir, "portfolio-demo.uk.html"),
+    portfolioDemoHtmlUk,
     "utf8"
   );
 

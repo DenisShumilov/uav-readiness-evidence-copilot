@@ -3,6 +3,8 @@ import type { BuiltEvidenceGraph } from "../../evidence/src/evidenceGraph";
 import type { ReadinessAssessment } from "../../rules/src/readiness";
 import { buildTraceabilityRows } from "./traceabilityMatrix";
 
+export type PortfolioDemoLanguage = "en" | "uk";
+
 export function generatePortfolioDemoMarkdown(
   bundle: DemoBundle,
   graph: BuiltEvidenceGraph,
@@ -60,15 +62,17 @@ export function generatePortfolioDemoHtml(
   bundle: DemoBundle,
   graph: BuiltEvidenceGraph,
   assessment: ReadinessAssessment,
-  outputFiles: string[]
+  outputFiles: string[],
+  language: PortfolioDemoLanguage = "en"
 ): string {
   const score = assessment.readinessScore;
   const lockedItems = assessment.lockedCriticalItems;
   const traceabilityRows = buildTraceabilityRows(bundle, assessment).slice(0, 5);
   const warnings = assessment.warnings.slice(0, 6);
+  const text = getPortfolioText(language);
 
   return `<!doctype html>
-<html lang="en">
+<html lang="${language}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -282,6 +286,12 @@ export function generatePortfolioDemoHtml(
       border-left-color: var(--locked);
     }
 
+    .language-link {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
     @media (max-width: 760px) {
       .hero,
       .grid,
@@ -299,106 +309,100 @@ export function generatePortfolioDemoHtml(
   <main>
     <section class="hero">
       <div>
-        <div class="eyebrow">Portfolio demo</div>
+        <div class="eyebrow">${escapeHtml(text.eyebrow)}</div>
         <h1>UAV Readiness & Evidence Copilot</h1>
-        <p class="one-liner">AI-assisted QA workspace for UAV engineering artifacts.</p>
-        <p>Turns messy synthetic documents into a clear readiness package: evidence status, locked steps, traceability, hashes, and reports.</p>
+        <p class="one-liner">${escapeHtml(text.oneLiner)}</p>
+        <p>${escapeHtml(text.heroBody)}</p>
+        <p class="language-link">${text.languageLink}</p>
       </div>
       <div class="score" aria-label="Readiness score ${score} out of 100">
         <div>
           <strong>${score}</strong>
-          <span>readiness score</span>
+          <span>${escapeHtml(text.scoreLabel)}</span>
         </div>
       </div>
     </section>
 
     <section class="grid" aria-label="Evidence summary">
       <div class="panel">
-        <h2>Evidence Counters</h2>
-        <div class="metric"><span>Verified</span><b class="verified">${graph.summary.verifiedCount}</b></div>
-        <div class="metric"><span>Partial</span><b class="partial">${graph.summary.partialCount}</b></div>
-        <div class="metric"><span>Locked</span><b class="locked">${graph.summary.lockedCount}</b></div>
+        <h2>${escapeHtml(text.evidenceCounters)}</h2>
+        <div class="metric"><span>${escapeHtml(text.verified)}</span><b class="verified">${graph.summary.verifiedCount}</b></div>
+        <div class="metric"><span>${escapeHtml(text.partial)}</span><b class="partial">${graph.summary.partialCount}</b></div>
+        <div class="metric"><span>${escapeHtml(text.locked)}</span><b class="locked">${graph.summary.lockedCount}</b></div>
       </div>
 
       <div class="panel soft">
-        <h2>Before</h2>
+        <h2>${escapeHtml(text.beforeTitle)}</h2>
         <ul>
-          <li>Messy artifacts.</li>
-          <li>Scattered notes and logs.</li>
-          <li>Unclear proof status.</li>
+          ${formatHtmlList(text.beforeItems)}
         </ul>
       </div>
 
       <div class="panel soft">
-        <h2>After</h2>
+        <h2>${escapeHtml(text.afterTitle)}</h2>
         <ul>
-          <li>Readiness package.</li>
-          <li>Evidence graph and locks.</li>
-          <li>Clear review outputs.</li>
+          ${formatHtmlList(text.afterItems)}
         </ul>
       </div>
 
       <div class="panel">
-        <h2>Warnings</h2>
+        <h2>${escapeHtml(text.warningsTitle)}</h2>
         <ul>
           ${formatHtmlList(warnings)}
         </ul>
       </div>
 
       <div class="panel">
-        <h2>Locked Steps</h2>
+        <h2>${escapeHtml(text.lockedStepsTitle)}</h2>
         <ul>
           ${formatHtmlList(lockedItems.map((item) => `${item.id}: ${item.reason}`))}
         </ul>
       </div>
 
       <div class="panel">
-        <h2>Generated Outputs</h2>
+        <h2>${escapeHtml(text.generatedOutputsTitle)}</h2>
         <ul>
           ${outputFiles.map((file) => `<li><a href="${escapeAttribute(file)}">${escapeHtml(file)}</a></li>`).join("\n          ")}
         </ul>
       </div>
 
       <div class="panel wide">
-        <h2>What This Demonstrates</h2>
+        <h2>${escapeHtml(text.demonstratesTitle)}</h2>
         <ul>
-          <li>AI-assisted engineering workflow.</li>
-          <li>Evidence tracking.</li>
-          <li>QA automation.</li>
-          <li>Traceability.</li>
-          <li>Readiness reporting.</li>
-          <li>Safe human-reviewed UAV support tooling.</li>
+          ${formatHtmlList(text.demonstratesItems)}
         </ul>
       </div>
 
       <div class="panel wide">
-        <h2>Technical Pipeline</h2>
+        <h2>${escapeHtml(text.pipelineTitle)}</h2>
         <div class="flow" aria-label="Technical pipeline">
-          <span>input artifacts</span>
-          <span>parsers</span>
-          <span>evidence graph</span>
-          <span>rules engine</span>
-          <span>readiness report</span>
-          <span>portfolio demo</span>
+          ${text.pipelineItems.map((item) => `<span>${escapeHtml(item)}</span>`).join("\n          ")}
         </div>
       </div>
 
       <div class="panel wide">
-        <h2>Artifact Summary</h2>
+        <h2>${escapeHtml(text.simpleTitle)}</h2>
+        <ul>
+          ${formatHtmlList(text.simpleItems)}
+        </ul>
+      </div>
+
+      <div class="panel wide">
+        <h2>${escapeHtml(text.artifactSummaryTitle)}</h2>
         <ul>
           ${bundle.artifacts.map((artifact) => `<li>${escapeHtml(artifact.filename)} - ${escapeHtml(artifact.kind)}</li>`).join("\n          ")}
         </ul>
       </div>
 
       <div class="panel wide">
-        <h2>Traceability Preview</h2>
+        <h2>${escapeHtml(text.traceabilityTitle)}</h2>
         <table>
           <thead>
             <tr>
-              <th>Requirement</th>
-              <th>Evidence</th>
-              <th>Check</th>
-              <th>Status</th>
+              <th>${escapeHtml(text.requirement)}</th>
+              <th>${escapeHtml(text.evidence)}</th>
+              <th>${escapeHtml(text.check)}</th>
+              <th>${escapeHtml(text.status)}</th>
             </tr>
           </thead>
           <tbody>
@@ -417,9 +421,9 @@ export function generatePortfolioDemoHtml(
       </div>
 
       <div class="panel wide note boundary">
-        <h2>Safety Boundary</h2>
+        <h2>${escapeHtml(text.safetyTitle)}</h2>
         <p>No mission planning. No payload. No live drone control.</p>
-        <p>This static demo is for synthetic documentation review only. It does not connect to live systems or operate real equipment.</p>
+        <p>${escapeHtml(text.safetyBody)}</p>
       </div>
     </section>
   </main>
@@ -455,4 +459,136 @@ function escapeHtml(value: string): string {
 
 function escapeAttribute(value: string): string {
   return escapeHtml(value).replaceAll(" ", "%20");
+}
+
+function getPortfolioText(language: PortfolioDemoLanguage) {
+  if (language === "uk") {
+    return {
+      eyebrow: "Портфоліо демо",
+      oneLiner: "AI-assisted QA workspace для UAV engineering artifacts.",
+      heroBody:
+        "Перетворює messy synthetic documents на зрозумілий readiness package: докази, locked кроки, traceability, hashes і звіти.",
+      languageLink:
+        '<a href="portfolio-demo.en.html">English version</a> | Українська версія',
+      scoreLabel: "documentation readiness score",
+      evidenceCounters: "Лічильники доказів",
+      verified: "Verified",
+      partial: "Partial",
+      locked: "Locked",
+      beforeTitle: "Before",
+      beforeItems: [
+        "Багато розкиданих artifacts.",
+        "Нотатки й logs у різних місцях.",
+        "Неясно, де є proof."
+      ],
+      afterTitle: "After",
+      afterItems: [
+        "Readiness package для перегляду.",
+        "Evidence graph і locked кроки.",
+        "Зрозумілі review outputs."
+      ],
+      warningsTitle: "Warnings",
+      lockedStepsTitle: "Locked steps",
+      generatedOutputsTitle: "Generated outputs",
+      demonstratesTitle: "Що це показує",
+      demonstratesItems: [
+        "AI-assisted engineering workflow.",
+        "Evidence tracking.",
+        "QA automation.",
+        "Traceability.",
+        "Readiness reporting.",
+        "Safe human-reviewed UAV support tooling."
+      ],
+      pipelineTitle: "Technical pipeline",
+      pipelineItems: [
+        "input artifacts",
+        "parsers",
+        "evidence graph",
+        "rules engine",
+        "readiness report",
+        "portfolio demo"
+      ],
+      simpleTitle: "Простими словами",
+      simpleItems: [
+        "Readiness score = оцінка готовності документації, не дозвіл на роботу реальної системи.",
+        "Evidence = доказ із файлу, таблиці, note або log.",
+        "Locked = заблоковано, бо доказу немає.",
+        "Demo показує, як messy files стають зрозумілим review package.",
+        "Це корисно UAV/miltech engineering team для QA, handoff і документації."
+      ],
+      artifactSummaryTitle: "Artifact summary",
+      traceabilityTitle: "Traceability preview",
+      requirement: "Requirement",
+      evidence: "Evidence",
+      check: "Check",
+      status: "Status",
+      safetyTitle: "Safety boundary",
+      safetyBody:
+        "Це static demo тільки для synthetic documentation review. Воно не підключається до live systems і не працює з real equipment."
+    };
+  }
+
+  return {
+    eyebrow: "Portfolio demo",
+    oneLiner: "AI-assisted QA workspace for UAV engineering artifacts.",
+    heroBody:
+      "Turns messy synthetic documents into a clear readiness package: evidence status, locked steps, traceability, hashes, and reports.",
+    languageLink:
+      'English version | <a href="portfolio-demo.uk.html">Українська версія</a>',
+    scoreLabel: "readiness score",
+    evidenceCounters: "Evidence Counters",
+    verified: "Verified",
+    partial: "Partial",
+    locked: "Locked",
+    beforeTitle: "Before",
+    beforeItems: [
+      "Messy artifacts.",
+      "Scattered notes and logs.",
+      "Unclear proof status."
+    ],
+    afterTitle: "After",
+    afterItems: [
+      "Readiness package.",
+      "Evidence graph and locks.",
+      "Clear review outputs."
+    ],
+    warningsTitle: "Warnings",
+    lockedStepsTitle: "Locked Steps",
+    generatedOutputsTitle: "Generated Outputs",
+    demonstratesTitle: "What This Demonstrates",
+    demonstratesItems: [
+      "AI-assisted engineering workflow.",
+      "Evidence tracking.",
+      "QA automation.",
+      "Traceability.",
+      "Readiness reporting.",
+      "Safe human-reviewed UAV support tooling."
+    ],
+    pipelineTitle: "Technical Pipeline",
+    pipelineItems: [
+      "input artifacts",
+      "parsers",
+      "evidence graph",
+      "rules engine",
+      "readiness report",
+      "portfolio demo"
+    ],
+    simpleTitle: "Plain-English Meaning",
+    simpleItems: [
+      "Readiness score means documentation readiness, not real-world approval.",
+      "Evidence means proof from a file, table, note, or log.",
+      "Locked means the tool refuses to verify a claim when proof is missing.",
+      "The demo shows how messy files become a readable review package.",
+      "This helps UAV/miltech engineering teams with QA, handoff, and documentation review."
+    ],
+    artifactSummaryTitle: "Artifact Summary",
+    traceabilityTitle: "Traceability Preview",
+    requirement: "Requirement",
+    evidence: "Evidence",
+    check: "Check",
+    status: "Status",
+    safetyTitle: "Safety Boundary",
+    safetyBody:
+      "This static demo is for synthetic documentation review only. It does not connect to live systems or operate real equipment."
+  };
 }
