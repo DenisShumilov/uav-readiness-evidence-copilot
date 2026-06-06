@@ -10,9 +10,9 @@ This future package will build:
 - evidence locks, meaning blocked claims without proof;
 - traceability links, meaning requirement -> evidence -> check.
 
-Phase 1 rule:
+Implemented:
 
-No implementation yet.
+- `buildEvidenceGraphFromBundle`, which builds a detective-board style evidence map from the safe demo bundle.
 
 Core rule:
 
