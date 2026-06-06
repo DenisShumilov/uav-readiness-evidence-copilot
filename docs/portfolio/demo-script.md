@@ -12,6 +12,11 @@ Say:
 
 Simple meaning: the tool is like a paperwork inspector, not a drone controller.
 
+Optional: open the MP4 demo from the GitHub Release page:
+
+- English: `https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.1.0-demo-video/uav-readiness-demo.en.final.mp4`
+- Ukrainian: `https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.1.0-demo-video/uav-readiness-demo.uk.final.mp4`
+
 ## 0:20-0:45 - Show the input files
 
 Show:
@@ -24,6 +29,8 @@ Show:
 Say:
 
 > These files are synthetic, meaning fake and made only for learning. They imitate safe engineering documentation, QA notes, and review logs.
+
+Do not present `future-fixtures/wiring_notes.yaml` or `future-fixtures/config_dump.txt` as active MVP inputs.
 
 ## 0:45-1:05 - Run the demo command
 
@@ -57,7 +64,7 @@ Point out:
 
 - Before: messy artifacts.
 - After: readiness package.
-- What this demonstrates: AI-assisted engineering workflow, QA automation, traceability, and safe human-reviewed support tooling.
+- What this demonstrates: AI-assisted engineering workflow, QA automation, traceability, and safe engineering documentation QA.
 - Technical pipeline: input artifacts -> parsers -> evidence graph -> rules engine -> readiness report -> portfolio demo.
 
 ## Optional - make a README screenshot

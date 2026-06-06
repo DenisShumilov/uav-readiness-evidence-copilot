@@ -15,8 +15,7 @@ These areas can be reviewed later, but were intentionally not moved in this spri
 - `.claude/` project agent and skill files;
 - `demo-video/` generated-video pipeline files;
 - test layout;
-- portfolio/interview docs under `docs/`;
+- portfolio/interview docs under `docs/portfolio/`;
 - older generated local outputs ignored by Git.
 
 Keep future cleanup documentation-only unless there is a clear reason to change code.
-

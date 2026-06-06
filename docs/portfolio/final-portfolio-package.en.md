@@ -14,9 +14,9 @@ Engineering teams often have scattered artifacts, notes, test logs, and document
 
 This is a safe documentation and QA tool, not a drone control system.
 
-The demo parses synthetic UAV-related project artifacts, builds an evidence graph, detects locked steps, calculates a documentation readiness score, and generates reports for review workflows.
+The demo parses four synthetic documentation inputs, builds an evidence graph, detects locked steps, calculates a documentation readiness score, and generates reports for review workflows.
 
-Built with TypeScript, Zod, Vitest, a CLI workflow, traceability matrix export, artifact hashes, static HTML demo pages, bilingual docs, and GitHub Actions CI.
+Built with TypeScript, Zod, Vitest, a CLI workflow, traceability matrix export, artifact hashes, static HTML demo pages, bilingual docs, GitHub Release MP4 demos, and GitHub Actions CI.
 
 GitHub: https://github.com/DenisShumilov/uav-readiness-evidence-copilot
 

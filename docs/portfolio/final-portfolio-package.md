@@ -1,6 +1,6 @@
 # Final portfolio package
 
-GitHub link placeholder:
+GitHub repository:
 
 ```text
 https://github.com/DenisShumilov/uav-readiness-evidence-copilot
@@ -18,7 +18,7 @@ https://github.com/DenisShumilov/uav-readiness-evidence-copilot
 
 Технічно: TypeScript, Zod, Vitest, CLI, evidence tracking, traceability matrix, artifact hashes, static portfolio demo page, GitHub Actions CI.
 
-GitHub: [insert GitHub link]
+GitHub: https://github.com/DenisShumilov/uav-readiness-evidence-copilot
 
 #UAV #QA #TypeScript #EngineeringTools #Traceability #Documentation #AIEngineering #Portfolio
 
@@ -30,11 +30,11 @@ The idea is simple: engineering teams often have scattered artifacts, notes, tes
 
 This is a safe documentation and QA tool, not a drone control system.
 
-The demo parses synthetic UAV-related project artifacts, builds an evidence graph, detects locked steps, calculates a documentation readiness score, and generates reports for review workflows.
+The demo parses four synthetic documentation inputs, builds an evidence graph, detects locked steps, calculates a documentation readiness score, and generates reports for review workflows.
 
-Built with TypeScript, Zod, Vitest, a CLI workflow, traceability matrix export, artifact hashes, static HTML demo page, and GitHub Actions CI.
+Built with TypeScript, Zod, Vitest, a CLI workflow, traceability matrix export, artifact hashes, static HTML demo page, GitHub Release MP4 demos, and GitHub Actions CI.
 
-GitHub: [insert GitHub link]
+GitHub: https://github.com/DenisShumilov/uav-readiness-evidence-copilot
 
 #TypeScript #QA #EngineeringTools #Traceability #Documentation #AIEngineering #UAV #Portfolio
 
@@ -151,39 +151,39 @@ Say:
 
 ### Recruiter
 
-Hi [Name], I built a small TypeScript portfolio project that may be relevant to engineering QA/internal tooling roles: UAV Readiness & Evidence Copilot. It is a safe documentation QA tool that parses synthetic artifacts, tracks evidence, detects locked steps, and generates readiness reports. GitHub: [link]
+Hi [Name], I built a small TypeScript portfolio project that may be relevant to engineering QA/internal tooling roles: UAV Readiness & Evidence Copilot. It is a safe documentation QA tool that parses synthetic artifacts, tracks evidence, detects locked steps, and generates readiness reports. GitHub: https://github.com/DenisShumilov/uav-readiness-evidence-copilot
 
 ### CTO / Tech lead
 
-Hi [Name], I wanted to share a focused internal-tools prototype I built: a TypeScript QA workspace for evidence tracking, traceability, and documentation readiness. It is safe and synthetic, not operational UAV tooling. I would appreciate feedback on whether this kind of engineering workflow is useful for your team. GitHub: [link]
+Hi [Name], I wanted to share a focused internal-tools prototype I built: a TypeScript QA workspace for evidence tracking, traceability, and documentation readiness. It is safe and synthetic, not operational UAV tooling. I would appreciate feedback on whether this kind of engineering workflow is useful for your team. GitHub: https://github.com/DenisShumilov/uav-readiness-evidence-copilot
 
 ### UAV startup
 
-Hi [Name], I built a safe UAV documentation QA demo that turns synthetic project artifacts into evidence-backed readiness outputs. It focuses on traceability, locked claims, readiness reporting, and handoff workflows, without any drone control functionality. GitHub: [link]
+Hi [Name], I built a safe UAV documentation QA demo that turns synthetic project artifacts into evidence-backed readiness outputs. It focuses on traceability, locked claims, readiness reporting, and handoff workflows, without any drone control functionality. GitHub: https://github.com/DenisShumilov/uav-readiness-evidence-copilot
 
 ### Miltech company
 
-Hi [Name], I made a portfolio project around safe engineering QA for UAV-related documentation: evidence tracking, traceability matrix, readiness score, report generation, and GitHub CI. It avoids operational UAV features and stays focused on documentation review. GitHub: [link]
+Hi [Name], I made a portfolio project around safe engineering QA for UAV-related documentation: evidence tracking, traceability matrix, readiness score, report generation, and GitHub CI. It avoids operational UAV features and stays focused on documentation review. GitHub: https://github.com/DenisShumilov/uav-readiness-evidence-copilot
 
 ### QA lead
 
-Hi [Name], I built a QA tooling demo in TypeScript that checks synthetic engineering artifacts, keeps unsupported claims locked, generates traceability CSV, artifact hashes, and readiness reports. It may be relevant to QA automation/internal tooling work. GitHub: [link]
+Hi [Name], I built a QA tooling demo in TypeScript that checks synthetic engineering artifacts, keeps unsupported claims locked, generates traceability CSV, artifact hashes, and readiness reports. It may be relevant to QA automation/internal tooling work. GitHub: https://github.com/DenisShumilov/uav-readiness-evidence-copilot
 
 ### Product manager
 
-Hi [Name], I built a small product-style demo for engineering documentation readiness. It turns messy synthetic files into a clear package: score, evidence status, locked steps, warnings, and outputs. It is designed as safe internal tooling, not operational control software. GitHub: [link]
+Hi [Name], I built a small product-style demo for engineering documentation readiness. It turns messy synthetic files into a clear package: score, evidence status, locked steps, warnings, and outputs. It is designed as safe internal tooling, not operational control software. GitHub: https://github.com/DenisShumilov/uav-readiness-evidence-copilot
 
 ### Founder
 
-Hi [Name], I built a portfolio prototype that shows how AI-assisted tooling can help engineering teams review documentation evidence before handoff. It parses synthetic data, builds an evidence graph, and generates readiness outputs. GitHub: [link]
+Hi [Name], I built a portfolio prototype that shows how AI-assisted tooling can help engineering teams review documentation evidence before handoff. It parses synthetic data, builds an evidence graph, and generates readiness outputs. GitHub: https://github.com/DenisShumilov/uav-readiness-evidence-copilot
 
 ### Telegram / LinkedIn DM
 
-Hi, I built a safe TypeScript QA tool for UAV engineering documentation: evidence graph, locked steps, readiness score, reports, tests, and static demo page. It is not drone control, only documentation QA. GitHub: [link]
+Hi, I built a safe TypeScript QA tool for UAV engineering documentation: evidence graph, locked steps, readiness score, reports, tests, and static demo page. It is not drone control, only documentation QA. GitHub: https://github.com/DenisShumilov/uav-readiness-evidence-copilot
 
 ### DOU vacancy
 
-Hi, I am interested in this role. As a relevant portfolio example, I built UAV Readiness & Evidence Copilot: a TypeScript QA/internal-tooling demo for evidence tracking, traceability, readiness reports, artifact hashes, and GitHub CI. GitHub: [link]
+Hi, I am interested in this role. As a relevant portfolio example, I built UAV Readiness & Evidence Copilot: a TypeScript QA/internal-tooling demo for evidence tracking, traceability, readiness reports, artifact hashes, and GitHub CI. GitHub: https://github.com/DenisShumilov/uav-readiness-evidence-copilot
 
 ### Cold email
 
@@ -195,7 +195,7 @@ I built a portfolio project that may be relevant to engineering QA/internal tool
 
 It is a safe TypeScript tool that parses synthetic engineering artifacts, tracks evidence, detects locked steps, calculates a documentation readiness score, and generates reports for review workflows. It does not control drones or use live operational data.
 
-GitHub: [link]
+GitHub: https://github.com/DenisShumilov/uav-readiness-evidence-copilot
 
 Best,
 [Your Name]

@@ -497,7 +497,7 @@ function getPortfolioText(language: PortfolioDemoLanguage) {
         "QA automation.",
         "Traceability.",
         "Readiness reporting.",
-        "Safe human-reviewed UAV support tooling."
+        "Safe human-reviewed engineering documentation QA."
       ],
       pipelineTitle: "Technical pipeline",
       pipelineItems: [
@@ -514,7 +514,7 @@ function getPortfolioText(language: PortfolioDemoLanguage) {
         "Evidence = доказ із файлу, таблиці, note або log.",
         "Locked = заблоковано, бо доказу немає.",
         "Demo показує, як messy files стають зрозумілим review package.",
-        "Це корисно UAV/miltech engineering team для QA, handoff і документації."
+        "Це корисно engineering documentation teams для QA, handoff і evidence review."
       ],
       artifactSummaryTitle: "Artifact summary",
       traceabilityTitle: "Traceability preview",
@@ -562,7 +562,7 @@ function getPortfolioText(language: PortfolioDemoLanguage) {
       "QA automation.",
       "Traceability.",
       "Readiness reporting.",
-      "Safe human-reviewed UAV support tooling."
+      "Safe human-reviewed engineering documentation QA."
     ],
     pipelineTitle: "Technical Pipeline",
     pipelineItems: [
@@ -579,7 +579,7 @@ function getPortfolioText(language: PortfolioDemoLanguage) {
       "Evidence means proof from a file, table, note, or log.",
       "Locked means the tool refuses to verify a claim when proof is missing.",
       "The demo shows how messy files become a readable review package.",
-      "This helps UAV/miltech engineering teams with QA, handoff, and documentation review."
+      "This helps engineering documentation teams with QA, handoff, and evidence review."
     ],
     artifactSummaryTitle: "Artifact Summary",
     traceabilityTitle: "Traceability Preview",

@@ -14,9 +14,9 @@ https://github.com/DenisShumilov/uav-readiness-evidence-copilot
 
 Я зробив safe documentation/QA tool, not drone control.
 
-Проєкт читає synthetic demo files, будує evidence graph, показує locked steps, рахує documentation readiness score і генерує звіти для review/handoff workflows.
+Проєкт читає 4 active synthetic demo inputs, будує evidence graph, показує locked steps, рахує documentation readiness score і генерує звіти для review/handoff workflows.
 
-Технічно: TypeScript, Zod, Vitest, CLI, traceability matrix, artifact hashes, bilingual demo pages, GitHub Actions CI.
+Технічно: TypeScript, Zod, Vitest, CLI, traceability matrix, artifact hashes, bilingual demo pages, GitHub Release MP4 demos, GitHub Actions CI.
 
 GitHub: https://github.com/DenisShumilov/uav-readiness-evidence-copilot
 
@@ -49,7 +49,7 @@ Safe TypeScript UAV QA demo for evidence tracking, traceability, readiness repor
 
 ## Що сказати на співбесіді
 
-> Я зробив safe TypeScript QA tool для UAV engineering documentation. Він читає synthetic files, будує карту доказів, показує locked steps, рахує documentation readiness score і генерує reports/traceability/hashes.
+> Я зробив safe TypeScript QA tool для UAV engineering documentation. Він читає 4 active synthetic demo inputs, будує карту доказів, показує locked steps, рахує documentation readiness score і генерує reports/traceability/hashes.
 
 Головне правило:
 

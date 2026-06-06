@@ -2,7 +2,7 @@
 
 ## 30-секундний pitch
 
-UAV Readiness & Evidence Copilot — це safe TypeScript QA tool для engineering documentation. Він читає synthetic UAV-related demo files, зв'язує claims із evidence, тримає missing proof у locked, рахує documentation readiness score і генерує reports, traceability, hashes та static demo pages.
+UAV Readiness & Evidence Copilot — це safe TypeScript QA tool для engineering documentation. Він читає чотири active synthetic demo inputs, зв'язує claims із evidence, тримає missing proof у locked, рахує documentation readiness score і генерує reports, traceability, hashes, static demo pages та GitHub Release MP4 demos.
 
 ## 10-секундний pitch
 
@@ -11,7 +11,7 @@ UAV Readiness & Evidence Copilot — це safe TypeScript QA tool для enginee
 ## Що я реально зробив
 
 - TypeScript schemas для project data.
-- Parsers для safe synthetic demo files.
+- Parsers для чотирьох safe synthetic demo inputs: BOM, manual, test log і QA notes.
 - Evidence graph builder.
 - Readiness rules engine.
 - Markdown, JSON, CSV, hash і static HTML outputs.
@@ -19,7 +19,7 @@ UAV Readiness & Evidence Copilot — це safe TypeScript QA tool для enginee
 - CLI command: `npm run demo:readiness`.
 - Automated tests з Vitest.
 - GitHub Actions CI.
-- Demo video storyboard і voiceover scripts.
+- Demo video storyboard, voiceover scripts і GitHub Release MP4 demos.
 
 ## Що я НЕ робив
 

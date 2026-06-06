@@ -144,6 +144,8 @@ synthetic demo artifacts
   -> reports and portfolio outputs
 ```
 
+See [docs/architecture.md](docs/architecture.md) for the detailed data flow.
+
 Main folders:
 
 - `packages/core/`
@@ -169,14 +171,16 @@ Main folders:
 
 ## Portfolio Materials
 
-- [Final interview pack](docs/final-interview-pack.en.md)
-- [Portfolio package](docs/final-portfolio-package.en.md)
+- [Final interview pack](docs/portfolio/final-interview-pack.en.md)
+- [Portfolio package](docs/portfolio/final-portfolio-package.en.md)
 - [Concept glossary](docs/explain-like-new.md)
 - [Demo video pipeline](demo-video/README.md)
+- [Roadmap](docs/roadmap.md)
+- [Release checklist](docs/release-checklist.md)
 
 ## Roadmap
 
-- Publish demo video and outreach package
+- Use published demo video in outreach package
 - Add optional static dashboard view
 - Add remaining safe documentation-only parsers
 - Add richer traceability and evidence-quality reports

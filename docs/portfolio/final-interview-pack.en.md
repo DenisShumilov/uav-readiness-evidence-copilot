@@ -2,7 +2,7 @@
 
 ## 30-second pitch
 
-UAV Readiness & Evidence Copilot is a safe TypeScript QA tool for engineering documentation. It reads synthetic UAV-related demo files, connects claims to evidence, keeps missing proof locked, calculates a documentation readiness score, and generates reports, traceability output, hashes, and static demo pages.
+UAV Readiness & Evidence Copilot is a safe TypeScript QA tool for engineering documentation. It reads four active synthetic demo inputs, connects claims to evidence, keeps missing proof locked, calculates a documentation readiness score, and generates reports, traceability output, hashes, static demo pages, and GitHub Release MP4 demos.
 
 ## 10-second pitch
 
@@ -11,7 +11,7 @@ It is a safe evidence checker for UAV engineering documentation, not a drone con
 ## What I actually built
 
 - TypeScript schemas for project data.
-- Parsers for safe synthetic demo files.
+- Parsers for four safe synthetic demo inputs: BOM, manual, test log, and QA notes.
 - Evidence graph builder.
 - Readiness rules engine.
 - Markdown, JSON, CSV, hash, and static HTML outputs.
@@ -19,7 +19,7 @@ It is a safe evidence checker for UAV engineering documentation, not a drone con
 - CLI command: `npm run demo:readiness`.
 - Automated tests with Vitest.
 - GitHub Actions CI.
-- Demo video storyboards and voiceover scripts.
+- Demo video storyboards, voiceover scripts, and GitHub Release MP4 demos.
 
 ## What I did not build
 

@@ -108,7 +108,10 @@ Planned future fixtures:
 
 ## Portfolio Materials
 
-- [Final interview pack українською](docs/final-interview-pack.uk.md)
-- [Portfolio package українською](docs/final-portfolio-package.uk.md)
+- [Final interview pack українською](docs/portfolio/final-interview-pack.uk.md)
+- [Portfolio package українською](docs/portfolio/final-portfolio-package.uk.md)
 - [Словник понять](docs/explain-like-new.md)
 - [Demo video pipeline](demo-video/README.md)
+- [Architecture](docs/architecture.md)
+- [Roadmap](docs/roadmap.md)
+- [Release checklist](docs/release-checklist.md)
