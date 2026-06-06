@@ -128,6 +128,12 @@ Seven key ideas:
 
 > It is a safe evidence checker for engineering documents.
 
+## Interview Prep
+
+Read [docs/interview-cheat-sheet.md](docs/interview-cheat-sheet.md) before sharing the GitHub link or talking to a recruiter.
+
+It explains the project, the main terms, a short interview pitch, and 10 likely questions with simple answers.
+
 ## How To Run
 
 Install dependencies:
