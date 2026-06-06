@@ -1,0 +1,5 @@
+item_id,item_name,category,quantity,record_status,evidence_id,notes
+COMP-FRAME-001,Training frame plate,frame,1,verified,EV-BOM-001,Synthetic row matched to QA note
+COMP-CABLE-001,Training bench cable,cable,2,partial,EV-BOM-002,Length note exists but second source is absent
+COMP-BOARD-001,Training compute board,compute,1,locked,,Board record needs a supporting source before review
+DOC-LABEL-001,Training safety label set,documentation,4,verified,EV-QA-001,Label set is listed for the demo package

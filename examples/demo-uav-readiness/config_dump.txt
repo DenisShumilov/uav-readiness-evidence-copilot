@@ -1,0 +1,13 @@
+SYNTHETIC DEMO - EDUCATIONAL ONLY - NOT FOR REAL USE
+
+profile_id=demo_training_profile
+config_source=synthetic_text
+software_label=qa_workspace_demo
+schema_version=demo-0.1
+artifact_status=partial
+evidence_claim=configuration file is present but not linked to every QA check
+review_owner=missing
+locked_reason=review owner is missing in this synthetic record
+real_values_present=false
+external_system_linked=false
+documentation_only=true

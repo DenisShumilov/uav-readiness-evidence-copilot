@@ -1,0 +1,28 @@
+synthetic: true
+fixture_id: wiring_demo_001
+scope: documentation_only
+notice: "SYNTHETIC DEMO - EDUCATIONAL ONLY - NOT FOR REAL USE"
+evidence_summary:
+  - evidence_id: EV-WIRE-001
+    status: partial
+    claim: "Bench connector labels have one supporting note"
+  - evidence_id: EV-WIRE-002
+    status: locked
+    claim: "Second connector label source is missing"
+connections:
+  - connection_id: DOC-CONN-A
+    from_label: "Training connector A label"
+    to_label: "Training board note"
+    description: "Label relationship for document review only"
+    status: partial
+    evidence_id: EV-WIRE-001
+  - connection_id: DOC-CONN-B
+    from_label: "Training connector B label"
+    to_label: "Review note placeholder"
+    description: "Documentation entry waiting for a supporting source"
+    status: locked
+    lock_reason: "No supporting note exists in the demo set"
+review_rules:
+  documentation_only: true
+  exact_hardware_setup: false
+  real_values_present: false

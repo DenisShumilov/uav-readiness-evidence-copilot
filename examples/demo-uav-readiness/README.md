@@ -17,14 +17,12 @@ This folder will later contain safe example artifacts:
 
 Blocked content:
 
-- real coordinates;
-- real routes;
-- mission planning;
-- targeting;
-- payload details;
+- real location details;
+- real movement plans;
+- live system streams;
+- real control links;
 - tactical notes;
-- live telemetry;
-- drone control commands.
+- blocked operational topics.
 
 Phase 1 creates the folder only.
 
