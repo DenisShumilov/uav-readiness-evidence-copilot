@@ -4,9 +4,9 @@
 
 [![CI](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/actions/workflows/ci.yml)
 
-Evidence-first QA workspace для UAV та robotics engineering documentation.
+QA-інструмент для UAV та robotics документації, побудований навколо принципу evidence-first.
 
-UAV Readiness & Evidence Copilot перетворює synthetic engineering artifacts на evidence-backed readiness package: parsed inputs, evidence graph, locked findings, traceability CSV, artifact hashes, markdown report і static portfolio demo.
+UAV Readiness & Evidence Copilot читає синтетичні інженерні документи, будує evidence graph, показує locked findings, рахує readiness score і генерує готовий пакет для review: traceability CSV, artifact hashes, markdown report та static portfolio demo.
 
 ## Demo Video
 
@@ -120,14 +120,19 @@ See [docs/architecture.md](docs/architecture.md) for the detailed data flow.
 
 ## Tech Stack
 
+Core stack:
+
 - TypeScript
 - Zod
 - Vitest
 - tsx
 - Node.js
+- GitHub Actions
+
+Demo media stack:
+
 - Playwright
 - ffmpeg
-- GitHub Actions
 
 ## Documentation
 
