@@ -26,6 +26,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Demo readiness
+        run: npm run demo:readiness
+
       - name: Typecheck
         run: npm run typecheck
 

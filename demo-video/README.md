@@ -130,6 +130,6 @@ Needed tools:
 
 ## Git Rule
 
-Large MP4 and WAV files are ignored by Git.
+Generated media files are ignored by Git.
 
-Commit scripts, docs, screenshots, GIF previews, contact sheets, and QA reports. Do not commit large final videos unless you intentionally publish them through a GitHub Release or external video hosting.
+Commit scripts and documentation. Keep screenshots, GIF previews, contact sheets, QA reports, MP4 files, and WAV files out of Git unless they are intentionally published through a GitHub Release or external video hosting.
