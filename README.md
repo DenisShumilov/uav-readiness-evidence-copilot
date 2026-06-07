@@ -15,6 +15,7 @@ Final demo videos are published through GitHub Releases, not committed as binary
 - [English MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.1.0-demo-video/uav-readiness-demo.en.final.mp4)
 - [Ukrainian MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.1.0-demo-video/uav-readiness-demo.uk.final.mp4)
 - [Release page](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.1.0-demo-video)
+- [Video generation details](demo-video/README.md)
 
 ## Demo Screenshot
 
@@ -69,28 +70,6 @@ npm run typecheck
 npm test
 npm audit --audit-level=moderate
 ```
-
-## Video Pipeline
-
-Regenerate the local MP4 demo:
-
-```powershell
-npm run demo:readiness
-npm run demo:video:record:hq
-npm run demo:video:build
-npm run demo:video:voiceover
-npm run demo:video:merge
-npm run demo:video:qa
-```
-
-Local generated MP4 files are ignored by Git:
-
-```text
-demo-video/videos/final/uav-readiness-demo.en.final.mp4
-demo-video/videos/final/uav-readiness-demo.uk.final.mp4
-```
-
-GIF previews are optional and are not the primary demo format.
 
 ## Inputs
 
@@ -177,11 +156,3 @@ Main folders:
 - [Demo video pipeline](demo-video/README.md)
 - [Roadmap](docs/roadmap.md)
 - [Release checklist](docs/release-checklist.md)
-
-## Roadmap
-
-- Keep the published demo video current
-- Add optional static dashboard view
-- Add remaining safe documentation-only parsers
-- Add richer traceability and evidence-quality reports
-- Keep safety boundaries and synthetic-data policy strict

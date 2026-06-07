@@ -13,6 +13,7 @@ Evidence-first QA workspace для безпечної UAV/robotics інжене�
 - [English MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.1.0-demo-video/uav-readiness-demo.en.final.mp4)
 - [Ukrainian MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.1.0-demo-video/uav-readiness-demo.uk.final.mp4)
 - [Release page](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.1.0-demo-video)
+- [Video generation details](demo-video/README.md)
 
 ## Demo Screenshot
 
@@ -68,28 +69,6 @@ npm test
 npm audit --audit-level=moderate
 ```
 
-## Video Pipeline
-
-Перегенерувати локальні MP4:
-
-```powershell
-npm run demo:readiness
-npm run demo:video:record:hq
-npm run demo:video:build
-npm run demo:video:voiceover
-npm run demo:video:merge
-npm run demo:video:qa
-```
-
-Локальні MP4 ignored by Git:
-
-```text
-demo-video/videos/final/uav-readiness-demo.en.final.mp4
-demo-video/videos/final/uav-readiness-demo.uk.final.mp4
-```
-
-GIF лишається тільки optional preview.
-
 ## Inputs
 
 Active parsed inputs:
@@ -114,11 +93,3 @@ Planned future fixtures:
 - [Demo video pipeline](demo-video/README.md)
 - [Roadmap](docs/roadmap.md)
 - [Release checklist](docs/release-checklist.md)
-
-## План розвитку
-
-- Підтримувати актуальним published demo video.
-- Додати optional static dashboard view.
-- Додати remaining safe documentation-only parsers.
-- Покращити traceability та evidence-quality reports.
-- Тримати safety boundaries і synthetic-data policy строгими.
