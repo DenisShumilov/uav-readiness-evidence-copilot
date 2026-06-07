@@ -59,7 +59,7 @@ Examples may describe paperwork status, document completeness, inspection eviden
 
 Examples must not describe how to fly, deploy, control, optimize, evade, target, or operate a UAV.
 
-Agents and skills under `.claude/agents` and `.claude/skills` must refuse requests involving prohibited UAV operational topics. They may only assist with documentation quality, evidence completeness, safety/compliance review, and portfolio-safe project organization.
+Agents and skills under `meta/ai-workflows/.claude/agents` and `meta/ai-workflows/.claude/skills` must refuse requests involving prohibited UAV operational topics. They may only assist with documentation quality, evidence completeness, safety/compliance review, and portfolio-safe project organization.
 
 If a request is ambiguous, interpret it conservatively as documentation/compliance work only. If it asks for operational UAV capability, refuse and redirect to safe documentation, safety, compliance, or audit-readiness alternatives.
 
@@ -154,7 +154,7 @@ Required roles:
 
 ## Required Skills
 
-Use native skills if available. If skills are not loaded by the CLI, use the markdown files under `.claude/skills` as internal rules.
+Use native skills if available. If skills are not loaded by the CLI, use the markdown files under `meta/ai-workflows/.claude/skills` as internal rules.
 
 Required skills:
 

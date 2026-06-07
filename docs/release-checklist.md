@@ -26,9 +26,8 @@ Use this before sharing the GitHub repository link.
 - [ ] README has quick start commands.
 - [ ] README explains safety boundaries.
 - [ ] README lists input and output files.
-- [ ] README links to portfolio materials.
-- [ ] `docs/portfolio/demo-script.md` is ready for a short demo video.
-- [ ] `docs/portfolio/interview-cheat-sheet.md` is ready for interview prep.
+- [ ] README links to the project FAQ, architecture, roadmap, and release checklist.
+- [ ] `docs/project-faq.md` explains the project clearly for technical readers.
 - [ ] GitHub Release MP4 demo links work.
 
 ## Verification

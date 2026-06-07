@@ -169,10 +169,10 @@ Main folders:
 - ffmpeg
 - GitHub Actions
 
-## Portfolio Materials
+## Documentation
 
-- [Final interview pack](docs/portfolio/final-interview-pack.en.md)
-- [Portfolio package](docs/portfolio/final-portfolio-package.en.md)
+- [Project FAQ](docs/project-faq.md)
+- [Architecture](docs/architecture.md)
 - [Concept glossary](docs/explain-like-new.md)
 - [Demo video pipeline](demo-video/README.md)
 - [Roadmap](docs/roadmap.md)
@@ -180,7 +180,7 @@ Main folders:
 
 ## Roadmap
 
-- Use published demo video in outreach package
+- Keep the published demo video current
 - Add optional static dashboard view
 - Add remaining safe documentation-only parsers
 - Add richer traceability and evidence-quality reports

@@ -4,21 +4,11 @@ This roadmap keeps the repository focused on one story: documentation QA, eviden
 
 ## Near Term
 
-- Use the published demo video in outreach and portfolio materials.
+- Keep the published demo video current.
 - Add optional static dashboard view.
 - Add remaining safe documentation-only parsers.
 - Add richer traceability and evidence-quality reports.
 - Keep safety boundaries and synthetic-data policy strict.
-
-## Optional Repository Cleanup
-
-These changes can improve presentation later, but are intentionally not part of the current lightweight sprint:
-
-- Move `.claude/` and `AGENTS.md` into `meta/ai-workflows/` or a private internal workflow repo.
-- Move `demo-video/` into `media/demo-video/` if the media pipeline starts distracting from the core app.
-- Keep portfolio/outreach material under `docs/portfolio/`.
-- Review whether `packages/qa/` should stay as CLI smoke-test support or move under `tests/cli/`.
-- Review whether `packages/deck/` should remain as a future placeholder or be represented only in the roadmap.
 
 ## Safety Rule
 

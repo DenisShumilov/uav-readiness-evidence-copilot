@@ -18,7 +18,7 @@ connections:
     evidence_id: EV-WIRE-001
   - connection_id: DOC-CONN-B
     from_label: "Training connector B label"
-    to_label: "Review note placeholder"
+    to_label: "Review note pending source"
     description: "Documentation entry waiting for a supporting source"
     status: locked
     lock_reason: "No supporting note exists in the demo set"

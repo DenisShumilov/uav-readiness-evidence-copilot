@@ -51,3 +51,6 @@ demo-video/audio/*.mp3
 demo-video/audio/**/*.wav
 demo-video/audio/**/*.mp3
 demo-video/qa/qa-*.png
+
+# Private career/outreach notes
+private-portfolio-notes/

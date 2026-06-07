@@ -106,12 +106,19 @@ Planned future fixtures:
 
 Поточний MVP читає тільки documentation-safe synthetic inputs зі списку active parsed inputs.
 
-## Portfolio Materials
+## Документація
 
-- [Final interview pack українською](docs/portfolio/final-interview-pack.uk.md)
-- [Portfolio package українською](docs/portfolio/final-portfolio-package.uk.md)
+- [Project FAQ](docs/project-faq.md)
+- [Architecture](docs/architecture.md)
 - [Словник понять](docs/explain-like-new.md)
 - [Demo video pipeline](demo-video/README.md)
-- [Architecture](docs/architecture.md)
 - [Roadmap](docs/roadmap.md)
 - [Release checklist](docs/release-checklist.md)
+
+## План розвитку
+
+- Підтримувати актуальним published demo video.
+- Додати optional static dashboard view.
+- Додати remaining safe documentation-only parsers.
+- Покращити traceability та evidence-quality reports.
+- Тримати safety boundaries і synthetic-data policy строгими.
