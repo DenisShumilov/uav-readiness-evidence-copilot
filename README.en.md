@@ -1,16 +1,16 @@
 # UAV Readiness & Evidence Copilot
 
-[English version](README.en.md)
+[Українська версія](README.md)
 
 [![CI](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/actions/workflows/ci.yml)
 
-Evidence-first QA workspace для UAV та robotics engineering documentation.
+Evidence-first QA workspace for UAV and robotics engineering documentation.
 
-UAV Readiness & Evidence Copilot перетворює synthetic engineering artifacts на evidence-backed readiness package: parsed inputs, evidence graph, locked findings, traceability CSV, artifact hashes, markdown report і static portfolio demo.
+UAV Readiness & Evidence Copilot turns synthetic engineering artifacts into an evidence-backed readiness package: parsed inputs, evidence graph, locked findings, traceability CSV, artifact hashes, markdown report, and static portfolio demo.
 
 ## Demo Video
 
-Фінальні demo videos опубліковані через GitHub Releases, а не збережені як важкі binary files у репозиторії.
+Final demo videos are published through GitHub Releases, not committed as binary files.
 
 - [English MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.1.0-demo-video/uav-readiness-demo.en.final.mp4)
 - [Ukrainian MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.1.0-demo-video/uav-readiness-demo.uk.final.mp4)
@@ -18,22 +18,22 @@ UAV Readiness & Evidence Copilot перетворює synthetic engineering arti
 
 ## Demo Screenshot
 
-![Portfolio demo screenshot українською](docs/assets/demo-screenshot.uk.png)
+![Portfolio demo screenshot](docs/assets/demo-screenshot.png)
 
-## Що робить
+## What It Does
 
-- Читає 4 synthetic documentation inputs.
-- Будує evidence graph для claims, sources і locks.
-- Показує verified, partial і locked evidence.
-- Рахує documentation readiness score.
-- Генерує markdown, JSON, CSV і static HTML outputs.
-- Перевіряється через TypeScript, Vitest, npm audit і GitHub Actions CI.
+- Parses 4 synthetic documentation inputs.
+- Builds an evidence graph for claims, sources, and locks.
+- Shows verified, partial, and locked evidence.
+- Calculates a documentation readiness score.
+- Generates markdown, JSON, CSV, and static HTML outputs.
+- Runs through TypeScript, Vitest, npm audit, and GitHub Actions CI.
 
-## Чому це важливо
+## Why It Matters
 
-Engineering teams часто мають багато документів, logs і QA notes, але не завжди швидко бачать, що реально підтверджено доказами.
+Engineering teams often have scattered documents, logs, and QA notes, but need a fast way to see what is actually supported by evidence.
 
-Цей проєкт демонструє safe internal-tool workflow для documentation readiness, audit preparation і handoff review.
+This project demonstrates a safe internal-tool workflow for documentation readiness, audit preparation, and handoff review.
 
 Core rule:
 
@@ -43,11 +43,11 @@ No evidence -> locked.
 
 ## Safety Boundaries
 
-Це тільки documentation, QA і portfolio project.
+This is a documentation, QA, and portfolio project only.
 
-Проєкт не керує дронами або роботами, не обробляє live telemetry, не генерує routes або waypoints, не підтримує payload operation, targeting, tactical advice і не підключається до real aircraft, radios, sensors або field systems.
+It does not control drones or robots, process live telemetry, generate routes or waypoints, support payload operation, support targeting, provide tactical advice, or connect to real aircraft, radios, sensors, or field systems.
 
-Усі demo data synthetic, static і educational.
+All demo data is synthetic, static, and educational.
 
 ## Quick Start
 
@@ -59,7 +59,7 @@ npm run demo:readiness
 Open:
 
 ```text
-examples/demo-uav-readiness/output/portfolio-demo.uk.html
+examples/demo-uav-readiness/output/portfolio-demo.html
 ```
 
 Run checks:
@@ -84,7 +84,7 @@ Future-only fixtures:
 - `future-fixtures/wiring_notes.yaml`
 - `future-fixtures/config_dump.txt`
 
-Поточний MVP читає тільки active parsed inputs.
+The current MVP parses only the active inputs.
 
 ## Outputs
 
