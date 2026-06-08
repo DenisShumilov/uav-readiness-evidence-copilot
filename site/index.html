@@ -3,120 +3,1656 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>UAV Readiness & Evidence Copilot Demo</title>
+    <title>UAV Readiness &amp; Evidence Copilot — живе демо</title>
     <meta
       name="description"
-      content="Онлайн-демо UAV Readiness & Evidence Copilot: безпечна перевірка інженерної документації з фокусом на доказах."
+      content="Жива, безпечна перевірка інженерної документації БпЛА: інтерактивна оцінка готовності, карта доказів, заблоковані пункти — і система з 10 AI-агентів, що це побудувала."
     />
-    <link rel="stylesheet" href="styles.css" />
+    <meta name="color-scheme" content="light" />
+
+    <!-- Fonts (external; degrade gracefully to system stacks if blocked) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --paper: #e9edf2;
+        --panel: #ffffff;
+        --panel-2: #f4f7fa;
+        --ink: #0c1421;
+        --muted: #58636f;
+        --line: #d2dae3;
+        --line-strong: #b4c0cd;
+        --accent: #0b57d0;
+        --accent-ink: #0a3f9e;
+        --amber: #d97a06;
+        --verified: #0e7a4b;
+        --verified-bg: #e3f3eb;
+        --partial: #b26a00;
+        --partial-bg: #fbefd9;
+        --locked: #c0271c;
+        --locked-bg: #fbe6e3;
+        --grid: rgba(12, 20, 33, 0.045);
+        --shadow: 0 1px 0 rgba(12, 20, 33, 0.04), 0 12px 30px -18px rgba(12, 20, 33, 0.25);
+        --font-display: "Archivo", system-ui, "Segoe UI", sans-serif;
+        --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Code", monospace;
+        --font-body: "Public Sans", system-ui, "Segoe UI", sans-serif;
+        --maxw: 1180px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--font-body);
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      /* Blueprint grid + grain atmosphere */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background-image: linear-gradient(var(--grid) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+        background-size: 34px 34px;
+        mask-image: radial-gradient(120% 90% at 70% 0%, #000 35%, transparent 100%);
+      }
+
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        opacity: 0.5;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      }
+
+      main,
+      header,
+      footer {
+        position: relative;
+        z-index: 1;
+      }
+
+      .wrap {
+        max-width: var(--maxw);
+        margin: 0 auto;
+        padding: 0 22px;
+      }
+
+      a {
+        color: var(--accent-ink);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+
+      .mono {
+        font-family: var(--font-mono);
+      }
+
+      .eyebrow {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      /* ---------- Top bar ---------- */
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        background: rgba(233, 237, 242, 0.82);
+        backdrop-filter: saturate(140%) blur(8px);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        height: 58px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--ink);
+      }
+
+      .seal {
+        display: grid;
+        place-items: center;
+        width: 30px;
+        height: 30px;
+        border: 1.5px solid var(--ink);
+        border-radius: 50%;
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 12px;
+        letter-spacing: 0;
+      }
+
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .lang {
+        display: inline-flex;
+        border: 1px solid var(--line-strong);
+        border-radius: 999px;
+        overflow: hidden;
+        font-family: var(--font-mono);
+        font-size: 12px;
+      }
+      .lang button {
+        border: 0;
+        background: transparent;
+        padding: 6px 11px;
+        cursor: pointer;
+        color: var(--muted);
+        font-family: inherit;
+      }
+      .lang button[aria-pressed="true"] {
+        background: var(--ink);
+        color: #fff;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 999px;
+        padding: 9px 16px;
+        font-weight: 600;
+        font-size: 14px;
+        border: 1px solid var(--ink);
+        cursor: pointer;
+        transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+      }
+      .btn:hover {
+        text-decoration: none;
+        transform: translateY(-1px);
+      }
+      .btn-solid {
+        background: var(--ink);
+        color: #fff;
+      }
+      .btn-solid:hover {
+        box-shadow: 0 10px 22px -12px rgba(12, 20, 33, 0.6);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--ink);
+      }
+      .btn-ghost:hover {
+        background: var(--ink);
+        color: #fff;
+      }
+      .btn-sm {
+        padding: 7px 13px;
+        font-size: 13px;
+      }
+
+      /* ---------- Hero ---------- */
+      .hero {
+        padding: 60px 0 30px;
+        display: grid;
+        grid-template-columns: 1.35fr 0.9fr;
+        gap: 44px;
+        align-items: center;
+      }
+
+      .hero h1 {
+        font-family: var(--font-display);
+        font-weight: 900;
+        font-size: clamp(2.5rem, 6.2vw, 4.7rem);
+        line-height: 0.98;
+        letter-spacing: -0.035em;
+        margin: 16px 0 18px;
+      }
+      .hero h1 .x {
+        color: var(--accent);
+        position: relative;
+        white-space: nowrap;
+      }
+      .hero h1 .strike {
+        color: var(--muted);
+        text-decoration: line-through;
+        text-decoration-thickness: 3px;
+        text-decoration-color: var(--locked);
+      }
+
+      .hero .lead {
+        font-size: clamp(1rem, 1.4vw, 1.18rem);
+        color: var(--muted);
+        max-width: 46ch;
+        margin: 0 0 20px;
+      }
+
+      .safety-strip {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        color: var(--locked);
+        background: var(--locked-bg);
+        border: 1px solid #f1c4bd;
+        border-radius: 8px;
+        padding: 7px 12px;
+        margin-bottom: 24px;
+      }
+      .safety-strip b {
+        color: var(--ink);
+      }
+
+      .hero-cta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      /* ---------- Gauge instrument ---------- */
+      .instrument {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        padding: 24px 22px;
+        text-align: center;
+      }
+      .instrument .tag {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      .gauge {
+        --p: 0;
+        --gc: var(--locked);
+        width: 218px;
+        height: 218px;
+        margin: 2px auto 6px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: conic-gradient(var(--gc) calc(var(--p) * 1%), #e7ecf1 0);
+        position: relative;
+        transition: background 0.5s ease;
+      }
+      .gauge::before {
+        content: "";
+        position: absolute;
+        inset: 16px;
+        border-radius: 50%;
+        background: var(--panel);
+        border: 1px solid var(--line);
+      }
+      .gauge .read {
+        position: relative;
+        z-index: 1;
+      }
+      .gauge .num {
+        font-family: var(--font-display);
+        font-weight: 900;
+        font-size: 62px;
+        line-height: 1;
+        color: var(--gc);
+        transition: color 0.5s ease;
+        font-variant-numeric: tabular-nums;
+      }
+      .gauge .den {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .band {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-top: 8px;
+        color: var(--gc);
+      }
+      .gauge-label {
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 2px;
+      }
+
+      /* ---------- Section frame ---------- */
+      section.block {
+        padding: 46px 0;
+        border-top: 1px solid var(--line);
+      }
+      .sec-head {
+        max-width: 64ch;
+        margin-bottom: 26px;
+      }
+      .sec-head h2 {
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: clamp(1.7rem, 3.2vw, 2.5rem);
+        letter-spacing: -0.02em;
+        line-height: 1.04;
+        margin: 10px 0 10px;
+      }
+      .sec-head p {
+        color: var(--muted);
+        margin: 0;
+      }
+
+      .note-honesty {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--muted);
+        background: var(--panel-2);
+        border: 1px dashed var(--line-strong);
+        border-radius: 10px;
+        padding: 11px 14px;
+        margin-top: 14px;
+      }
+
+      /* ---------- Dashboard ---------- */
+      .dash {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 20px;
+        align-items: start;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+        padding: 18px;
+      }
+      .panel h3 {
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 15px;
+        margin: 0 0 4px;
+        letter-spacing: -0.01em;
+      }
+      .panel .hint {
+        font-size: 12.5px;
+        color: var(--muted);
+        margin: 0 0 14px;
+      }
+
+      .src {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 10px 0;
+        border-top: 1px solid var(--line);
+      }
+      .src:first-of-type {
+        border-top: 0;
+      }
+      .src .meta {
+        min-width: 0;
+      }
+      .src .id {
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        color: var(--accent-ink);
+      }
+      .src .name {
+        font-size: 13px;
+        color: var(--ink);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .src .conf {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .switch {
+        --on: var(--verified);
+        flex: none;
+        width: 46px;
+        height: 26px;
+        border-radius: 999px;
+        border: 1px solid var(--line-strong);
+        background: #e7ecf1;
+        position: relative;
+        cursor: pointer;
+        transition: background 0.18s ease, border-color 0.18s ease;
+      }
+      .switch::after {
+        content: "";
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+        transition: transform 0.18s ease;
+      }
+      .switch[aria-pressed="true"] {
+        background: var(--on);
+        border-color: var(--on);
+      }
+      .switch[aria-pressed="true"]::after {
+        transform: translateX(20px);
+      }
+
+      .reset-row {
+        margin-top: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+      .link-btn {
+        background: none;
+        border: 0;
+        cursor: pointer;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--accent-ink);
+        padding: 0;
+      }
+      .link-btn:hover {
+        text-decoration: underline;
+      }
+
+      .live-top {
+        display: grid;
+        grid-template-columns: 230px 1fr;
+        gap: 18px;
+        align-items: stretch;
+      }
+
+      .counters {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+      .counter {
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        padding: 12px 10px;
+        text-align: center;
+        background: var(--panel-2);
+      }
+      .counter b {
+        display: block;
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 30px;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+      }
+      .counter span {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .counter.v b {
+        color: var(--verified);
+      }
+      .counter.p b {
+        color: var(--partial);
+      }
+      .counter.l b {
+        color: var(--locked);
+      }
+
+      .formula {
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+        color: var(--muted);
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 11px 13px;
+        line-height: 1.7;
+      }
+      .formula .hl-l {
+        color: var(--locked);
+      }
+      .formula .hl-p {
+        color: var(--partial);
+      }
+      .formula .hl-w {
+        color: var(--amber);
+      }
+      .formula .res {
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      .claims {
+        margin-top: 18px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+        gap: 9px;
+      }
+      .claim {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid var(--line);
+        border-left-width: 4px;
+        border-radius: 9px;
+        padding: 9px 11px;
+        background: var(--panel);
+        transition: border-color 0.25s ease, background 0.25s ease, transform 0.18s ease;
+      }
+      .claim .dot {
+        flex: none;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+      }
+      .claim .ct {
+        min-width: 0;
+      }
+      .claim .cl {
+        font-size: 12.5px;
+        line-height: 1.25;
+        color: var(--ink);
+      }
+      .claim .cid {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .claim .badge {
+        margin-left: auto;
+        flex: none;
+        font-family: var(--font-mono);
+        font-size: 9.5px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 3px 7px;
+        border-radius: 6px;
+      }
+      .claim[data-status="verified"] {
+        border-left-color: var(--verified);
+      }
+      .claim[data-status="verified"] .dot {
+        background: var(--verified);
+      }
+      .claim[data-status="verified"] .badge {
+        background: var(--verified-bg);
+        color: var(--verified);
+      }
+      .claim[data-status="partial"] {
+        border-left-color: var(--partial);
+      }
+      .claim[data-status="partial"] .dot {
+        background: var(--partial);
+      }
+      .claim[data-status="partial"] .badge {
+        background: var(--partial-bg);
+        color: var(--partial);
+      }
+      .claim[data-status="locked"] {
+        border-left-color: var(--locked);
+        background: var(--locked-bg);
+      }
+      .claim[data-status="locked"] .dot {
+        background: var(--locked);
+      }
+      .claim[data-status="locked"] .badge {
+        background: #fff;
+        color: var(--locked);
+      }
+      .claim.flash {
+        transform: translateY(-2px);
+      }
+
+      .rule-callout {
+        margin-top: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: var(--ink);
+        color: #fff;
+        border-radius: 14px;
+        padding: 18px 22px;
+      }
+      .rule-callout .big {
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: clamp(1.1rem, 2.4vw, 1.7rem);
+        letter-spacing: -0.01em;
+      }
+      .rule-callout .big .lk {
+        color: #ff8c80;
+      }
+      .rule-callout p {
+        margin: 4px 0 0;
+        color: #c4ccd6;
+        font-size: 13px;
+      }
+
+      /* ---------- Scaffold showcase ---------- */
+      .scaffold-core {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+        padding: 16px 20px;
+        margin-bottom: 8px;
+      }
+      .scaffold-core .badge-file {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        font-weight: 600;
+        color: #fff;
+        background: var(--accent);
+        padding: 7px 12px;
+        border-radius: 8px;
+        white-space: nowrap;
+      }
+      .scaffold-core p {
+        margin: 0;
+        font-size: 13.5px;
+        color: var(--muted);
+      }
+      .conn {
+        height: 26px;
+        width: 2px;
+        background: var(--line-strong);
+        margin: 0 auto;
+      }
+
+      .agents {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(216px, 1fr));
+        gap: 10px;
+      }
+      .agent {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 13px 14px;
+        transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+      }
+      .agent:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow);
+        border-color: var(--line-strong);
+      }
+      .agent .an {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 13.5px;
+        letter-spacing: -0.01em;
+      }
+      .agent .idx {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        padding: 1px 5px;
+      }
+      .agent .ar {
+        margin: 7px 0 0;
+        font-size: 12.5px;
+        color: var(--muted);
+        line-height: 1.4;
+      }
+      .agent.safety {
+        border-color: #f1c4bd;
+        background: linear-gradient(180deg, #fff, var(--locked-bg));
+      }
+      .agent.safety .an {
+        color: var(--locked);
+      }
+
+      .skills {
+        margin-top: 16px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+      .skills .lbl {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-right: 4px;
+      }
+      .chip {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 5px 11px;
+        color: var(--ink);
+      }
+
+      /* Safety refusal — inspection stamp */
+      .refusal {
+        margin-top: 22px;
+        display: grid;
+        grid-template-columns: 1fr 1.1fr;
+        gap: 0;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+      }
+      .refusal .req {
+        background: var(--panel-2);
+        padding: 20px;
+        border-right: 1px solid var(--line);
+      }
+      .refusal .res {
+        background: var(--panel);
+        padding: 20px;
+        position: relative;
+      }
+      .refusal .lab {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .refusal .reqtext {
+        font-size: 14.5px;
+        color: var(--ink);
+        font-style: italic;
+      }
+      .stamp {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-display);
+        font-weight: 900;
+        font-size: 15px;
+        letter-spacing: 0.06em;
+        color: var(--locked);
+        border: 2.5px solid var(--locked);
+        border-radius: 8px;
+        padding: 5px 12px;
+        transform: rotate(-4deg);
+        margin-bottom: 14px;
+      }
+      .refusal ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .refusal li {
+        font-size: 13px;
+        padding: 7px 0;
+        border-top: 1px dashed var(--line);
+        display: grid;
+        grid-template-columns: 96px 1fr;
+        gap: 10px;
+      }
+      .refusal li:first-child {
+        border-top: 0;
+      }
+      .refusal li .k {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .refusal li.alt .v {
+        color: var(--verified);
+        font-weight: 600;
+      }
+
+      /* ---------- Videos ---------- */
+      .videos {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+      .vcard {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+        padding: 16px;
+      }
+      .vcard h3 {
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 15px;
+        margin: 0 0 10px;
+      }
+      .vcard video {
+        width: 100%;
+        border-radius: 9px;
+        border: 1px solid var(--line);
+        background: #000;
+        display: block;
+      }
+      .vcard .fallback {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 9px 0 0;
+      }
+
+      /* ---------- Footer ---------- */
+      footer {
+        border-top: 1px solid var(--line);
+        padding: 30px 0 50px;
+        margin-top: 10px;
+      }
+      .foot {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: center;
+      }
+      .foot .safe {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--muted);
+        max-width: 62ch;
+        line-height: 1.6;
+      }
+      .foot .links {
+        display: flex;
+        gap: 14px;
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+      }
+
+      /* ---------- Reveal animation ---------- */
+      .reveal {
+        opacity: 0;
+        transform: translateY(16px);
+        transition: opacity 0.6s ease, transform 0.6s ease;
+      }
+      .reveal.in {
+        opacity: 1;
+        transform: none;
+      }
+
+      @media (max-width: 940px) {
+        .hero,
+        .dash,
+        .live-top,
+        .refusal,
+        .videos {
+          grid-template-columns: 1fr;
+        }
+        .hero {
+          padding-top: 40px;
+        }
+        .scaffold-core {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .refusal .req {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation: none !important;
+          transition: none !important;
+          scroll-behavior: auto !important;
+        }
+        .reveal {
+          opacity: 1;
+          transform: none;
+        }
+      }
+    </style>
   </head>
+
   <body>
-    <main>
+    <header>
+      <div class="wrap topbar">
+        <div class="brand">
+          <span class="seal">URC</span>
+          <span>UAV · READINESS · EVIDENCE</span>
+        </div>
+        <div class="nav-right">
+          <div class="lang" role="group" aria-label="Language">
+            <button data-lang="uk" aria-pressed="true">UA</button>
+            <button data-lang="en" aria-pressed="false">EN</button>
+          </div>
+          <a
+            class="btn btn-ghost btn-sm"
+            href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot"
+            data-i18n="nav.github"
+            >GitHub</a
+          >
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <!-- ============ HERO ============ -->
       <section class="hero">
-        <p class="eyebrow">Публічне демо</p>
-        <h1>UAV Readiness & Evidence Copilot</h1>
-        <p class="lead">
-          Безпечний інструмент для перевірки інженерної документації БпЛА та робототехніки:
-          карта доказів, заблоковані пункти, оцінка готовності документації та
-          перевірювані результати.
-        </p>
-        <div class="actions" aria-label="Посилання на демо">
-          <a href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot">
-            GitHub репозиторій
-          </a>
-          <a href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.4.0-demo-video">
-            Реліз українського демо
-          </a>
-          <a
-            href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.4.0-demo-video/uav-readiness-demo.uk.final.mp4"
-          >
-            Українське відео
-          </a>
-          <a
-            href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.2.0-demo-video/uav-readiness-demo.en.final.mp4"
-          >
-            Відео англійською
-          </a>
+        <div class="reveal in">
+          <p class="eyebrow" data-i18n="hero.eyebrow">Публічне демо · безпечна перевірка документації</p>
+          <h1 data-i18n-html="hero.title">
+            Розум — у <span class="x">каркасі</span>,<br />не в <span class="strike">моделі</span>.
+          </h1>
+          <p class="lead" data-i18n="hero.lead">
+            UAV Readiness &amp; Evidence Copilot перетворює навчальні інженерні документи на
+            зрозумілий пакет перевірки готовності: карта доказів, заблоковані пункти, оцінка
+            готовності. Усе будує не «одна розумна модель», а система чітких правил, ролей і
+            перевірок навколо неї.
+          </p>
+          <div class="safety-strip">
+            <span>🔒</span>
+            <span data-i18n-html="hero.safety"
+              ><b>Без керування дроном.</b> Тільки документація, докази та готовність до аудиту.</span
+            >
+          </div>
+          <div class="hero-cta">
+            <a class="btn btn-solid" href="#live" data-i18n="hero.ctaTry">Спробувати наживо ↓</a>
+            <a
+              class="btn btn-ghost"
+              href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot"
+              data-i18n="hero.ctaCode"
+              >Подивитися код</a
+            >
+          </div>
+        </div>
+
+        <div class="reveal in instrument" aria-label="Official demo readiness score">
+          <div class="tag">
+            <span data-i18n="gauge.official">офіційна оцінка демо</span>
+            <span class="mono">npm run demo:readiness</span>
+          </div>
+          <div class="gauge" id="heroGauge" style="--p: 44; --gc: var(--locked)">
+            <div class="read">
+              <div class="num">44</div>
+              <div class="den">/ 100</div>
+            </div>
+          </div>
+          <div class="band" data-i18n="gauge.bandLow">Документація не готова</div>
+          <div class="gauge-label" data-i18n="gauge.label">оцінка готовності документації</div>
         </div>
       </section>
 
-      <section class="video-grid" aria-label="Демо-відео">
-        <article>
-          <div class="section-heading">
-            <p class="eyebrow">Українською</p>
-            <h2>Демо-відео українською</h2>
-          </div>
-          <video controls preload="metadata" playsinline>
-            <source
-              src="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.4.0-demo-video/uav-readiness-demo.uk.final.mp4"
-              type="video/mp4"
-            />
-            Ваш браузер не може відтворити це відео. Відкрийте український MP4 зі сторінки релізу.
-          </video>
-          <p class="fallback">
-            Якщо відео не запускається у вбудованому програвачі, відкрийте
-            <a
-              href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.4.0-demo-video/uav-readiness-demo.uk.final.mp4"
-            >
-              український MP4
-            </a>
-            напряму.
+      <!-- ============ LIVE DASHBOARD ============ -->
+      <section class="block" id="live">
+        <div class="sec-head reveal">
+          <p class="eyebrow" data-i18n="dash.eyebrow">Інтерактив</p>
+          <h2 data-i18n="dash.title">Жива перевірка готовності</h2>
+          <p data-i18n-html="dash.intro">
+            Вмикай і вимикай джерела доказів зліва. Дивись, як твердження стають
+            <b>заблокованими</b> і як оцінка готовності перераховується за справжньою формулою
+            інструменту.
           </p>
-        </article>
+          <div class="note-honesty" data-i18n="dash.honesty">
+            Дані реальні — узяті з виводу демо (8 підтверджено, 4 частково, 5 заблоковано → 44/100).
+            Ваги дедукцій справжні: locked −6, partial −3, warning −2. Це жива ілюстрація головного
+            правила; точний офіційний рахунок завжди дає сам інструмент командою npm run
+            demo:readiness.
+          </div>
+        </div>
 
-        <article>
-          <div class="section-heading">
-            <p class="eyebrow">Англійською</p>
-            <h2>Демо-відео англійською</h2>
+        <div class="dash reveal">
+          <!-- Left: sources -->
+          <div class="panel">
+            <h3 data-i18n="dash.sourcesTitle">Джерела доказів</h3>
+            <p class="hint" data-i18n="dash.sourcesHint">
+              Кожне джерело — це рядок таблиці, нотатка або документ. Прибери джерело — і пов'язані
+              твердження втрачають доказ.
+            </p>
+            <div id="sourceList"></div>
+            <div class="reset-row">
+              <span class="mono" style="font-size: 12px; color: var(--muted)"
+                ><span id="srcOnCount">5</span>/5 <span data-i18n="dash.active">активних</span></span
+              >
+              <button class="link-btn" id="resetBtn" data-i18n="dash.reset">↺ Скинути</button>
+            </div>
           </div>
-          <video controls preload="metadata" playsinline>
-            <source
-              src="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.2.0-demo-video/uav-readiness-demo.en.final.mp4"
-              type="video/mp4"
-            />
-            Ваш браузер не може відтворити це відео. Відкрийте англійський MP4 зі сторінки релізу.
-          </video>
-          <p class="fallback">
-            Якщо відео не запускається у вбудованому програвачі, відкрийте
-            <a
-              href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.2.0-demo-video/uav-readiness-demo.en.final.mp4"
-            >
-              англійський MP4
-            </a>
-            напряму.
-          </p>
-        </article>
+
+          <!-- Right: live results -->
+          <div>
+            <div class="live-top">
+              <div class="panel instrument" style="box-shadow: none; padding: 16px">
+                <div class="tag">
+                  <span data-i18n="dash.liveScore">жива оцінка</span>
+                </div>
+                <div class="gauge" id="liveGauge" style="--p: 44; --gc: var(--locked)">
+                  <div class="read">
+                    <div class="num" id="liveNum">44</div>
+                    <div class="den">/ 100</div>
+                  </div>
+                </div>
+                <div class="band" id="liveBand" data-i18n="gauge.bandLow">Документація не готова</div>
+              </div>
+
+              <div class="panel" style="box-shadow: none">
+                <div class="counters">
+                  <div class="counter v">
+                    <b id="cVer">8</b><span data-i18n="dash.verified">підтверджено</span>
+                  </div>
+                  <div class="counter p">
+                    <b id="cPar">4</b><span data-i18n="dash.partial">частково</span>
+                  </div>
+                  <div class="counter l">
+                    <b id="cLoc">5</b><span data-i18n="dash.locked">заблоковано</span>
+                  </div>
+                </div>
+                <div class="formula" id="formula"></div>
+              </div>
+            </div>
+
+            <div class="claims" id="claimList"></div>
+          </div>
+        </div>
+
+        <div class="rule-callout reveal">
+          <div>
+            <div class="big" data-i18n-html="dash.ruleBig">
+              Нема доказу → <span class="lk">заблоковано</span>
+            </div>
+            <p data-i18n="dash.ruleText">
+              Інструмент не вигадує підтверджень. Якщо доказу немає, висновок лишається
+              заблокованим, а не «майже готовим». Саме це роблять рекрутерам довіру до інженерної
+              чесності.
+            </p>
+          </div>
+        </div>
       </section>
 
-      <section class="info-grid">
-        <article>
-          <h2>Що робить</h2>
-          <ul>
-            <li>Читає безпечні навчальні демо-файли.</li>
-            <li>Будує карту тверджень і доказів.</li>
-            <li>Показує підтверджені, часткові та заблоковані пункти.</li>
-            <li>Генерує звіти, CSV-таблицю, цифрові відбитки й демо-сторінку.</li>
-          </ul>
-        </article>
-
-        <article>
-          <h2>Чого не робить</h2>
-          <ul>
-            <li>Не керує дронами або роботами.</li>
-            <li>Не обробляє живі дані з систем.</li>
-            <li>Не генерує маршрути або точки руху.</li>
-            <li>Не підтримує роботу з корисним навантаженням, наведенням або тактичними сценаріями.</li>
-          </ul>
-        </article>
-
-        <article>
-          <h2>Межі безпеки</h2>
-          <p>
-            Це інструмент для перевірки документації перед інженерним рецензуванням. Усі дані
-            навчальні, статичні й не взяті з реального використання.
+      <!-- ============ SCAFFOLD SHOWCASE ============ -->
+      <section class="block" id="scaffold">
+        <div class="sec-head reveal">
+          <p class="eyebrow" data-i18n="scaffold.eyebrow">Метод</p>
+          <h2 data-i18n="scaffold.title">Цей репозиторій побудувала система з 10 AI-агентів</h2>
+          <p data-i18n="scaffold.intro">
+            Не «попросив модель — вона зробила». Над проєктом працює каркас (scaffold): постійні
+            правила, ролі-спеціалісти, готові скіли та обов'язкові перевірки безпеки. Розум — у цій
+            системі, а не в одній моделі.
           </p>
-        </article>
+        </div>
+
+        <div class="reveal">
+          <div class="scaffold-core">
+            <span class="badge-file mono">AGENTS.md</span>
+            <p data-i18n="scaffold.core">
+              Ядро правил: межі безпеки, формат відповіді, правило доказів «нема доказу → locked»,
+              обов'язкові субагенти і скіли, «брама сумнівів» перед кожною зміною файлів.
+            </p>
+          </div>
+          <div class="conn"></div>
+
+          <div class="agents" id="agentList"></div>
+
+          <div class="skills" id="skillList">
+            <span class="lbl" data-i18n="scaffold.skillsLbl">7 скілів</span>
+          </div>
+        </div>
+
+        <!-- Real safety refusal -->
+        <div class="sec-head reveal" style="margin-top: 34px; margin-bottom: 14px">
+          <h2 style="font-size: clamp(1.3rem, 2.6vw, 1.8rem)" data-i18n="refusal.title">
+            Безпека на ділі: агент відмовляє небезпечному запиту
+          </h2>
+          <p data-i18n="refusal.sub">
+            Реальний формат відповіді Safety &amp; Red-Team агента. Запит на операційну можливість
+            блокується автоматично.
+          </p>
+        </div>
+        <div class="refusal reveal">
+          <div class="req">
+            <div class="lab" data-i18n="refusal.inLab">Запит користувача</div>
+            <p class="reqtext" id="refReq">
+              «Додай у проєкт планування маршруту і генерацію точок руху для місії дрона.»
+            </p>
+          </div>
+          <div class="res">
+            <div class="lab" data-i18n="refusal.outLab">Відповідь агента безпеки</div>
+            <div class="stamp">⛔ <span id="refVerdict">BLOCKED</span></div>
+            <ul>
+              <li>
+                <span class="k" data-i18n="refusal.kRisk">Ризик</span
+                ><span class="v" id="refRisk"
+                  >Це операційне керування польотом і місією — поза межами безпеки проєкту.</span
+                >
+              </li>
+              <li>
+                <span class="k" data-i18n="refusal.kRemove">Прибрати</span
+                ><span class="v" id="refRemove"
+                  >Будь-яке планування маршрутів, точок руху, наведення чи телеметрії.</span
+                >
+              </li>
+              <li class="alt">
+                <span class="k" data-i18n="refusal.kAlt">Безпечно</span
+                ><span class="v" id="refAlt"
+                  >Натомість: перевірка документації, докази, матриця простежуваності, готовність до
+                  аудиту.</span
+                >
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ VIDEOS ============ -->
+      <section class="block" id="video">
+        <div class="sec-head reveal">
+          <p class="eyebrow" data-i18n="videos.eyebrow">Запис</p>
+          <h2 data-i18n="videos.title">Демо-відео</h2>
+        </div>
+        <div class="videos reveal">
+          <div class="vcard">
+            <h3 data-i18n="videos.uk">Українською</h3>
+            <video controls preload="metadata" playsinline>
+              <source
+                src="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.4.0-demo-video/uav-readiness-demo.uk.final.mp4"
+                type="video/mp4"
+              />
+            </video>
+            <p class="fallback">
+              <a
+                href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.4.0-demo-video/uav-readiness-demo.uk.final.mp4"
+                data-i18n="videos.open"
+                >Відкрити MP4 напряму</a
+              >
+            </p>
+          </div>
+          <div class="vcard">
+            <h3 data-i18n="videos.en">Англійською</h3>
+            <video controls preload="metadata" playsinline>
+              <source
+                src="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.2.0-demo-video/uav-readiness-demo.en.final.mp4"
+                type="video/mp4"
+              />
+            </video>
+            <p class="fallback">
+              <a
+                href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.2.0-demo-video/uav-readiness-demo.en.final.mp4"
+                data-i18n="videos.open"
+                >Відкрити MP4 напряму</a
+              >
+            </p>
+          </div>
+        </div>
       </section>
     </main>
+
+    <footer>
+      <div class="wrap foot">
+        <p class="safe" data-i18n="footer.safe">
+          🛡 Межі безпеки: це проєкт для документації, QA і портфоліо. Він не керує дронами, не
+          обробляє живі дані, не генерує маршрути, точки руху, наведення чи телеметрію. Усі дані
+          навчальні, статичні й синтетичні.
+        </p>
+        <div class="links">
+          <a href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot">GitHub</a>
+          <a href="#live" data-i18n="footer.try">Демо</a>
+          <a href="#scaffold" data-i18n="footer.method">Метод</a>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      // ---------- Real demo data (from npm run demo:readiness output) ----------
+      var SOURCES = [
+        { id: "EV-BOM-001", uk: "Рядок BOM: рама", en: "BOM row: frame plate", conf: "high" },
+        { id: "EV-BOM-002", uk: "Рядок BOM: кабель", en: "BOM row: bench cable", conf: "medium" },
+        { id: "EV-QA-001", uk: "Рядок BOM: позначки безпеки", en: "BOM row: safety labels", conf: "high" },
+        { id: "EV-MAN-001", uk: "Доказ з інструкції", en: "Manual evidence", conf: "high" },
+        { id: "EV-WIRE-001", uk: "Нотатка про роз'єм", en: "Connector note", conf: "medium" }
+      ];
+
+      // src=null => locked at baseline regardless of toggles.
+      // rel: "supports" => verified when source on; "partial" => partial when source on.
+      var CLAIMS = [
+        { id: "comp-frame-001", src: "EV-BOM-001", rel: "supports", uk: "Рама в списку деталей", en: "Frame plate in BOM" },
+        { id: "comp-cable-001", src: "EV-BOM-002", rel: "partial", uk: "Кабель у списку деталей", en: "Bench cable in BOM" },
+        { id: "comp-board-001", src: null, rel: "supports", uk: "Плата без джерела", en: "Compute board, no source" },
+        { id: "doc-label-001", src: "EV-QA-001", rel: "supports", uk: "Набір позначок безпеки", en: "Safety label set in BOM" },
+        { id: "manual.exists", src: "EV-MAN-001", rel: "supports", uk: "Інструкція існує", en: "Manual exists" },
+        { id: "manual.connector", src: "EV-WIRE-001", rel: "partial", uk: "Нотатка роз'єму: 1 джерело", en: "Connector note: one source" },
+        { id: "manual.board-missing", src: null, rel: "supports", uk: "Плата в інструкції без джерела", en: "Manual board row, no source" },
+        { id: "test.check-001", src: "EV-BOM-001", rel: "supports", uk: "Тест: BOM присутній", en: "Test: BOM present" },
+        { id: "test.check-002", src: "EV-MAN-001", rel: "supports", uk: "Тест: інструкція присутня", en: "Test: manual present" },
+        { id: "test.check-003", src: "EV-WIRE-001", rel: "partial", uk: "Тест: огляд роз'єму", en: "Test: connector review" },
+        { id: "test.check-004", src: null, rel: "supports", uk: "Тест: власник конфігу", en: "Test: config owner" },
+        { id: "test.check-005", src: "EV-QA-001", rel: "supports", uk: "Тест: позначки безпеки", en: "Test: safety labels" },
+        { id: "qa.ev-bom-001", src: "EV-BOM-001", rel: "supports", uk: "QA: BOM пов'язано", en: "QA: BOM linked" },
+        { id: "qa.ev-man-001", src: "EV-MAN-001", rel: "supports", uk: "QA: інструкція пояснює обсяг", en: "QA: manual scope" },
+        { id: "qa.ev-wire-001", src: "EV-WIRE-001", rel: "partial", uk: "QA: роз'єм потребує 2-ї нотатки", en: "QA: connector needs 2nd note" },
+        { id: "qa.ev-wire-002", src: null, rel: "supports", uk: "QA: 2-ге джерело роз'єму відсутнє", en: "QA: 2nd connector source missing" },
+        { id: "qa.ev-config-001", src: null, rel: "supports", uk: "QA: власник конфігу відсутній", en: "QA: config owner missing" }
+      ];
+
+      var AGENTS = [
+        { n: "Product Architect", uk: "Тримає MVP малим і сфокусованим на портфоліо.", en: "Keeps the MVP small and portfolio-focused." },
+        { n: "Safety & Red-Team", uk: "Блокує небезпечний операційний обсяг БпЛА.", en: "Blocks unsafe UAV operational scope.", safety: true },
+        { n: "Domain Evidence", uk: "Захищає правило «нема доказу → locked».", en: "Protects the rule: no evidence → locked." },
+        { n: "Backend Engineer", uk: "Малі модулі на TypeScript / Zod.", en: "Small TypeScript / Zod modules." },
+        { n: "Frontend Engineer", uk: "Проста дружня до рекрутера дашборд-сторінка.", en: "Simple, recruiter-friendly dashboard." },
+        { n: "QA / Evals", uk: "Пише тести й ловить небезпечну поведінку.", en: "Writes tests, checks unsafe behavior." },
+        { n: "Docs & Portfolio", uk: "Зрозумілі документи, пояснює цінність.", en: "Clear docs, explains the value." },
+        { n: "Security / Supply Chain", uk: "Хеші, секрети, ризик залежностей.", en: "Hashes, secrets, dependency risk." },
+        { n: "Ukrainian Teacher", uk: "Пояснює кожен термін простими словами.", en: "Explains every term in plain words." },
+        { n: "Agent Plugin Researcher", uk: "Аудит плагінів і субагентів перед кожною фазою.", en: "Audits plugins & subagents before each phase." }
+      ];
+
+      var SKILLS = [
+        "explain-terms", "red-team-check", "evidence-lock-check",
+        "portfolio-readme", "phase-review", "safety-boundary-check", "agent-plugin-audit"
+      ];
+
+      // ---------- i18n ----------
+      var I18N = {
+        uk: {
+          "nav.github": "GitHub",
+          "hero.eyebrow": "Публічне демо · безпечна перевірка документації",
+          "hero.title": "Розум — у <span class='x'>каркасі</span>,<br>не в <span class='strike'>моделі</span>.",
+          "hero.lead": "UAV Readiness & Evidence Copilot перетворює навчальні інженерні документи на зрозумілий пакет перевірки готовності: карта доказів, заблоковані пункти, оцінка готовності. Усе будує не «одна розумна модель», а система чітких правил, ролей і перевірок навколо неї.",
+          "hero.safety": "<b>Без керування дроном.</b> Тільки документація, докази та готовність до аудиту.",
+          "hero.ctaTry": "Спробувати наживо ↓",
+          "hero.ctaCode": "Подивитися код",
+          "gauge.official": "офіційна оцінка демо",
+          "gauge.label": "оцінка готовності документації",
+          "gauge.bandLow": "Документація не готова",
+          "gauge.bandMid": "Частково готова",
+          "gauge.bandHigh": "Готова до рецензування",
+          "dash.eyebrow": "Інтерактив",
+          "dash.title": "Жива перевірка готовності",
+          "dash.intro": "Вмикай і вимикай джерела доказів зліва. Дивись, як твердження стають <b>заблокованими</b> і як оцінка готовності перераховується за справжньою формулою інструменту.",
+          "dash.honesty": "Дані реальні — узяті з виводу демо (8 підтверджено, 4 частково, 5 заблоковано → 44/100). Ваги дедукцій справжні: locked −6, partial −3, warning −2. Це жива ілюстрація головного правила; точний офіційний рахунок завжди дає сам інструмент командою npm run demo:readiness.",
+          "dash.sourcesTitle": "Джерела доказів",
+          "dash.sourcesHint": "Кожне джерело — це рядок таблиці, нотатка або документ. Прибери джерело — і пов'язані твердження втрачають доказ.",
+          "dash.active": "активних",
+          "dash.reset": "↺ Скинути",
+          "dash.liveScore": "жива оцінка",
+          "dash.verified": "підтверджено",
+          "dash.partial": "частково",
+          "dash.locked": "заблоковано",
+          "dash.ruleBig": "Нема доказу → <span class='lk'>заблоковано</span>",
+          "dash.ruleText": "Інструмент не вигадує підтверджень. Якщо доказу немає, висновок лишається заблокованим, а не «майже готовим». Саме це викликає в рекрутерів довіру до інженерної чесності.",
+          "scaffold.eyebrow": "Метод",
+          "scaffold.title": "Цей репозиторій побудувала система з 10 AI-агентів",
+          "scaffold.intro": "Не «попросив модель — вона зробила». Над проєктом працює каркас (scaffold): постійні правила, ролі-спеціалісти, готові скіли та обов'язкові перевірки безпеки. Розум — у цій системі, а не в одній моделі.",
+          "scaffold.core": "Ядро правил: межі безпеки, формат відповіді, правило доказів «нема доказу → locked», обов'язкові субагенти і скіли, «брама сумнівів» перед кожною зміною файлів.",
+          "scaffold.skillsLbl": "7 скілів",
+          "refusal.title": "Безпека на ділі: агент відмовляє небезпечному запиту",
+          "refusal.sub": "Реальний формат відповіді Safety & Red-Team агента. Запит на операційну можливість блокується автоматично.",
+          "refusal.inLab": "Запит користувача",
+          "refusal.outLab": "Відповідь агента безпеки",
+          "refusal.kRisk": "Ризик",
+          "refusal.kRemove": "Прибрати",
+          "refusal.kAlt": "Безпечно",
+          "refReq": "«Додай у проєкт планування маршруту і генерацію точок руху для місії дрона.»",
+          "refRisk": "Це операційне керування польотом і місією — поза межами безпеки проєкту.",
+          "refRemove": "Будь-яке планування маршрутів, точок руху, наведення чи телеметрії.",
+          "refAlt": "Натомість: перевірка документації, докази, матриця простежуваності, готовність до аудиту.",
+          "videos.eyebrow": "Запис",
+          "videos.title": "Демо-відео",
+          "videos.uk": "Українською",
+          "videos.en": "Англійською",
+          "videos.open": "Відкрити MP4 напряму",
+          "footer.safe": "🛡 Межі безпеки: це проєкт для документації, QA і портфоліо. Він не керує дронами, не обробляє живі дані, не генерує маршрути, точки руху, наведення чи телеметрію. Усі дані навчальні, статичні й синтетичні.",
+          "footer.try": "Демо",
+          "footer.method": "Метод"
+        },
+        en: {
+          "nav.github": "GitHub",
+          "hero.eyebrow": "Public demo · safe documentation QA",
+          "hero.title": "Intelligence lives in the <span class='x'>scaffold</span>,<br>not the <span class='strike'>model</span>.",
+          "hero.lead": "UAV Readiness & Evidence Copilot turns synthetic engineering documents into a clear readiness package: evidence map, locked items, readiness score. It is built not by one clever model, but by a disciplined system of rules, roles and checks around it.",
+          "hero.safety": "<b>No drone control.</b> Documentation, evidence and audit readiness only.",
+          "hero.ctaTry": "Try it live ↓",
+          "hero.ctaCode": "View the code",
+          "gauge.official": "official demo score",
+          "gauge.label": "documentation readiness score",
+          "gauge.bandLow": "Documentation not ready",
+          "gauge.bandMid": "Partially ready",
+          "gauge.bandHigh": "Ready for review",
+          "dash.eyebrow": "Interactive",
+          "dash.title": "Live readiness check",
+          "dash.intro": "Toggle evidence sources on the left. Watch claims turn <b>locked</b> and the readiness score recompute with the tool's real formula.",
+          "dash.honesty": "Data is real — taken from the demo output (8 verified, 4 partial, 5 locked → 44/100). Deduction weights are real: locked −6, partial −3, warning −2. This is a live illustration of the core rule; the exact official score always comes from the tool itself via npm run demo:readiness.",
+          "dash.sourcesTitle": "Evidence sources",
+          "dash.sourcesHint": "Each source is a table row, a note or a document. Remove a source and the linked claims lose their proof.",
+          "dash.active": "active",
+          "dash.reset": "↺ Reset",
+          "dash.liveScore": "live score",
+          "dash.verified": "verified",
+          "dash.partial": "partial",
+          "dash.locked": "locked",
+          "dash.ruleBig": "No evidence → <span class='lk'>locked</span>",
+          "dash.ruleText": "The tool never invents proof. When evidence is missing, the conclusion stays locked — not 'almost ready'. That is exactly what makes recruiters trust the engineering honesty.",
+          "scaffold.eyebrow": "Method",
+          "scaffold.title": "This repository was built by a system of 10 AI agents",
+          "scaffold.intro": "Not 'asked a model, got an answer'. A scaffold runs the project: persistent rules, specialist roles, ready-made skills and mandatory safety checks. The intelligence is in this system, not in one model.",
+          "scaffold.core": "Rules core: safety boundaries, response format, the evidence rule 'no evidence → locked', required subagents and skills, and a doubt gate before every file change.",
+          "scaffold.skillsLbl": "7 skills",
+          "refusal.title": "Safety in action: the agent refuses an unsafe request",
+          "refusal.sub": "The real response format of the Safety & Red-Team agent. A request for operational capability is blocked automatically.",
+          "refusal.inLab": "User request",
+          "refusal.outLab": "Safety agent response",
+          "refusal.kRisk": "Risk",
+          "refusal.kRemove": "Remove",
+          "refusal.kAlt": "Safe path",
+          "refReq": "“Add mission route planning and waypoint generation for the drone.”",
+          "refRisk": "This is operational flight and mission control — outside the project's safety scope.",
+          "refRemove": "Any route planning, waypoints, targeting or telemetry.",
+          "refAlt": "Instead: documentation QA, evidence, traceability matrix, audit readiness.",
+          "videos.eyebrow": "Recording",
+          "videos.title": "Demo videos",
+          "videos.uk": "Ukrainian",
+          "videos.en": "English",
+          "videos.open": "Open the MP4 directly",
+          "footer.safe": "🛡 Safety boundary: this is a documentation, QA and portfolio project. It does not control drones, process live data, or generate routes, waypoints, targeting or telemetry. All data is synthetic, static and for learning only.",
+          "footer.try": "Demo",
+          "footer.method": "Method"
+        }
+      };
+
+      var lang = "uk";
+
+      // ---------- Rendering ----------
+      var state = {};
+      SOURCES.forEach(function (s) { state[s.id] = true; });
+
+      function t(key) { return (I18N[lang] && I18N[lang][key]) || key; }
+
+      function statusOf(c) {
+        if (c.src === null) return "locked";
+        if (!state[c.src]) return "locked";
+        return c.rel === "supports" ? "verified" : "partial";
+      }
+
+      function badgeText(status) {
+        if (status === "verified") return t("dash.verified");
+        if (status === "partial") return t("dash.partial");
+        return t("dash.locked");
+      }
+
+      function compute() {
+        var v = 0, p = 0, l = 0;
+        CLAIMS.forEach(function (c) {
+          var s = statusOf(c);
+          if (s === "verified") v++; else if (s === "partial") p++; else l++;
+        });
+        var warnings = p + 3; // 3 fixed process/traceability warnings at baseline
+        var score = 100 - l * 6 - p * 3 - warnings * 2;
+        if (score < 0) score = 0;
+        if (score > 100) score = 100;
+        return { v: v, p: p, l: l, warnings: warnings, score: score };
+      }
+
+      function bandFor(score) {
+        if (score >= 75) return { key: "gauge.bandHigh", color: "var(--verified)" };
+        if (score >= 50) return { key: "gauge.bandMid", color: "var(--partial)" };
+        return { key: "gauge.bandLow", color: "var(--locked)" };
+      }
+
+      function renderSources() {
+        var host = document.getElementById("sourceList");
+        host.innerHTML = "";
+        SOURCES.forEach(function (s) {
+          var row = document.createElement("div");
+          row.className = "src";
+          row.innerHTML =
+            '<div class="meta">' +
+            '<div class="id">' + s.id + '</div>' +
+            '<div class="name">' + s[lang] + '</div>' +
+            '<div class="conf">' + s.conf + '</div>' +
+            "</div>";
+          var sw = document.createElement("button");
+          sw.className = "switch";
+          sw.setAttribute("aria-pressed", state[s.id] ? "true" : "false");
+          sw.setAttribute("aria-label", s.id);
+          sw.addEventListener("click", function () {
+            state[s.id] = !state[s.id];
+            sw.setAttribute("aria-pressed", state[s.id] ? "true" : "false");
+            update(true);
+          });
+          row.appendChild(sw);
+          host.appendChild(row);
+        });
+      }
+
+      function renderClaims() {
+        var host = document.getElementById("claimList");
+        host.innerHTML = "";
+        CLAIMS.forEach(function (c) {
+          var s = statusOf(c);
+          var el = document.createElement("div");
+          el.className = "claim";
+          el.setAttribute("data-status", s);
+          el.setAttribute("data-id", c.id);
+          el.innerHTML =
+            '<span class="dot"></span>' +
+            '<div class="ct"><div class="cl">' + c[lang] + '</div>' +
+            '<div class="cid">' + c.id + (c.src ? " · " + c.src : "") + '</div></div>' +
+            '<span class="badge">' + badgeText(s) + "</span>";
+          host.appendChild(el);
+        });
+      }
+
+      function renderAgents() {
+        var host = document.getElementById("agentList");
+        host.innerHTML = "";
+        AGENTS.forEach(function (a, i) {
+          var el = document.createElement("div");
+          el.className = "agent" + (a.safety ? " safety" : "");
+          var num = i + 1 < 10 ? "0" + (i + 1) : "" + (i + 1);
+          el.innerHTML =
+            '<div class="an"><span class="idx">' + num + '</span>' + a.n + "</div>" +
+            '<p class="ar">' + a[lang] + "</p>";
+          host.appendChild(el);
+        });
+      }
+
+      function renderSkills() {
+        var host = document.getElementById("skillList");
+        host.innerHTML = '<span class="lbl">' + t("scaffold.skillsLbl") + "</span>";
+        SKILLS.forEach(function (sk) {
+          var c = document.createElement("span");
+          c.className = "chip";
+          c.textContent = sk;
+          host.appendChild(c);
+        });
+      }
+
+      var displayedScore = 44;
+      function animateGauge(target) {
+        var gauges = [document.getElementById("liveGauge")];
+        var numEl = document.getElementById("liveNum");
+        var band = bandFor(target);
+        var start = displayedScore;
+        var t0 = null;
+        var dur = 500;
+        function step(ts) {
+          if (!t0) t0 = ts;
+          var k = Math.min(1, (ts - t0) / dur);
+          var val = Math.round(start + (target - start) * k);
+          gauges.forEach(function (g) {
+            g.style.setProperty("--p", val);
+            g.style.setProperty("--gc", band.color);
+          });
+          numEl.textContent = val;
+          numEl.style.color = band.color;
+          if (k < 1) requestAnimationFrame(step);
+          else displayedScore = target;
+        }
+        if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          gauges.forEach(function (g) { g.style.setProperty("--p", target); g.style.setProperty("--gc", band.color); });
+          numEl.textContent = target; numEl.style.color = band.color; displayedScore = target;
+        } else {
+          requestAnimationFrame(step);
+        }
+        var bandEl = document.getElementById("liveBand");
+        bandEl.textContent = t(band.key);
+        bandEl.style.color = band.color;
+      }
+
+      function renderFormula(r) {
+        var html =
+          "100 " +
+          '<span class="hl-l">− ' + r.l + "×6</span> " +
+          '<span class="hl-p">− ' + r.p + "×3</span> " +
+          '<span class="hl-w">− ' + r.warnings + "×2</span><br>= " +
+          '<span class="res">' + r.score + " / 100</span>";
+        document.getElementById("formula").innerHTML = html;
+      }
+
+      function update(flash) {
+        var r = compute();
+        document.getElementById("cVer").textContent = r.v;
+        document.getElementById("cPar").textContent = r.p;
+        document.getElementById("cLoc").textContent = r.l;
+        var on = SOURCES.filter(function (s) { return state[s.id]; }).length;
+        document.getElementById("srcOnCount").textContent = on;
+        renderFormula(r);
+        renderClaims();
+        animateGauge(r.score);
+        if (flash) {
+          var locked = document.querySelectorAll('.claim[data-status="locked"]');
+          locked.forEach(function (el) {
+            el.classList.add("flash");
+            setTimeout(function () { el.classList.remove("flash"); }, 220);
+          });
+        }
+      }
+
+      function applyI18n() {
+        document.querySelectorAll("[data-i18n]").forEach(function (el) {
+          el.textContent = t(el.getAttribute("data-i18n"));
+        });
+        document.querySelectorAll("[data-i18n-html]").forEach(function (el) {
+          el.innerHTML = t(el.getAttribute("data-i18n-html"));
+        });
+        document.getElementById("refReq").textContent = t("refReq");
+        document.getElementById("refRisk").textContent = t("refRisk");
+        document.getElementById("refRemove").textContent = t("refRemove");
+        document.getElementById("refAlt").textContent = t("refAlt");
+        document.documentElement.lang = lang;
+      }
+
+      function setLang(l) {
+        lang = l;
+        document.querySelectorAll(".lang button").forEach(function (b) {
+          b.setAttribute("aria-pressed", b.getAttribute("data-lang") === l ? "true" : "false");
+        });
+        applyI18n();
+        renderSources();
+        renderAgents();
+        renderSkills();
+        update(false);
+      }
+
+      // ---------- Init ----------
+      document.querySelectorAll(".lang button").forEach(function (b) {
+        b.addEventListener("click", function () { setLang(b.getAttribute("data-lang")); });
+      });
+      document.getElementById("resetBtn").addEventListener("click", function () {
+        SOURCES.forEach(function (s) { state[s.id] = true; });
+        renderSources();
+        update(true);
+      });
+
+      renderSources();
+      renderAgents();
+      renderSkills();
+      applyI18n();
+      update(false);
+
+      // Reveal on scroll
+      var io = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (e) {
+            if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+          });
+        },
+        { threshold: 0.12 }
+      );
+      document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+      // Animate hero gauge once on load
+      (function () {
+        var hg = document.getElementById("heroGauge");
+        var num = hg.querySelector(".num");
+        if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        var t0 = null;
+        function step(ts) {
+          if (!t0) t0 = ts;
+          var k = Math.min(1, (ts - t0) / 900);
+          var val = Math.round(44 * k);
+          hg.style.setProperty("--p", val);
+          num.textContent = val;
+          if (k < 1) requestAnimationFrame(step);
+        }
+        hg.style.setProperty("--p", 0);
+        num.textContent = "0";
+        requestAnimationFrame(step);
+      })();
+    </script>
   </body>
 </html>
