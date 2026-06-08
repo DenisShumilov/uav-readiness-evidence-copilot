@@ -2,11 +2,34 @@
 
 [English version](README.en.md)
 
+> Доказово-орієнтований QA-інструмент для інженерної документації UAV / robotics: карта доказів, заблоковані висновки, оцінка готовності, простежуваність.
+>
+> **Розум — у каркасі, не в моделі.**
+
 [![CI](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/actions/workflows/ci.yml)
+[![Демо наживо](https://img.shields.io/badge/демо-наживо-2556c7)](https://denisshumilov.github.io/uav-readiness-evidence-copilot/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-1d7f58.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-monorepo-3178C6)](#технології)
+[![Tests: Vitest](https://img.shields.io/badge/tests-Vitest-6E9F18)](#технології)
 
-Інструмент для перевірки інженерної документації UAV та robotics з фокусом на доказах.
+<p align="center">
+  <a href="https://denisshumilov.github.io/uav-readiness-evidence-copilot/">
+    <img src="docs/assets/hero-dashboard.png" alt="Жива демо-сторінка: оцінка готовності 44/100, карта доказів і теза «Розум — у каркасі, не в моделі»" width="100%" />
+  </a>
+</p>
 
-UAV Readiness & Evidence Copilot читає навчальні файли, будує карту доказів, показує заблоковані висновки, рахує оцінку готовності документації і генерує пакет перевірки з доказами: матрицю простежуваності, цифрові відбитки файлів, текстовий звіт та демо-сторінку.
+**Жива сторінка:** https://denisshumilov.github.io/uav-readiness-evidence-copilot/ — інтерактивний дашборд: перемикай джерела доказів і дивись, як оцінка готовності перераховується, а твердження стають `locked`.
+
+UAV Readiness & Evidence Copilot читає синтетичні навчальні файли, будує карту доказів, показує заблоковані висновки, рахує оцінку готовності документації і генерує пакет перевірки: матрицю простежуваності, цифрові відбитки файлів, звіт і демо-сторінку. Усе будує не одна модель, а каркас із правил, ролей і перевірок навколо неї.
+
+## TL;DR
+
+- Читає 4 синтетичні навчальні файли (BOM, інструкція, журнал тестів, QA-нотатки).
+- Будує карту доказів для тверджень, джерел і блокувань.
+- Не вигадує підтверджень: **нема доказу → заблоковано**.
+- Рахує оцінку готовності документації прозорими правилами.
+- Генерує звіт, JSON, traceability CSV, цифрові відбитки і демо-сторінку.
+- Головне: надійність — у каркасі (правила, ролі, перевірки), а не в моделі.
 
 ## Демо-відео
 
@@ -17,10 +40,6 @@ UAV Readiness & Evidence Copilot читає навчальні файли, бу�
 - [Англійське MP4-демо](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.2.0-demo-video/uav-readiness-demo.en.final.mp4)
 - [Реліз українського демо v3](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.3.0-demo-video)
 - [Реліз англійського демо](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.2.0-demo-video)
-
-## Скриншот демо
-
-![Скриншот української демо-сторінки](docs/assets/demo-screenshot.uk.png)
 
 ## Що робить
 
@@ -45,7 +64,7 @@ UAV Readiness & Evidence Copilot читає навчальні файли, бу�
 
 ## Межі безпеки
 
-Це тільки проєкт для документації, QA і портфоліо.
+Сувора межа безпеки тут — це **перевага, а не дисклеймер**: вона показує інженерну дисципліну й контроль обсягу (scope). Це тільки проєкт для документації, QA і портфоліо.
 
 Проєкт не керує дронами або роботами, не обробляє живі дані з систем, не генерує маршрути або точки руху, не підтримує роботу з корисним навантаженням, наведення, тактичні поради і не підключається до реальних літальних апаратів, радіомодулів, сенсорів або польових систем.
 
@@ -121,6 +140,14 @@ examples/demo-uav-readiness/output/
 
 Детальна схема потоку даних: [docs/architecture.md](docs/architecture.md).
 
+## Як це побудовано — каркас із 10 агентів
+
+Цей репозиторій зробила не одна модель, а **каркас (scaffold)**: постійні правила в [AGENTS.md](AGENTS.md), 10 агентів-спеціалістів, 7 готових скілів і обов'язкові перевірки (doubt-gate, red-team, evidence-lock, self-review).
+
+Повний опис із діаграмою, ролями і реальним прикладом відмови агента безпеки: **[docs/scaffold.md](docs/scaffold.md)**.
+
+Головна теза: **інтелект — у каркасі навколо моделі, а не в самій моделі.**
+
 ## Технології
 
 Основні технології:
@@ -139,6 +166,8 @@ examples/demo-uav-readiness/output/
 
 ## Документація
 
+- [Як це побудовано — каркас із 10 агентів](docs/scaffold.md)
+- [AGENTS.md — ядро правил](AGENTS.md)
 - [FAQ про проєкт](docs/project-faq.md)
 - [Архітектура](docs/architecture.md)
 - [Межі безпеки](docs/safety-boundaries.md)
