@@ -923,6 +923,44 @@
         font-size: 12.5px;
       }
 
+      /* ---------- Proof strip ---------- */
+      .proofstrip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        padding: 14px 0 2px;
+        border-top: 1px solid var(--line);
+      }
+      .chip-link {
+        color: var(--accent-ink);
+        text-decoration: none;
+        border-color: #c8d4f7;
+        background: var(--accent-soft);
+      }
+      .chip-link:hover {
+        text-decoration: none;
+        border-color: var(--accent);
+      }
+
+      /* ---------- Accessibility ---------- */
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      :focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 3px;
+        border-radius: 4px;
+      }
+
       /* ---------- Reveal animation ---------- */
       .reveal {
         opacity: 0;
@@ -1013,6 +1051,7 @@
           </div>
           <div class="hero-cta">
             <a class="btn btn-solid" href="#live" data-i18n="hero.ctaTry">Спробувати наживо ↓</a>
+            <a class="btn btn-ghost" href="#scaffold" data-i18n="hero.ctaMethod">Як це побудовано</a>
             <a
               class="btn btn-ghost"
               href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot"
@@ -1024,7 +1063,7 @@
 
         <div class="reveal in instrument" aria-label="Official demo readiness score">
           <div class="tag">
-            <span data-i18n="gauge.official">офіційна оцінка демо</span>
+            <span data-i18n="gauge.official">демо-оцінка · синтетичні дані</span>
             <span class="mono">npm run demo:readiness</span>
           </div>
           <div class="gauge" id="heroGauge" style="--p: 44; --gc: var(--locked)">
@@ -1036,6 +1075,19 @@
           <div class="band" data-i18n="gauge.bandLow">Документація не готова</div>
           <div class="gauge-label" data-i18n="gauge.label">оцінка готовності документації</div>
         </div>
+      </section>
+
+      <section class="proofstrip reveal" aria-label="Project proof">
+        <span class="chip" data-i18n="proof.packages">6 пакетів · TS monorepo</span>
+        <span class="chip" data-i18n="proof.tests">тести + CI · Vitest · Actions</span>
+        <span class="chip" data-i18n="proof.demo">статичне демо на GitHub Pages</span>
+        <span class="chip" data-i18n="proof.synthetic">синтетичні навчальні дані</span>
+        <a
+          class="chip chip-link"
+          href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/blob/main/docs/scaffold.md"
+          data-i18n="proof.scaffold"
+          >каркас із 10 агентів →</a
+        >
       </section>
 
       <!-- ============ LIVE DASHBOARD ============ -->
@@ -1054,6 +1106,7 @@
             правила; точний офіційний рахунок завжди дає сам інструмент командою npm run
             demo:readiness.
           </div>
+          <p id="liveStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
         </div>
 
         <div class="dash reveal">
@@ -1314,8 +1367,15 @@
           "hero.lead": "UAV Readiness & Evidence Copilot перетворює навчальні інженерні документи на зрозумілий пакет перевірки готовності: карта доказів, заблоковані пункти, оцінка готовності. Усе будує не «одна розумна модель», а система чітких правил, ролей і перевірок навколо неї.",
           "hero.safety": "<b>Без керування дроном.</b> Тільки документація, докази та готовність до аудиту.",
           "hero.ctaTry": "Спробувати наживо ↓",
+          "hero.ctaMethod": "Як це побудовано",
           "hero.ctaCode": "Подивитися код",
-          "gauge.official": "офіційна оцінка демо",
+          "gauge.official": "демо-оцінка · синтетичні дані",
+          "proof.packages": "6 пакетів · TS monorepo",
+          "proof.tests": "тести + CI · Vitest · Actions",
+          "proof.demo": "статичне демо на GitHub Pages",
+          "proof.synthetic": "синтетичні навчальні дані",
+          "proof.scaffold": "каркас із 10 агентів →",
+          "live.status": "Жива оцінка готовності: {s} зі 100. Підтверджено {v}, частково {p}, заблоковано {l}.",
           "gauge.label": "оцінка готовності документації",
           "gauge.bandLow": "Документація не готова",
           "gauge.bandMid": "Частково готова",
@@ -1366,8 +1426,15 @@
           "hero.lead": "UAV Readiness & Evidence Copilot turns synthetic engineering documents into a clear readiness package: evidence map, locked items, readiness score. It is built not by one clever model, but by a disciplined system of rules, roles and checks around it.",
           "hero.safety": "<b>No drone control.</b> Documentation, evidence and audit readiness only.",
           "hero.ctaTry": "Try it live ↓",
+          "hero.ctaMethod": "How it's built",
           "hero.ctaCode": "View the code",
-          "gauge.official": "official demo score",
+          "gauge.official": "demo score · synthetic data",
+          "proof.packages": "6 packages · TS monorepo",
+          "proof.tests": "tests + CI · Vitest · Actions",
+          "proof.demo": "static demo on GitHub Pages",
+          "proof.synthetic": "synthetic training data",
+          "proof.scaffold": "scaffold of 10 agents →",
+          "live.status": "Live readiness score: {s} out of 100. Verified {v}, partial {p}, locked {l}.",
           "gauge.label": "documentation readiness score",
           "gauge.bandLow": "Documentation not ready",
           "gauge.bandMid": "Partially ready",
@@ -1573,6 +1640,12 @@
         renderFormula(r);
         renderClaims();
         animateGauge(r.score);
+        var statusEl = document.getElementById("liveStatus");
+        if (statusEl) {
+          statusEl.textContent = t("live.status")
+            .replace("{s}", r.score).replace("{v}", r.v)
+            .replace("{p}", r.p).replace("{l}", r.l);
+        }
         if (flash) {
           var locked = document.querySelectorAll('.claim[data-status="locked"]');
           locked.forEach(function (el) {
