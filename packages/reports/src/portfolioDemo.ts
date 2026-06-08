@@ -71,10 +71,10 @@ export function generatePortfolioDemoHtml(
   const warnings = assessment.warnings.slice(0, 6);
   const text = getPortfolioText(language);
   const displayWarnings = warnings.map((warning) =>
-    localizeDisplayText(warning, language)
+    localizeDisplayIssue(warning, language)
   );
   const displayLockedItems = lockedItems.map(
-    (item) => `${item.id}: ${localizeDisplayText(item.reason, language)}`
+    (item) => localizeLockedItem(item.id, item.reason, language)
   );
   const displayTraceabilityRows = traceabilityRows.map((row) => ({
     requirement: localizeDisplayText(row.requirement, language),
@@ -525,6 +525,41 @@ function localizeDisplayText(value: string, language: PortfolioDemoLanguage): st
     .replaceAll("missing", "немає");
 }
 
+function localizeDisplayIssue(value: string, language: PortfolioDemoLanguage): string {
+  if (language !== "uk") {
+    return value;
+  }
+
+  const labels: Record<string, string> = {
+    "finding.test.check-003: Connector note review":
+      "Перевірити нотатку про роз'єм.",
+    "finding.test.check-004: Config owner assigned":
+      "Призначити власника конфігурації.",
+    "WARN-TRACE-001: Traceability warning":
+      "Попередження щодо простежуваності.",
+    "claim.comp-cable-001: partial evidence":
+      "Кабель має лише частковий доказ.",
+    "claim.manual.connector-note-has-one-source: partial evidence":
+      "Нотатка про роз'єм має лише одне джерело доказу.",
+    "claim.test.check-003: partial evidence":
+      "Перевірка позначки роз'єму має частковий доказ."
+  };
+
+  return labels[value] ?? localizeDisplayText(value, language);
+}
+
+function localizeLockedItem(
+  id: string,
+  reason: string,
+  language: PortfolioDemoLanguage
+): string {
+  if (language !== "uk") {
+    return `${id}: ${reason}`;
+  }
+
+  return localizeDisplayText(reason, language);
+}
+
 function localizeStatus(value: string, language: PortfolioDemoLanguage): string {
   if (language !== "uk") {
     return value;
@@ -557,26 +592,26 @@ function localizeArtifactKind(value: string, language: PortfolioDemoLanguage): s
 function getPortfolioText(language: PortfolioDemoLanguage) {
   if (language === "uk") {
     return {
-      eyebrow: "Портфоліо демо",
-      oneLiner: "AI-допоміжний інструмент для перевірки інженерної документації UAV.",
+      eyebrow: "Демо для портфоліо",
+      oneLiner: "Інструмент із підтримкою ШІ для перевірки інженерної документації БпЛА.",
       heroBody:
         "Перетворює навчальні документи на зрозумілий пакет перевірки готовності: докази, заблоковані пункти, матрицю простежуваності, цифрові відбитки файлів і звіти.",
       languageLink:
-        '<a href="portfolio-demo.en.html">English version</a> | Українська версія',
+        '<a href="portfolio-demo.en.html">Англійська версія</a> | Українська версія',
       scoreLabel: "оцінка готовності документації",
       scoreAria: "Оцінка готовності документації {score} зі 100",
       evidenceSummaryAria: "Підсумок доказів",
       pipelineAria: "Технічний шлях обробки",
       noneLabel: "Немає",
-      evidenceCounters: "Підсумок доказів",
+      evidenceCounters: "Лічильники доказів",
       verified: "Підтверджено",
       partial: "Частково",
       locked: "Заблоковано",
       beforeTitle: "До",
       beforeItems: [
         "Багато розкиданих файлів.",
-        "Нотатки й логи в різних місцях.",
-        "Неясно, де є доказ."
+        "Нотатки й журнали в різних місцях.",
+        "Незрозуміло, де доказ."
       ],
       afterTitle: "Після",
       afterItems: [
@@ -589,12 +624,12 @@ function getPortfolioText(language: PortfolioDemoLanguage) {
       generatedOutputsTitle: "Згенеровані результати",
       demonstratesTitle: "Що це показує",
       demonstratesItems: [
-        "AI-допомогу для інженерної перевірки.",
+        "Допомогу ШІ для інженерної перевірки.",
         "Відстеження доказів.",
         "Автоматизацію перевірки якості.",
         "Простежуваність від вимоги до доказу.",
         "Звітність про готовність документації.",
-        "Безпечну підтримку документаційної перевірки з участю людини."
+        "Безпечну перевірку документації за участі людини."
       ],
       pipelineTitle: "Технічний шлях",
       pipelineItems: [
@@ -608,7 +643,7 @@ function getPortfolioText(language: PortfolioDemoLanguage) {
       simpleTitle: "Простими словами",
       simpleItems: [
         "Оцінка готовності показує стан документації, а не дозвіл на роботу реальної системи.",
-        "Доказ — це підтвердження з файлу, таблиці, нотатки або логу.",
+        "Доказ — це підтвердження з файлу, таблиці, нотатки або журналу.",
         "Заблоковано означає: доказу немає, тому висновок не підтверджується.",
         "Демо показує, як розкидані файли стають зрозумілим пакетом перевірки.",
         "Це корисно командам, які готують інженерну документацію до перевірки."
@@ -621,7 +656,7 @@ function getPortfolioText(language: PortfolioDemoLanguage) {
       status: "Статус",
       safetyTitle: "Межі безпеки",
       safetyRule:
-        "Немає планування завдань. Немає роботи з корисним навантаженням. Немає живого керування дроном.",
+        "Немає планування завдань. Немає роботи з корисним навантаженням. Жодного керування реальним дроном.",
       safetyBody:
         "Це демо-сторінка тільки для перевірки навчальної документації. Вона не підключається до живих систем і не працює з реальним обладнанням."
     };
