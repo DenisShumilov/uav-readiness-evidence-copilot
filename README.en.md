@@ -13,9 +13,10 @@ UAV Readiness & Evidence Copilot turns synthetic engineering artifacts into an e
 Final demo videos are published through GitHub Releases, not committed as binary files.
 
 - [Online demo page](https://denisshumilov.github.io/uav-readiness-evidence-copilot/)
-- [Ukrainian MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.2.0-demo-video/uav-readiness-demo.uk.final.mp4)
+- [Ukrainian MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.3.0-demo-video/uav-readiness-demo.uk.final.mp4)
 - [English MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.2.0-demo-video/uav-readiness-demo.en.final.mp4)
-- [Release page](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.2.0-demo-video)
+- [Ukrainian demo release](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.3.0-demo-video)
+- [English demo release](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.2.0-demo-video)
 
 ## Demo Screenshot
 
@@ -89,14 +90,17 @@ The current MVP parses only the active inputs.
 
 ## Outputs
 
-Generated outputs live in:
+Generated outputs are created locally by `npm run demo:readiness` in:
 
 ```text
 examples/demo-uav-readiness/output/
 ```
 
+This folder is not committed to the repository. For public viewing, use the online demo page and GitHub Release MP4 videos.
+
 Current outputs:
 
+- `portfolio-demo.md`
 - `portfolio-demo.html`
 - `portfolio-demo.en.html`
 - `portfolio-demo.uk.html`

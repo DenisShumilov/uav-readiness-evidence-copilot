@@ -88,14 +88,17 @@ npm audit --audit-level=moderate
 
 ## Результати
 
-Згенеровані результати зберігаються тут:
+Згенеровані результати створюються локально командою `npm run demo:readiness` тут:
 
 ```text
 examples/demo-uav-readiness/output/
 ```
 
+Ця папка не зберігається в репозиторії. Для публічного перегляду використовуйте онлайн-демо сторінку та GitHub Release з MP4-відео.
+
 Поточні результати:
 
+- `portfolio-demo.md`
 - `portfolio-demo.html`
 - `portfolio-demo.en.html`
 - `portfolio-demo.uk.html`
