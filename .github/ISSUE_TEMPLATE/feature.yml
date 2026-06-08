@@ -1,0 +1,36 @@
+name: Feature / improvement
+description: Suggest a safe improvement to docs QA, evidence, traceability, readiness, or the demo.
+title: "[idea]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas are welcome — as long as they stay inside the project's safe scope
+        (documentation QA, evidence, traceability, readiness, audit, portfolio).
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      placeholder: It is hard to see which claims ...
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Proposed improvement
+      placeholder: Add a ... that ...
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional — other approaches you weighed.
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Safe scope
+      options:
+        - label: This idea stays within documentation QA and does NOT add flight control, routing, telemetry, payload, targeting, or tactical capability.
+          required: true

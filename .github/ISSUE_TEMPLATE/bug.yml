@@ -1,0 +1,49 @@
+name: Bug report
+description: Report a problem with the demo, parsers, scoring, or docs.
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve UAV Readiness & Evidence Copilot.
+        This is a documentation-QA portfolio project — please keep reports inside that safe scope.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+      placeholder: When I run `npm run demo:readiness`, ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      placeholder: The readiness report should ...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. npm install
+        2. npm run demo:readiness
+        3. Open ...
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: "Node version, OS, browser (if site-related)"
+    validations:
+      required: false
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Safe scope
+      options:
+        - label: This report is about documentation QA / evidence / readiness / docs only (no operational UAV topics).
+          required: true
