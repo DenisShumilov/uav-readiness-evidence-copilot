@@ -1,20 +1,20 @@
-Engineering projects often have scattered files: parts lists, notes, review logs, and claims.
-Before a handoff, the simple question is: what is actually backed by evidence?
+Engineering projects often contain many scattered files: a parts list, a manual, test logs, and QA notes.
+Before a review, the team needs one clear answer: what is actually supported by evidence?
 
 This is UAV Readiness & Evidence Copilot.
-This is not drone control.
-This is QA and documentation readiness.
-It does not use live aircraft data, routes, or operational systems.
+It reads safe synthetic demo files and turns them into a documentation readiness package.
 
-The demo shows a readiness score, evidence counters, warnings, and locked items.
-Readiness score means documentation readiness, not permission to operate equipment.
-Verified means there is proof.
-Partial means the proof is incomplete.
-Locked means the tool refuses to approve an item when evidence is missing.
+The demo page shows a documentation readiness score.
+It also shows three counters: verified, partial, and locked.
+Verified means the evidence is present.
+Partial means the evidence is incomplete.
+Locked means the tool will not approve a claim when proof is missing.
 
-Behind the page, a TypeScript CLI reads synthetic demo files.
-It builds an evidence graph, which is a map of claims and proof.
-Then it creates a report, traceability CSV, artifact hashes, and portfolio pages.
+Next, the page highlights warnings and locked items.
+This is the core behavior: the workflow does not invent confidence.
 
-The value is safe engineering QA: evidence tracking, traceability, and readiness reporting.
-For a recruiter, this shows practical internal-tool thinking, clear safety boundaries, and testable TypeScript.
+After the review, the tool generates useful outputs: a report, an evidence graph, a traceability table, and file hashes.
+That gives the team a clearer handoff package for engineering review.
+
+This is not a drone-control system.
+It is a safe documentation QA workflow for engineering review.

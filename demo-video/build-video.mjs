@@ -6,7 +6,6 @@ const root = process.cwd();
 const fps = 30;
 const width = 1920;
 const height = 1080;
-const transitionSeconds = 0.6;
 const frameRoot = join(root, "demo-video", "frames");
 const videoRoot = join(root, "demo-video", "videos", "silent");
 mkdirSync(videoRoot, { recursive: true });
@@ -22,6 +21,30 @@ function requireCommand(command, installHint) {
   }
 }
 
+function easeExpression(start, end) {
+  if (start.scrollY === end.scrollY) {
+    return String(start.scrollY);
+  }
+
+  const duration = end.time - start.time;
+  const p = `((t-${start.time})/${duration})`;
+  const eased = `((${p})*(${p})*(3-2*(${p})))`;
+  return `(${start.scrollY}+(${end.scrollY - start.scrollY})*${eased})`;
+}
+
+function buildScrollExpression(keyframes) {
+  let expression = String(keyframes.at(-1).scrollY);
+
+  for (let index = keyframes.length - 2; index >= 0; index -= 1) {
+    const start = keyframes[index];
+    const end = keyframes[index + 1];
+    const value = easeExpression(start, end);
+    expression = `if(lt(t\\,${end.time})\\,${value}\\,${expression})`;
+  }
+
+  return expression;
+}
+
 requireCommand("ffmpeg", "Install ffmpeg, then rerun: npm run demo:video:build");
 requireCommand("ffprobe", "Install ffmpeg/ffprobe, then rerun: npm run demo:video:build");
 
@@ -34,42 +57,33 @@ for (const language of languages) {
   }
 
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-  const scenes = manifest.scenes;
-  const transition = manifest.transitionSeconds ?? transitionSeconds;
-  const output = join(videoRoot, `uav-readiness-demo.${language}.silent.mp4`);
-
-  const args = [];
-  scenes.forEach((scene) => {
-    args.push("-loop", "1", "-t", String(scene.duration), "-i", scene.file);
-  });
-
-  const filters = [];
-  scenes.forEach((_, index) => {
-    filters.push(
-      `[${index}:v]scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2,fps=${fps},format=yuv420p[v${index}]`
-    );
-  });
-
-  let outputLabel = "v0";
-  if (scenes.length > 1) {
-    let offset = scenes[0].duration - transition;
-    filters.push(`[v0][v1]xfade=transition=fade:duration=${transition}:offset=${offset.toFixed(2)}[x1]`);
-    for (let index = 2; index < scenes.length; index += 1) {
-      offset += scenes[index - 1].duration - transition;
-      const previous = `x${index - 1}`;
-      const next = `x${index}`;
-      filters.push(`[${previous}][v${index}]xfade=transition=fade:duration=${transition}:offset=${offset.toFixed(2)}[${next}]`);
-    }
-    outputLabel = `x${scenes.length - 1}`;
+  const fullPageFile = join(root, manifest.fullPageFile);
+  if (!existsSync(fullPageFile)) {
+    console.error(`Missing full-page screenshot for ${language}: ${fullPageFile}`);
+    process.exitCode = 1;
+    continue;
   }
+
+  const output = join(videoRoot, `uav-readiness-demo.${language}.silent.mp4`);
+  const scrollExpression = buildScrollExpression(manifest.keyframes);
+  const duration = manifest.durationSeconds ?? 70;
+  const filter = [
+    `fps=${fps}`,
+    `scale=${width}:-1`,
+    `crop=${width}:${height}:0:${scrollExpression}`,
+    "format=yuv420p"
+  ].join(",");
 
   const ffmpegArgs = [
     "-y",
-    ...args,
-    "-filter_complex",
-    filters.join(";"),
-    "-map",
-    `[${outputLabel}]`,
+    "-loop",
+    "1",
+    "-t",
+    String(duration),
+    "-i",
+    fullPageFile,
+    "-vf",
+    filter,
     "-r",
     String(fps),
     "-c:v",
@@ -99,12 +113,8 @@ for (const language of languages) {
   );
 
   if (probe.status === 0) {
-    writeFileSync(
-      join(videoRoot, `uav-readiness-demo.${language}.silent.ffprobe.json`),
-      probe.stdout,
-      "utf8"
-    );
+    writeFileSync(join(videoRoot, `uav-readiness-demo.${language}.silent.ffprobe.json`), probe.stdout, "utf8");
   }
 
-  console.log(`Built high-quality silent video for ${language}: ${output}`);
+  console.log(`Built smooth silent video for ${language}: ${output}`);
 }
