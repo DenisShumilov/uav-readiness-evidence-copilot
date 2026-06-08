@@ -70,6 +70,19 @@ export function generatePortfolioDemoHtml(
   const traceabilityRows = buildTraceabilityRows(bundle, assessment).slice(0, 5);
   const warnings = assessment.warnings.slice(0, 6);
   const text = getPortfolioText(language);
+  const displayWarnings = warnings.map((warning) =>
+    localizeDisplayText(warning, language)
+  );
+  const displayLockedItems = lockedItems.map(
+    (item) => `${item.id}: ${localizeDisplayText(item.reason, language)}`
+  );
+  const displayTraceabilityRows = traceabilityRows.map((row) => ({
+    requirement: localizeDisplayText(row.requirement, language),
+    evidence: localizeDisplayText(row.evidence, language),
+    check: localizeDisplayText(row.check, language),
+    status: row.status,
+    statusLabel: localizeStatus(row.status, language)
+  }));
 
   return `<!doctype html>
 <html lang="${language}">
@@ -315,7 +328,7 @@ export function generatePortfolioDemoHtml(
         <p>${escapeHtml(text.heroBody)}</p>
         <p class="language-link">${text.languageLink}</p>
       </div>
-      <div class="score" aria-label="Readiness score ${score} out of 100">
+      <div class="score" aria-label="${escapeHtml(text.scoreAria.replace("{score}", String(score)))}">
         <div>
           <strong>${score}</strong>
           <span>${escapeHtml(text.scoreLabel)}</span>
@@ -323,7 +336,7 @@ export function generatePortfolioDemoHtml(
       </div>
     </section>
 
-    <section class="grid" aria-label="Evidence summary">
+    <section class="grid" aria-label="${escapeHtml(text.evidenceSummaryAria)}">
       <div class="panel">
         <h2>${escapeHtml(text.evidenceCounters)}</h2>
         <div class="metric"><span>${escapeHtml(text.verified)}</span><b class="verified">${graph.summary.verifiedCount}</b></div>
@@ -334,28 +347,28 @@ export function generatePortfolioDemoHtml(
       <div class="panel soft">
         <h2>${escapeHtml(text.beforeTitle)}</h2>
         <ul>
-          ${formatHtmlList(text.beforeItems)}
+          ${formatHtmlList(text.beforeItems, text.noneLabel)}
         </ul>
       </div>
 
       <div class="panel soft">
         <h2>${escapeHtml(text.afterTitle)}</h2>
         <ul>
-          ${formatHtmlList(text.afterItems)}
+          ${formatHtmlList(text.afterItems, text.noneLabel)}
         </ul>
       </div>
 
       <div class="panel">
         <h2>${escapeHtml(text.warningsTitle)}</h2>
         <ul>
-          ${formatHtmlList(warnings)}
+          ${formatHtmlList(displayWarnings, text.noneLabel)}
         </ul>
       </div>
 
       <div class="panel">
         <h2>${escapeHtml(text.lockedStepsTitle)}</h2>
         <ul>
-          ${formatHtmlList(lockedItems.map((item) => `${item.id}: ${item.reason}`))}
+          ${formatHtmlList(displayLockedItems, text.noneLabel)}
         </ul>
       </div>
 
@@ -369,13 +382,13 @@ export function generatePortfolioDemoHtml(
       <div class="panel wide">
         <h2>${escapeHtml(text.demonstratesTitle)}</h2>
         <ul>
-          ${formatHtmlList(text.demonstratesItems)}
+          ${formatHtmlList(text.demonstratesItems, text.noneLabel)}
         </ul>
       </div>
 
       <div class="panel wide">
         <h2>${escapeHtml(text.pipelineTitle)}</h2>
-        <div class="flow" aria-label="Technical pipeline">
+        <div class="flow" aria-label="${escapeHtml(text.pipelineAria)}">
           ${text.pipelineItems.map((item) => `<span>${escapeHtml(item)}</span>`).join("\n          ")}
         </div>
       </div>
@@ -383,14 +396,14 @@ export function generatePortfolioDemoHtml(
       <div class="panel wide">
         <h2>${escapeHtml(text.simpleTitle)}</h2>
         <ul>
-          ${formatHtmlList(text.simpleItems)}
+          ${formatHtmlList(text.simpleItems, text.noneLabel)}
         </ul>
       </div>
 
       <div class="panel wide">
         <h2>${escapeHtml(text.artifactSummaryTitle)}</h2>
         <ul>
-          ${bundle.artifacts.map((artifact) => `<li>${escapeHtml(artifact.filename)} - ${escapeHtml(artifact.kind)}</li>`).join("\n          ")}
+          ${bundle.artifacts.map((artifact) => `<li>${escapeHtml(artifact.filename)} - ${escapeHtml(localizeArtifactKind(artifact.kind, language))}</li>`).join("\n          ")}
         </ul>
       </div>
 
@@ -406,13 +419,13 @@ export function generatePortfolioDemoHtml(
             </tr>
           </thead>
           <tbody>
-            ${traceabilityRows
+            ${displayTraceabilityRows
               .map(
                 (row) => `<tr>
               <td>${escapeHtml(row.requirement)}</td>
               <td>${escapeHtml(row.evidence)}</td>
               <td>${escapeHtml(row.check)}</td>
-              <td class="${escapeAttribute(row.status)}">${escapeHtml(row.status)}</td>
+              <td class="${escapeAttribute(row.status)}">${escapeHtml(row.statusLabel)}</td>
             </tr>`
               )
               .join("\n            ")}
@@ -422,7 +435,7 @@ export function generatePortfolioDemoHtml(
 
       <div class="panel wide note boundary">
         <h2>${escapeHtml(text.safetyTitle)}</h2>
-        <p>No mission planning. No payload. No live drone control.</p>
+        <p>${escapeHtml(text.safetyRule)}</p>
         <p>${escapeHtml(text.safetyBody)}</p>
       </div>
     </section>
@@ -440,9 +453,9 @@ function formatList(items: string[]): string[] {
   return items.map((item) => `- ${item}`);
 }
 
-function formatHtmlList(items: string[]): string {
+function formatHtmlList(items: string[], emptyLabel = "None"): string {
   if (items.length === 0) {
-    return "<li>None</li>";
+    return `<li>${escapeHtml(emptyLabel)}</li>`;
   }
 
   return items.map((item) => `<li>${escapeHtml(item)}</li>`).join("\n          ");
@@ -461,70 +474,156 @@ function escapeAttribute(value: string): string {
   return escapeHtml(value).replaceAll(" ", "%20");
 }
 
+function localizeDisplayText(value: string, language: PortfolioDemoLanguage): string {
+  if (language !== "uk") {
+    return value;
+  }
+
+  return value
+    .replaceAll("Connector note review", "Перевірка нотатки про роз'єм")
+    .replaceAll("Config owner assigned", "Власника конфігурації призначено")
+    .replaceAll("Traceability warning", "Попередження простежуваності")
+    .replaceAll("partial evidence", "частковий доказ")
+    .replaceAll(
+      "Board record needs a supporting source before review",
+      "Запис про плату потребує джерела доказу перед рецензуванням"
+    )
+    .replaceAll(
+      "Manual evidence row has no supporting evidence id",
+      "Рядок доказу в інструкції не має ідентифікатора джерела"
+    )
+    .replaceAll(
+      "Owner field is missing in synthetic config",
+      "У навчальній конфігурації бракує поля власника"
+    )
+    .replaceAll(
+      "Second connector label source is missing",
+      "Бракує джерела для другої позначки роз'єму"
+    )
+    .replaceAll(
+      "Config owner field is missing",
+      "Бракує поля власника конфігурації"
+    )
+    .replaceAll(
+      "Training frame plate appears in the synthetic BOM",
+      "Навчальна пластина рами є у навчальному списку деталей"
+    )
+    .replaceAll(
+      "Training bench cable appears in the synthetic BOM",
+      "Навчальний стендовий кабель є у навчальному списку деталей"
+    )
+    .replaceAll(
+      "Training compute board requires supporting evidence",
+      "Навчальна обчислювальна плата потребує підтвердного доказу"
+    )
+    .replaceAll(
+      "Training safety label set appears in the synthetic BOM",
+      "Навчальний набір позначок безпеки є у навчальному списку деталей"
+    )
+    .replaceAll("Synthetic manual exists", "Навчальна інструкція існує")
+    .replaceAll("documentation review", "перевірка документації")
+    .replaceAll("missing", "немає");
+}
+
+function localizeStatus(value: string, language: PortfolioDemoLanguage): string {
+  if (language !== "uk") {
+    return value;
+  }
+
+  const labels: Record<string, string> = {
+    verified: "підтверджено",
+    partial: "частково",
+    locked: "заблоковано"
+  };
+
+  return labels[value] ?? value;
+}
+
+function localizeArtifactKind(value: string, language: PortfolioDemoLanguage): string {
+  if (language !== "uk") {
+    return value;
+  }
+
+  const labels: Record<string, string> = {
+    bom: "список деталей",
+    manual: "інструкція",
+    test_log: "журнал перевірок",
+    qa_notes: "нотатки якості"
+  };
+
+  return labels[value] ?? value;
+}
+
 function getPortfolioText(language: PortfolioDemoLanguage) {
   if (language === "uk") {
     return {
       eyebrow: "Портфоліо демо",
-      oneLiner: "AI-assisted QA workspace для UAV engineering artifacts.",
+      oneLiner: "AI-допоміжний інструмент для перевірки інженерної документації UAV.",
       heroBody:
-        "Перетворює messy synthetic documents на зрозумілий readiness package: докази, locked кроки, traceability, hashes і звіти.",
+        "Перетворює навчальні документи на зрозумілий пакет перевірки готовності: докази, заблоковані пункти, матрицю простежуваності, цифрові відбитки файлів і звіти.",
       languageLink:
         '<a href="portfolio-demo.en.html">English version</a> | Українська версія',
-      scoreLabel: "documentation readiness score",
-      evidenceCounters: "Лічильники доказів",
-      verified: "Verified",
-      partial: "Partial",
-      locked: "Locked",
-      beforeTitle: "Before",
+      scoreLabel: "оцінка готовності документації",
+      scoreAria: "Оцінка готовності документації {score} зі 100",
+      evidenceSummaryAria: "Підсумок доказів",
+      pipelineAria: "Технічний шлях обробки",
+      noneLabel: "Немає",
+      evidenceCounters: "Підсумок доказів",
+      verified: "Підтверджено",
+      partial: "Частково",
+      locked: "Заблоковано",
+      beforeTitle: "До",
       beforeItems: [
-        "Багато розкиданих artifacts.",
-        "Нотатки й logs у різних місцях.",
-        "Неясно, де є proof."
+        "Багато розкиданих файлів.",
+        "Нотатки й логи в різних місцях.",
+        "Неясно, де є доказ."
       ],
-      afterTitle: "After",
+      afterTitle: "Після",
       afterItems: [
-        "Readiness package для перегляду.",
-        "Evidence graph і locked кроки.",
-        "Зрозумілі review outputs."
+        "Пакет перевірки готовності.",
+        "Карта доказів і заблоковані пункти.",
+        "Зрозумілі результати для перегляду."
       ],
-      warningsTitle: "Warnings",
-      lockedStepsTitle: "Locked steps",
-      generatedOutputsTitle: "Generated outputs",
+      warningsTitle: "Попередження",
+      lockedStepsTitle: "Заблоковані пункти",
+      generatedOutputsTitle: "Згенеровані результати",
       demonstratesTitle: "Що це показує",
       demonstratesItems: [
-        "AI-assisted engineering workflow.",
-        "Evidence tracking.",
-        "QA automation.",
-        "Traceability.",
-        "Readiness reporting.",
-        "Safe human-reviewed engineering documentation QA."
+        "AI-допомогу для інженерної перевірки.",
+        "Відстеження доказів.",
+        "Автоматизацію перевірки якості.",
+        "Простежуваність від вимоги до доказу.",
+        "Звітність про готовність документації.",
+        "Безпечну підтримку документаційної перевірки з участю людини."
       ],
-      pipelineTitle: "Technical pipeline",
+      pipelineTitle: "Технічний шлях",
       pipelineItems: [
-        "input artifacts",
-        "parsers",
-        "evidence graph",
-        "rules engine",
-        "readiness report",
-        "portfolio demo"
+        "вхідні файли",
+        "читачі файлів",
+        "карта доказів",
+        "правила перевірки",
+        "звіт про готовність",
+        "демо-сторінка"
       ],
       simpleTitle: "Простими словами",
       simpleItems: [
-        "Readiness score = оцінка готовності документації, не дозвіл на роботу реальної системи.",
-        "Evidence = доказ із файлу, таблиці, note або log.",
-        "Locked = заблоковано, бо доказу немає.",
-        "Demo показує, як messy files стають зрозумілим review package.",
-        "Це корисно engineering documentation teams для QA, handoff і evidence review."
+        "Оцінка готовності показує стан документації, а не дозвіл на роботу реальної системи.",
+        "Доказ — це підтвердження з файлу, таблиці, нотатки або логу.",
+        "Заблоковано означає: доказу немає, тому висновок не підтверджується.",
+        "Демо показує, як розкидані файли стають зрозумілим пакетом перевірки.",
+        "Це корисно командам, які готують інженерну документацію до перевірки."
       ],
-      artifactSummaryTitle: "Artifact summary",
-      traceabilityTitle: "Traceability preview",
-      requirement: "Requirement",
-      evidence: "Evidence",
-      check: "Check",
-      status: "Status",
-      safetyTitle: "Safety boundary",
+      artifactSummaryTitle: "Підсумок файлів",
+      traceabilityTitle: "Попередній перегляд матриці простежуваності",
+      requirement: "Вимога",
+      evidence: "Доказ",
+      check: "Перевірка",
+      status: "Статус",
+      safetyTitle: "Межі безпеки",
+      safetyRule:
+        "Немає планування завдань. Немає роботи з корисним навантаженням. Немає живого керування дроном.",
       safetyBody:
-        "Це static demo тільки для synthetic documentation review. Воно не підключається до live systems і не працює з real equipment."
+        "Це демо-сторінка тільки для перевірки навчальної документації. Вона не підключається до живих систем і не працює з реальним обладнанням."
     };
   }
 
@@ -536,6 +635,10 @@ function getPortfolioText(language: PortfolioDemoLanguage) {
     languageLink:
       'English version | <a href="portfolio-demo.uk.html">Українська версія</a>',
     scoreLabel: "readiness score",
+    scoreAria: "Readiness score {score} out of 100",
+    evidenceSummaryAria: "Evidence summary",
+    pipelineAria: "Technical pipeline",
+    noneLabel: "None",
     evidenceCounters: "Evidence Counters",
     verified: "Verified",
     partial: "Partial",
@@ -588,6 +691,7 @@ function getPortfolioText(language: PortfolioDemoLanguage) {
     check: "Check",
     status: "Status",
     safetyTitle: "Safety Boundary",
+    safetyRule: "No mission planning. No payload. No live drone control.",
     safetyBody:
       "This static demo is for synthetic documentation review only. It does not connect to live systems or operate real equipment."
   };

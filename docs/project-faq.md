@@ -1,73 +1,73 @@
-# Project FAQ
+# FAQ про проєкт
 
-## What is UAV Readiness & Evidence Copilot?
+## Що таке UAV Readiness & Evidence Copilot?
 
-UAV Readiness & Evidence Copilot is a safe documentation QA tool for synthetic UAV and robotics engineering artifacts. It turns demo files into evidence-backed outputs: readiness report, evidence graph, traceability CSV, artifact hashes, and a static portfolio page.
+UAV Readiness & Evidence Copilot — це безпечний інструмент для перевірки інженерної документації UAV та robotics. Він читає навчальні файли й генерує пакет перевірки з доказами: текстовий звіт, карту доказів, матрицю простежуваності, цифрові відбитки файлів і демо-сторінку.
 
-## Who is it for?
+## Для кого цей проєкт?
 
-The project is designed for engineering, QA, documentation, and internal-tooling teams that need to review whether claims are supported by evidence.
+Для інженерних, QA, документаційних і внутрішніх команд, яким треба швидко перевірити, чи підтверджені твердження доказами.
 
-## What data does the MVP parse?
+## Які файли читає поточний MVP?
 
-The current MVP parses only four synthetic input files:
+Поточний MVP читає тільки чотири навчальні вхідні файли:
 
 - `BOM.csv`
 - `demo_manual.md`
 - `test_log.csv`
 - `qa_notes.md`
 
-Future-only fixtures are stored under `examples/demo-uav-readiness/future-fixtures/` and are not parsed by the current MVP.
+Майбутні навчальні файли лежать у `examples/demo-uav-readiness/future-fixtures/`, але поточний MVP їх ще не читає.
 
-## What does the project generate?
+## Що генерує проєкт?
 
-The demo command generates:
+Команда демо генерує:
 
-- static portfolio demo pages;
-- markdown readiness report;
-- evidence graph JSON;
-- readiness assessment JSON;
-- traceability matrix CSV;
-- artifact hash manifest.
+- демо-сторінки;
+- текстовий звіт про готовність документації;
+- JSON із картою доказів;
+- JSON з оцінкою готовності документації;
+- CSV з матрицею простежуваності;
+- файл із цифровими відбитками вхідних файлів.
 
-## What is the core rule?
+## Яке головне правило?
 
-The core rule is:
+Головне правило:
 
 ```text
-No evidence -> locked.
+Немає доказу -> заблоковано.
 ```
 
-If the tool cannot find evidence for a claim, it keeps that claim locked instead of guessing.
+Якщо інструмент не знаходить доказ для твердження, він залишає це твердження заблокованим і не вигадує відповідь.
 
-## Why can the readiness score be low in the demo?
+## Чому оцінка готовності в демо може бути низькою?
 
-The demo intentionally includes verified, partial, warning, and locked examples. A lower score shows that the tool is strict and does not pretend missing evidence is complete.
+Демо спеціально містить підтверджені, часткові, попереджувальні й заблоковані приклади. Нижча оцінка показує, що інструмент суворий і не видає неповні докази за повну готовність.
 
-## What does the project not do?
+## Чого проєкт не робить?
 
-It does not control drones or robots, process live telemetry, generate routes or waypoints, support payload operation, support targeting, provide tactical advice, or connect to real aircraft, radios, sensors, or field systems.
+Він не керує дронами або роботами, не обробляє живі дані з систем, не генерує маршрути або точки руху, не підтримує роботу з корисним навантаженням, наведення, тактичні поради і не підключається до реальних літальних апаратів, радіомодулів, сенсорів або польових систем.
 
-## Is the data real?
+## Дані реальні?
 
-No. All demo data is synthetic, static, and educational.
+Ні. Усі демо-дані навчальні, статичні й не взяті з реального використання.
 
-## How do I run it?
+## Як запустити?
 
 ```powershell
 npm install
 npm run demo:readiness
 ```
 
-Open:
+Відкрити:
 
 ```text
 examples/demo-uav-readiness/output/portfolio-demo.html
 ```
 
-## How is quality checked?
+## Як перевіряється якість?
 
-The repository uses TypeScript, Zod, Vitest, npm audit, and GitHub Actions CI. Local checks are:
+Репозиторій використовує TypeScript, Zod, Vitest, npm audit і GitHub Actions. Локальні перевірки:
 
 ```powershell
 npm run typecheck

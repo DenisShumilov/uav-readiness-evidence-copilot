@@ -4,66 +4,67 @@
 
 [![CI](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/actions/workflows/ci.yml)
 
-QA-інструмент для UAV та robotics документації, побудований навколо принципу evidence-first.
+Інструмент для перевірки інженерної документації UAV та robotics з фокусом на доказах.
 
-UAV Readiness & Evidence Copilot читає синтетичні інженерні документи, будує evidence graph, показує locked findings, рахує readiness score і генерує готовий пакет для review: traceability CSV, artifact hashes, markdown report та static portfolio demo.
+UAV Readiness & Evidence Copilot читає навчальні файли, будує карту доказів, показує заблоковані висновки, рахує оцінку готовності документації і генерує пакет перевірки з доказами: матрицю простежуваності, цифрові відбитки файлів, текстовий звіт та демо-сторінку.
 
-## Demo Video
+## Демо-відео
 
-Фінальні demo videos опубліковані через GitHub Releases, а не збережені як важкі binary files у репозиторії.
+Фінальні MP4-відео опубліковані через GitHub Release, а не зберігаються як важкі файли в репозиторії.
 
-- [Online demo page](https://denisshumilov.github.io/uav-readiness-evidence-copilot/)
-- [Ukrainian MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.2.0-demo-video/uav-readiness-demo.uk.final.mp4)
-- [English MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.2.0-demo-video/uav-readiness-demo.en.final.mp4)
-- [Release page](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.2.0-demo-video)
+- [Онлайн-сторінка демо](https://denisshumilov.github.io/uav-readiness-evidence-copilot/)
+- [Українське MP4-демо](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.3.0-demo-video/uav-readiness-demo.uk.final.mp4)
+- [Англійське MP4-демо](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.2.0-demo-video/uav-readiness-demo.en.final.mp4)
+- [Реліз українського демо v3](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.3.0-demo-video)
+- [Реліз англійського демо](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.2.0-demo-video)
 
-## Demo Screenshot
+## Скриншот демо
 
-![Portfolio demo screenshot українською](docs/assets/demo-screenshot.uk.png)
+![Скриншот української демо-сторінки](docs/assets/demo-screenshot.uk.png)
 
 ## Що робить
 
-- Читає 4 synthetic documentation inputs.
-- Будує evidence graph для claims, sources і locks.
-- Показує verified, partial і locked evidence.
-- Рахує documentation readiness score.
-- Генерує markdown, JSON, CSV і static HTML outputs.
-- Перевіряється через TypeScript, Vitest, npm audit і GitHub Actions CI.
+- Читає 4 навчальні вхідні файли.
+- Будує карту доказів для тверджень, джерел і блокувань.
+- Показує підтверджені, часткові та заблоковані докази.
+- Рахує оцінку готовності документації.
+- Генерує текстовий звіт, JSON, CSV і HTML-сторінки.
+- Перевіряється через TypeScript, Vitest, npm audit і GitHub Actions.
 
 ## Чому це важливо
 
-Engineering teams часто мають багато документів, logs і QA notes, але не завжди швидко бачать, що реально підтверджено доказами.
+Інженерні команди часто мають багато документів, логів і нотаток якості, але не завжди швидко бачать, що реально підтверджено доказами.
 
-Цей проєкт демонструє safe internal-tool workflow для documentation readiness, audit preparation і handoff review.
+Цей проєкт демонструє безпечний внутрішній інструмент для перевірки готовності документації, підготовки до аудиту та передачі матеріалів на рецензування.
 
-Core rule:
+Головне правило:
 
 ```text
-No evidence -> locked.
+Немає доказу -> заблоковано.
 ```
 
-## Safety Boundaries
+## Межі безпеки
 
-Це тільки documentation, QA і portfolio project.
+Це тільки проєкт для документації, QA і портфоліо.
 
-Проєкт не керує дронами або роботами, не обробляє live telemetry, не генерує routes або waypoints, не підтримує payload operation, targeting, tactical advice і не підключається до real aircraft, radios, sensors або field systems.
+Проєкт не керує дронами або роботами, не обробляє живі дані з систем, не генерує маршрути або точки руху, не підтримує роботу з корисним навантаженням, наведення, тактичні поради і не підключається до реальних літальних апаратів, радіомодулів, сенсорів або польових систем.
 
-Усі demo data synthetic, static і educational.
+Усі демо-дані навчальні, статичні й не взяті з реального використання.
 
-## Quick Start
+## Швидкий запуск
 
 ```powershell
 npm install
 npm run demo:readiness
 ```
 
-Open:
+Відкрити:
 
 ```text
 examples/demo-uav-readiness/output/portfolio-demo.uk.html
 ```
 
-Run checks:
+Запустити перевірки:
 
 ```powershell
 npm run typecheck
@@ -71,31 +72,29 @@ npm test
 npm audit --audit-level=moderate
 ```
 
-## Inputs
+## Вхідні файли
 
-Active parsed inputs:
+Активні вхідні файли, які читає MVP:
 
 - `BOM.csv`
 - `demo_manual.md`
 - `test_log.csv`
 - `qa_notes.md`
 
-Future-only fixtures:
+Майбутні навчальні файли, які поточний MVP ще не читає:
 
 - `future-fixtures/wiring_notes.yaml`
 - `future-fixtures/config_dump.txt`
 
-Поточний MVP читає тільки active parsed inputs.
+## Результати
 
-## Outputs
-
-Generated outputs live in:
+Згенеровані результати зберігаються тут:
 
 ```text
 examples/demo-uav-readiness/output/
 ```
 
-Current outputs:
+Поточні результати:
 
 - `portfolio-demo.html`
 - `portfolio-demo.en.html`
@@ -106,22 +105,22 @@ Current outputs:
 - `traceability-matrix.csv`
 - `artifact-hashes.json`
 
-## Architecture
+## Архітектура
 
 ```text
-synthetic demo artifacts
-  -> parsers
-  -> schemas
-  -> evidence graph
-  -> readiness rules
-  -> reports and portfolio outputs
+навчальні демо-файли
+  -> читачі файлів
+  -> правила даних
+  -> карта доказів
+  -> правила оцінки готовності
+  -> звіти та демо-сторінки
 ```
 
-See [docs/architecture.md](docs/architecture.md) for the detailed data flow.
+Детальна схема потоку даних: [docs/architecture.md](docs/architecture.md).
 
-## Tech Stack
+## Технології
 
-Core stack:
+Основні технології:
 
 - TypeScript
 - Zod
@@ -130,16 +129,16 @@ Core stack:
 - Node.js
 - GitHub Actions
 
-Demo media stack:
+Технології для демо-відео:
 
 - Playwright
 - ffmpeg
 
-## Documentation
+## Документація
 
-- [Project FAQ](docs/project-faq.md)
-- [Architecture](docs/architecture.md)
-- [Safety boundaries](docs/safety-boundaries.md)
-- [Evidence model](docs/evidence-model.md)
-- [Demo data policy](docs/demo-data-policy.md)
-- [Glossary](docs/glossary.md)
+- [FAQ про проєкт](docs/project-faq.md)
+- [Архітектура](docs/architecture.md)
+- [Межі безпеки](docs/safety-boundaries.md)
+- [Модель доказів](docs/evidence-model.md)
+- [Політика демо-даних](docs/demo-data-policy.md)
+- [Словник понять](docs/glossary.md)

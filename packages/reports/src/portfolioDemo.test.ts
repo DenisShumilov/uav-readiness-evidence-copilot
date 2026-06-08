@@ -69,9 +69,11 @@ describe("generatePortfolioDemoMarkdown", () => {
 
     expect(html).toContain('<html lang="uk">');
     expect(html).toContain("Простими словами");
-    expect(html).toContain("Readiness score = оцінка готовності документації");
-    expect(html).toContain("Evidence = доказ");
-    expect(html).toContain("Locked = заблоковано");
+    expect(html).toContain("Оцінка готовності показує стан документації");
+    expect(html).toContain("Доказ — це підтвердження");
+    expect(html).toContain("Заблоковано означає");
+    expect(html).toContain("Підтверджено");
+    expect(html).toContain("Немає роботи з корисним навантаженням");
     expect(html).toContain("portfolio-demo.en.html");
   });
 
