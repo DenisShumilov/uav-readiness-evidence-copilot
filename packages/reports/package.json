@@ -1,0 +1,7 @@
+{
+  "name": "@uav-readiness/reports",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Report and export generators (markdown, CSV, SARIF, HTML)."
+}

@@ -15,6 +15,7 @@ describe("demo readiness CLI", () => {
     const outputDir = mkdtempSync(join(tmpdir(), "readiness-output-"));
     const result = runReadinessDemo({ fixtureDir, outputDir });
 
+    expect(result.readinessScore).toBe(44);
     expect(result.files).toEqual([
       "readiness-report.md",
       "evidence-graph.json",

@@ -1,0 +1,7 @@
+{
+  "name": "@uav-readiness/evidence",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Evidence graph builder for the parsed demo bundle."
+}

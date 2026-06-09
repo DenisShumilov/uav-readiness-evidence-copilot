@@ -1401,7 +1401,7 @@
           "gauge.bandHigh": "Готова до рецензування",
           "dash.eyebrow": "Інтерактив",
           "dash.title": "Жива перевірка готовності",
-          "dash.intro": "Вмикай і вимикай джерела доказів зліва. Дивись, як твердження стають <b>заблокованими</b> і як оцінка готовності перераховується за справжньою формулою інструменту.",
+          "dash.intro": "Вмикай і вимикай джерела доказів зліва. Дивись, як твердження стають <b>заблокованими</b> і як оцінка перераховується за справжніми вагами й cap'ами інструменту (locked −6, partial −3, warning −2).",
           "dash.honesty": "Дані реальні — узяті з виводу демо (8 підтверджено, 4 частково, 5 заблоковано → 44/100). Ваги дедукцій справжні: locked −6, partial −3, warning −2. Це жива ілюстрація головного правила; точний офіційний рахунок завжди дає сам інструмент командою npm run demo:readiness.",
           "dash.sourcesTitle": "Джерела доказів",
           "dash.sourcesHint": "Кожне джерело — це рядок таблиці, нотатка або документ. Прибери джерело — і пов'язані твердження втрачають доказ.",
@@ -1461,7 +1461,7 @@
           "gauge.bandHigh": "Ready for review",
           "dash.eyebrow": "Interactive",
           "dash.title": "Live readiness check",
-          "dash.intro": "Toggle evidence sources on the left. Watch claims turn <b>locked</b> and the readiness score recompute with the tool's real formula.",
+          "dash.intro": "Toggle evidence sources on the left. Watch claims turn <b>locked</b> and the readiness score recompute with the tool's real weights and caps (locked −6, partial −3, warning −2).",
           "dash.honesty": "Data is real — taken from the demo output (8 verified, 4 partial, 5 locked → 44/100). Deduction weights are real: locked −6, partial −3, warning −2. This is a live illustration of the core rule; the exact official score always comes from the tool itself via npm run demo:readiness.",
           "dash.sourcesTitle": "Evidence sources",
           "dash.sourcesHint": "Each source is a table row, a note or a document. Remove a source and the linked claims lose their proof.",
@@ -1527,9 +1527,11 @@
           if (s === "verified") v++; else if (s === "partial") p++; else l++;
         });
         var warnings = p + 3; // 3 fixed process/traceability warnings at baseline
-        var score = 100 - l * 6 - p * 3 - warnings * 2;
-        if (score < 0) score = 0;
-        if (score > 100) score = 100;
+        // Same per-category capped deductions as the real engine (packages/rules):
+        var dLocked = Math.min(l * 6, 48);
+        var dPartial = Math.min(p * 3, 24);
+        var dWarn = Math.min(warnings * 2, 16);
+        var score = Math.max(0, Math.min(100, 100 - dLocked - dPartial - dWarn));
         return { v: v, p: p, l: l, warnings: warnings, score: score };
       }
 

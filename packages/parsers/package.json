@@ -1,0 +1,7 @@
+{
+  "name": "@uav-readiness/parsers",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Safe parsers for the active synthetic demo inputs."
+}
