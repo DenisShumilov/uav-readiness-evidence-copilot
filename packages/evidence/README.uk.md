@@ -2,10 +2,14 @@
 
 *[English](README.md) · Українською*
 
-Конструктор графа доказів (evidence graph) для розібраного демонстраційного пакета (parsed demo bundle).
+> Будує граф доказів (evidence graph) з розібраного демонстраційного пакета (parsed demo bundle).
 
-## Реалізовано
+Частина монорепозиторію [UAV Readiness & Evidence Copilot](../../README.md).
 
-- `buildEvidenceGraphFromBundle`
+## Що містить
 
-Граф з'єднує артефакти (artifacts), джерела доказів (evidence sources), твердження доказів (evidence claims) та блокування доказів (evidence locks). Основне правило: `No evidence -> locked` (немає доказів -> заблоковано).
+- `buildEvidenceGraphFromBundle` — пов'язує артефакти (artifacts), джерела доказів (evidence sources), твердження (claims) та блокування (locks)
+
+## Межі безпеки
+
+Забезпечує дотримання основного правила `No evidence → locked`; він ніколи не додумує відсутні докази (missing proof).

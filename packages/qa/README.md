@@ -2,6 +2,15 @@
 
 *English · [Українською](README.uk.md)*
 
-Smoke tests for the demo readiness CLI flow.
+> End-to-end smoke tests for the demo readiness CLI flow.
 
-This package verifies that the demo command generates the expected report, evidence graph, readiness assessment, traceability matrix, artifact hashes, and portfolio demo outputs.
+Part of the [UAV Readiness & Evidence Copilot](../../README.en.md) monorepo.
+
+## What it provides
+
+- Verifies the demo command generates the expected report, evidence graph, readiness assessment, traceability matrix, artifact hashes, SARIF, and portfolio demo outputs
+- Asserts the generated report stays inside safe wording
+
+## Safety scope
+
+Tests guard the documentation-QA scope and reject unsafe operational wording. `No evidence → locked`.

@@ -2,15 +2,18 @@
 
 *English · [Українською](README.uk.md)*
 
-Report and export generators for the safe demo flow.
+> Report and export generators for the safe demo flow.
 
-## Implemented outputs
+Part of the [UAV Readiness & Evidence Copilot](../../README.en.md) monorepo.
+
+## What it provides
 
 - Markdown readiness report
-- Portfolio demo page
-- Traceability matrix CSV
-- Artifact hash manifest
+- portfolio demo page (bilingual HTML)
+- traceability matrix CSV
+- artifact hash manifest
+- SARIF 2.1.0 findings export
 
-## Scope
+## Safety scope
 
-Reports describe documentation readiness only and must not claim operational readiness.
+Reports describe documentation readiness only — never operational readiness.

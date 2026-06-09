@@ -2,10 +2,14 @@
 
 *English · [Українською](README.uk.md)*
 
-Evidence graph builder for the parsed demo bundle.
+> Builds the evidence graph from a parsed demo bundle.
 
-## Implemented
+Part of the [UAV Readiness & Evidence Copilot](../../README.en.md) monorepo.
 
-- `buildEvidenceGraphFromBundle`
+## What it provides
 
-The graph connects artifacts, evidence sources, evidence claims, and evidence locks. Core rule: `No evidence -> locked`.
+- `buildEvidenceGraphFromBundle` — links artifacts, evidence sources, claims, and locks
+
+## Safety scope
+
+Enforces the core rule `No evidence → locked`; it never infers missing proof.

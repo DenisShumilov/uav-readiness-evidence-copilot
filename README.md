@@ -175,7 +175,7 @@ examples/demo-uav-readiness/output/
 ## Документація
 
 - [Як це побудовано — каркас із 10 агентів](docs/scaffold.md)
-- [AGENTS.md — ядро правил](AGENTS.md)
+- [AGENTS.md — ядро правил](AGENTS.uk.md)
 - [Як працює оцінка готовності](docs/scoring.md)
 - [Схеми виводу та SARIF](schemas/README.uk.md)
 - [FAQ про проєкт](docs/project-faq.md)

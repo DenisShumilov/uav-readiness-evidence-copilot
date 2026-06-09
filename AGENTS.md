@@ -1,5 +1,7 @@
 # AGENTS.md — UAV Readiness & Evidence Copilot
 
+*English · [Українською](AGENTS.uk.md)*
+
 This file is the rules core of the scaffold that builds this repository.
 It is the README **for the AI agents** working here.
 

@@ -2,16 +2,15 @@
 
 *English · [Українською](README.uk.md)*
 
-Explainable readiness rules for documentation QA.
+> Explainable readiness rules for documentation QA.
 
-## Implemented
+Part of the [UAV Readiness & Evidence Copilot](../../README.en.md) monorepo.
 
-- `evaluateReadiness`
+## What it provides
 
-## Scoring
+- `evaluateReadiness` — score from 100 minus capped deductions for locked, conflicting, partial, and warning evidence, plus missing artifacts
+- a conflict gate that caps the verdict in the Blocked band
 
-The score starts at 100 and subtracts points for locked critical evidence, partial claims, warnings, and missing active artifacts.
+## Safety scope
 
-## Scope
-
-Rules describe documentation readiness only. They must not become operational UAV, route, payload, targeting, or tactical rules.
+Rules describe documentation readiness only — never operational, route, payload, targeting, or tactical rules.
