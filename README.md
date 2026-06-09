@@ -126,6 +126,7 @@ examples/demo-uav-readiness/output/
 - `readiness-assessment.json`
 - `traceability-matrix.csv`
 - `artifact-hashes.json`
+- `readiness.sarif` — SARIF 2.1.0 (формат GitHub code scanning)
 
 ## Архітектура
 
@@ -169,6 +170,7 @@ examples/demo-uav-readiness/output/
 - [Як це побудовано — каркас із 10 агентів](docs/scaffold.md)
 - [AGENTS.md — ядро правил](AGENTS.md)
 - [Як працює оцінка готовності](docs/scoring.md)
+- [Схеми виводу та SARIF](schemas/README.md)
 - [FAQ про проєкт](docs/project-faq.md)
 - [Архітектура](docs/architecture.md)
 - [Межі безпеки](docs/safety-boundaries.md)

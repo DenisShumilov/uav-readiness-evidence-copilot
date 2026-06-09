@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://denisshumilov.github.io/uav-readiness-evidence-copilot/schemas/evidence-graph.schema.json",
+  "title": "Evidence graph",
+  "description": "Output of buildEvidenceGraphFromBundle(). All data is synthetic.",
+  "type": "object",
+  "required": ["evidenceGraph", "evidenceSources", "evidenceClaims", "evidenceLocks", "summary"],
+  "additionalProperties": true,
+  "properties": {
+    "evidenceGraph": {
+      "type": "object",
+      "required": ["id", "links", "synthetic"],
+      "properties": {
+        "id": { "type": "string" },
+        "artifactIds": { "type": "array", "items": { "type": "string" } },
+        "evidenceSourceIds": { "type": "array", "items": { "type": "string" } },
+        "evidenceClaimIds": { "type": "array", "items": { "type": "string" } },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["claimId", "evidenceSourceId", "relation"],
+            "properties": {
+              "claimId": { "type": "string" },
+              "evidenceSourceId": { "type": "string" },
+              "relation": {
+                "enum": ["supports", "partially_supports", "conflicts"]
+              }
+            }
+          }
+        },
+        "generatedAt": { "type": "string" },
+        "synthetic": { "const": true }
+      }
+    },
+    "evidenceSources": { "type": "array" },
+    "evidenceClaims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "statement", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "statement": { "type": "string" },
+          "claimType": { "type": "string" },
+          "status": { "enum": ["verified", "partial", "locked", "conflict"] },
+          "evidenceSourceIds": { "type": "array", "items": { "type": "string" } },
+          "lockReason": { "type": "string" }
+        }
+      }
+    },
+    "evidenceLocks": { "type": "array" },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "totalClaims": { "type": "integer", "minimum": 0 },
+        "verifiedCount": { "type": "integer", "minimum": 0 },
+        "partialCount": { "type": "integer", "minimum": 0 },
+        "lockedCount": { "type": "integer", "minimum": 0 },
+        "conflictCount": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://denisshumilov.github.io/uav-readiness-evidence-copilot/schemas/readiness-assessment.schema.json",
+  "title": "Readiness assessment",
+  "description": "Output of evaluateReadiness(). Documentation readiness only — never operational or flight readiness.",
+  "type": "object",
+  "required": ["readinessScore", "formula", "warnings", "lockedCriticalItems", "summary"],
+  "additionalProperties": true,
+  "properties": {
+    "readinessScore": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "formula": {
+      "type": "object",
+      "required": ["base", "deductions"],
+      "properties": {
+        "base": { "type": "integer" },
+        "deductions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["reason", "count", "pointsEach", "total"],
+            "properties": {
+              "reason": { "type": "string" },
+              "count": { "type": "integer", "minimum": 0 },
+              "pointsEach": { "type": "integer" },
+              "total": { "type": "integer" }
+            }
+          }
+        }
+      }
+    },
+    "findings": { "type": "array" },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "lockedCriticalItems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "reason"],
+        "properties": {
+          "id": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["verifiedCount", "partialCount", "lockedCount", "conflictCount"],
+      "properties": {
+        "verifiedCount": { "type": "integer", "minimum": 0 },
+        "partialCount": { "type": "integer", "minimum": 0 },
+        "lockedCount": { "type": "integer", "minimum": 0 },
+        "conflictCount": { "type": "integer", "minimum": 0 },
+        "missingArtifacts": { "type": "array", "items": { "type": "string" } },
+        "explanation": { "type": "string" }
+      }
+    }
+  }
+}

@@ -10,6 +10,7 @@ import {
   generatePortfolioDemoMarkdown
 } from "../packages/reports/src/portfolioDemo";
 import { generateTraceabilityMatrix } from "../packages/reports/src/traceabilityMatrix";
+import { generateReadinessSarif } from "../packages/reports/src/sarif";
 import { evaluateReadiness } from "../packages/rules/src/readiness";
 
 export type RunReadinessDemoOptions = {
@@ -41,6 +42,7 @@ export function runReadinessDemo(options: RunReadinessDemoOptions = {}) {
     "readiness-assessment.json",
     "traceability-matrix.csv",
     "artifact-hashes.json",
+    "readiness.sarif",
     "portfolio-demo.md",
     "portfolio-demo.html",
     "portfolio-demo.en.html",
@@ -93,6 +95,11 @@ export function runReadinessDemo(options: RunReadinessDemoOptions = {}) {
   writeFileSync(
     join(outputDir, "artifact-hashes.json"),
     JSON.stringify(artifactHashes, null, 2),
+    "utf8"
+  );
+  writeFileSync(
+    join(outputDir, "readiness.sarif"),
+    generateReadinessSarif(bundle, evidenceGraph, readinessAssessment),
     "utf8"
   );
   writeFileSync(join(outputDir, "portfolio-demo.md"), portfolioDemo, "utf8");

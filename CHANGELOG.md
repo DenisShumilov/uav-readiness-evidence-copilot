@@ -19,6 +19,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
   recruiter CTA, a `role="status"` live region for the readiness score, and `:focus-visible` outlines.
 - [`docs/scoring.md`](docs/scoring.md): transparent explanation of the readiness formula and bands.
 - Repository hygiene: `CODE_OF_CONDUCT.md`, issue forms, Dependabot config, and this changelog.
+- Machine-readable outputs: **SARIF 2.1.0** (`readiness.sarif`) for GitHub code-scanning ingest,
+  and JSON Schemas for the output contracts (`schemas/`).
 
 ### Notes
 

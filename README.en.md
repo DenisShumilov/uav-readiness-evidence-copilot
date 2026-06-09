@@ -128,6 +128,7 @@ Current outputs:
 - `readiness-assessment.json`
 - `traceability-matrix.csv`
 - `artifact-hashes.json`
+- `readiness.sarif` — SARIF 2.1.0 (GitHub code scanning format)
 
 ## Architecture
 
@@ -166,6 +167,7 @@ Core thesis: **the intelligence is in the scaffold around the model, not in the 
 - [How it was built — a scaffold of 10 agents](docs/scaffold.md)
 - [AGENTS.md — the rules core](AGENTS.md)
 - [How the readiness score works](docs/scoring.md)
+- [Output schemas & SARIF](schemas/README.md)
 - [Project FAQ](docs/project-faq.md)
 - [Architecture](docs/architecture.md)
 - [Safety boundaries](docs/safety-boundaries.md)

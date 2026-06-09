@@ -21,6 +21,7 @@ describe("demo readiness CLI", () => {
       "readiness-assessment.json",
       "traceability-matrix.csv",
       "artifact-hashes.json",
+      "readiness.sarif",
       "portfolio-demo.md",
       "portfolio-demo.html",
       "portfolio-demo.en.html",
@@ -31,6 +32,7 @@ describe("demo readiness CLI", () => {
     expect(existsSync(join(outputDir, "readiness-assessment.json"))).toBe(true);
     expect(existsSync(join(outputDir, "traceability-matrix.csv"))).toBe(true);
     expect(existsSync(join(outputDir, "artifact-hashes.json"))).toBe(true);
+    expect(existsSync(join(outputDir, "readiness.sarif"))).toBe(true);
     expect(existsSync(join(outputDir, "portfolio-demo.md"))).toBe(true);
     expect(existsSync(join(outputDir, "portfolio-demo.html"))).toBe(true);
     expect(existsSync(join(outputDir, "portfolio-demo.en.html"))).toBe(true);
