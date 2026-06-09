@@ -47,6 +47,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## Demo video releases
 
+- `v0.5.0-demo-video` — new video recorded from the **live interactive site**: shows the readiness
+  score dropping 44 → 8 as evidence is toggled off, the 10-agent scaffold, and the safety refusal (UK + EN).
 - `v0.4.0-demo-video` — polished Ukrainian demo video and voiceover.
 - `v0.3.0-demo-video` — Ukrainian demo release.
 - `v0.2.0-demo-video` — English demo release.
