@@ -1,142 +1,144 @@
-# Evidence Model
+# Модель доказів (Evidence Model)
 
-Evidence model means the rules for how the project treats proof.
+*Українською · [English](evidence-model.en.md)*
 
-The main idea is simple:
+Модель доказів (evidence model) — це правила того, як проєкт працює з підтвердженнями (доказами).
 
-`No evidence -> locked.`
+Головна ідея проста:
 
-If there is no proof, the system must block the claim instead of guessing.
+`Немає доказів -> заблоковано (locked).`
 
-## Main Objects
+Якщо підтвердження немає, система повинна заблокувати твердження (claim), а не вгадувати.
 
-## Artifact
+## Основні об'єкти
 
-Artifact means a file we receive or generate.
+## Артефакт (Artifact)
 
-Active parsed input examples:
+Артефакт (artifact) — це файл, який ми отримуємо або генеруємо.
 
-- `BOM.csv` = list of parts;
-- `demo_manual.md` = instruction text;
-- `test_log.csv` = test table;
-- `qa_notes.md` = quality notes.
+Приклади активних вхідних даних, що розбираються (parsed):
 
-Planned future fixtures, not read by the current MVP:
+- `BOM.csv` = список деталей;
+- `demo_manual.md` = текст інструкції;
+- `test_log.csv` = таблиця тестів;
+- `qa_notes.md` = нотатки якості (QA).
 
-- `future-fixtures/wiring_notes.yaml` = documentation-only wiring notes;
-- `future-fixtures/config_dump.txt` = fake settings text.
+Заплановані майбутні фікстури (fixtures), які поточний MVP ще не читає:
 
-## Evidence Source
+- `future-fixtures/wiring_notes.yaml` = нотатки про з'єднання лише для документації;
+- `future-fixtures/config_dump.txt` = умовний (несправжній) текст налаштувань.
 
-Evidence source means the exact file or record that supports a claim.
+## Джерело доказів (Evidence Source)
 
-Example:
+Джерело доказів (evidence source) — це конкретний файл або запис, який підтверджує твердження.
 
-`test_log.csv` can support the claim "a bench test record exists."
+Приклад:
 
-Bench test means a safe table/lab check, not a flight mission.
+`test_log.csv` може підтвердити твердження «запис про стендовий тест існує».
 
-## Evidence Claim
+Стендовий тест (bench test) — це безпечна перевірка на столі/у лабораторії, а не польотна місія.
 
-Evidence claim means a statement the system wants to make.
+## Доказове твердження (Evidence Claim)
 
-Safe example:
+Доказове твердження (evidence claim) — це твердження, яке система хоче зробити.
 
-`The demo package includes a QA note.`
+Безпечний приклад:
 
-Unsafe example:
+`Демонстраційний пакет містить нотатку QA.`
 
-`The UAV is ready for a mission.`
+Небезпечний приклад:
 
-The unsafe example is not allowed because this project does not make operational decisions.
+`БПЛА готовий до місії.`
 
-## Evidence Link
+Небезпечний приклад заборонений, тому що цей проєкт не ухвалює операційних рішень.
 
-Evidence link means the connection between a claim and the source that supports it.
+## Доказовий зв'язок (Evidence Link)
 
-Simple meaning:
+Доказовий зв'язок (evidence link) — це з'єднання між твердженням і джерелом, яке його підтверджує.
 
-`claim -> source file -> check result`
+Простими словами:
 
-## Evidence Graph
+`твердження -> файл-джерело -> результат перевірки`
 
-Evidence graph means a map of claims and proof.
+## Граф доказів (Evidence Graph)
 
-Graph means "things connected by lines." Here the lines show which file supports which claim.
+Граф доказів (evidence graph) — це карта тверджень і підтверджень.
 
-## Evidence Lock
+Граф (graph) означає «об'єкти, з'єднані лініями». Тут лінії показують, який файл підтверджує яке твердження.
 
-Evidence lock means a blocked claim.
+## Блокування доказу (Evidence Lock)
 
-A claim becomes locked when:
+Блокування доказу (evidence lock) — це заблоковане твердження.
 
-- the needed file is missing;
-- the file is present but does not support the claim;
-- sources disagree;
-- the claim asks for unsafe operational detail.
+Твердження стає заблокованим (locked), коли:
 
-## Claim Statuses
+- потрібного файлу немає;
+- файл присутній, але не підтверджує твердження;
+- джерела суперечать одне одному;
+- твердження вимагає небезпечних операційних деталей.
 
-- `verified` = confirmed by evidence;
-- `partial` = partly supported, but still incomplete;
-- `locked` = blocked because evidence is missing or unsafe;
-- `conflict` = two sources disagree.
+## Статуси тверджень (Claim Statuses)
 
-## Wiring And Config Rule
+- `verified` = підтверджено доказами;
+- `partial` = частково підтверджено, але все ще неповно;
+- `locked` = заблоковано, бо докази відсутні або небезпечні;
+- `conflict` = два джерела суперечать одне одному.
 
-Wiring means how parts are connected.
+## Правило для з'єднань і налаштувань (Wiring And Config Rule)
 
-Config means settings.
+З'єднання (wiring) — це те, як з'єднані деталі.
 
-Pinout means the map of pins/contacts on a board.
+Налаштування (config) — це параметри.
 
-The project must never invent exact wiring, pinout, or config.
+Розпіновка (pinout) — це карта контактів/пінів на платі.
 
-If exact wiring or config is not supported by evidence, mark it:
+Проєкт ніколи не повинен вигадувати точні з'єднання (wiring), розпіновку (pinout) чи налаштування (config).
+
+Якщо точні з'єднання або налаштування не підтверджені доказами, познач їх:
 
 `locked`
 
-## Readiness Score Rule
+## Правило оцінки готовності (Readiness Score Rule)
 
-Readiness score means a simple documentation readiness estimate.
+Оцінка готовності (readiness score) — це проста оцінка готовності документації.
 
-It must not mean:
+Вона не повинна означати:
 
-- flight approval;
-- mission approval;
-- safety certification;
-- tactical readiness.
+- дозвіл на політ;
+- дозвіл на місію;
+- сертифікацію безпеки;
+- тактичну готовність.
 
-If critical evidence is missing, the score must explain that the result is limited or locked.
+Якщо критичні докази відсутні, оцінка повинна пояснити, що результат обмежений або заблокований (locked).
 
-## Safe Example
+## Безпечний приклад (Safe Example)
 
-Claim:
+Твердження:
 
-`A synthetic BOM file exists.`
+`Синтетичний файл BOM існує.`
 
-Evidence:
+Докази:
 
 `examples/demo-uav-readiness/BOM.csv`
 
-Status:
+Статус:
 
 `verified`
 
-## Locked Example
+## Приклад блокування (Locked Example)
 
-Claim:
+Твердження:
 
-`Exact wiring is verified.`
+`Точні з'єднання перевірено.`
 
-Evidence:
+Докази:
 
-No wiring source exists.
+Джерела з'єднань не існує.
 
-Status:
+Статус:
 
 `locked`
 
-Reason:
+Причина:
 
-`Exact wiring cannot be verified without a source file.`
+`Точні з'єднання не можна перевірити без файлу-джерела.`

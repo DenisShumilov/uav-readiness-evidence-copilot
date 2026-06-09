@@ -148,13 +148,13 @@ synthetic demo artifacts
   -> reports and portfolio outputs
 ```
 
-See [docs/architecture.md](docs/architecture.md) for the detailed data flow.
+See [docs/architecture.en.md](docs/architecture.en.md) for the detailed data flow.
 
 ## How it was built — a scaffold of 10 agents
 
 This repo was built not by one model, but by a **scaffold**: persistent rules in [AGENTS.md](AGENTS.md), 10 specialist agents, 7 reusable skills, and mandatory gates (doubt gate, red-team, evidence lock, self-review).
 
-Full write-up with a diagram, role table, and a real safety-agent refusal: **[docs/scaffold.md](docs/scaffold.md)**.
+Full write-up with a diagram, role table, and a real safety-agent refusal: **[docs/scaffold.en.md](docs/scaffold.en.md)**.
 
 Core thesis: **the intelligence is in the scaffold around the model, not in the model itself.**
 
@@ -171,13 +171,13 @@ Core thesis: **the intelligence is in the scaffold around the model, not in the 
 
 ## Documentation
 
-- [How it was built — a scaffold of 10 agents](docs/scaffold.md)
+- [How it was built — a scaffold of 10 agents](docs/scaffold.en.md)
 - [AGENTS.md — the rules core](AGENTS.md)
-- [How the readiness score works](docs/scoring.md)
+- [How the readiness score works](docs/scoring.en.md)
 - [Output schemas & SARIF](schemas/README.md)
-- [Project FAQ](docs/project-faq.md)
-- [Architecture](docs/architecture.md)
-- [Safety boundaries](docs/safety-boundaries.md)
-- [Evidence model](docs/evidence-model.md)
-- [Demo data policy](docs/demo-data-policy.md)
-- [Glossary](docs/glossary.md)
+- [Project FAQ](docs/project-faq.en.md)
+- [Architecture](docs/architecture.en.md)
+- [Safety boundaries](docs/safety-boundaries.en.md)
+- [Evidence model](docs/evidence-model.en.md)
+- [Demo data policy](docs/demo-data-policy.en.md)
+- [Glossary](docs/glossary.en.md)

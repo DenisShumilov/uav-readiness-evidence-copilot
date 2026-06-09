@@ -1,15 +1,18 @@
-# How the documentation readiness score works
+# Як працює оцінка готовності документації
 
-> The score measures the **completeness and trustworthiness of the documentation evidence chain** —
-> not real-world or operational readiness. A high score never means "approved to operate."
+*Українською · [English](scoring.en.md)*
+
+> Оцінка вимірює **повноту та надійність ланцюжка доказів у документації** (evidence chain) —
+> а не реальну чи операційну готовність. Висока оцінка ніколи не означає «дозволено до експлуатації».
 
 **Простими словами:** оцінка готовності — це про якість і повноту *документів і доказів*, а не дозвіл
 щось робити в реальності. Низька оцінка означає, що паперам бракує підтверджень, а не що проєкт сирий.
 
-## The formula
+## Формула
 
-Every claim in the evidence graph has one status: `verified`, `partial`, `locked`, or `conflict`.
-The score starts at 100 and deducts points for what weakens trust in the record:
+Кожне твердження (claim) у графі доказів має один зі статусів: `verified` (підтверджено),
+`partial` (частково), `locked` (заблоковано) або `conflict` (конфлікт). Оцінка стартує зі 100 і
+віднімає бали за те, що послаблює довіру до запису:
 
 ```text
 score = 100
@@ -23,53 +26,57 @@ score = clamp(score, 0, 100)
 if any critical claim is in conflict → score is capped at 49 (Blocked)
 ```
 
-The weights reflect how much each issue hurts trust: a **conflict** (sources actively disagree) and
-a **locked** claim (no supporting evidence) hurt most, a **partial** claim (some evidence, not
-enough) hurts less, and a process **warning** is the lightest signal.
+Ваги відображають, наскільки сильно кожна проблема шкодить довірі: **конфлікт** (conflict — джерела
+активно суперечать одне одному) та **заблоковане** твердження (locked — без підтверджувальних доказів)
+шкодять найбільше; **часткове** твердження (partial — є деякі докази, але недостатньо) шкодить менше;
+а процесне **попередження** (warning) — найлегший сигнал.
 
-## Worked example (the live demo)
+## Розбір на прикладі (жива демонстрація)
 
-The synthetic demo package produces:
+Синтетичний демонстраційний пакет дає:
 
-| Deduction | Count | Points each | Total |
+| Віднімання | Кількість | Балів за одиницю | Разом |
 |---|---:|---:|---:|
-| Locked critical claims | 5 | 6 | −30 |
-| Partial claims | 4 | 3 | −12 |
-| Warnings | 7 | 2 | −14 |
-| **Readiness score** | | | **44 / 100** |
+| Заблоковані критичні твердження (locked critical) | 5 | 6 | −30 |
+| Часткові твердження (partial) | 4 | 3 | −12 |
+| Попередження (warnings) | 7 | 2 | −14 |
+| **Оцінка готовності** | | | **44 / 100** |
 
-So the headline `44/100` is not a vibe — it is `100 − 30 − 12 − 14`, fully reproducible with
-`npm run demo:readiness`.
+Отже, заголовкове `44/100` — це не суб'єктивне відчуття, а `100 − 30 − 12 − 14`, повністю відтворюване
+командою `npm run demo:readiness`.
 
-## How to read the bands
+## Як читати діапазони (bands)
 
-| Band | Range | Plain meaning |
+| Діапазон | Межі | Просте значення |
 |---|---:|---|
-| Strong package | 85–100 | Documentation is well structured and mostly evidenced (still **not** operational readiness). |
-| Reviewable, incomplete | 70–84 | Usable for review, but gaps remain before serious sign-off. |
-| Confidence reduced | 50–69 | The evidence chain is useful, but partials/gaps lower trust. |
-| Blocked | 0–49 | Missing proof or contradictions block a positive conclusion. |
+| Сильний пакет | 85–100 | Документація добре структурована та переважно підкріплена доказами (це все одно **не** операційна готовність). |
+| Придатно до огляду, неповно | 70–84 | Можна використовувати для огляду, але до серйозного затвердження ще лишаються прогалини. |
+| Знижена впевненість | 50–69 | Ланцюжок доказів корисний, але часткові твердження та прогалини знижують довіру. |
+| Заблоковано | 0–49 | Брак доказів або суперечності блокують позитивний висновок. |
 
-The demo sits in **Blocked (44)** on purpose: it is a strict tool, so unsupported claims are not
-inflated — they stay locked. A low number here is a sign of **honesty**, not weakness.
+Демонстрація навмисно перебуває в зоні **Заблоковано (44)**: це суворий інструмент, тож непідкріплені
+твердження не роздуваються штучно — вони лишаються заблокованими. Низьке число тут — це ознака
+**чесності**, а не слабкості.
 
-## Why low scores are a feature
+## Чому низькі оцінки — це перевага
 
-The core rule of this project is `no evidence → locked`. The score is designed so that the only way
-to raise it is to **add real evidence**, not to soften the rules. That is exactly the engineering
-discipline the project is meant to demonstrate.
+Головне правило цього проєкту — `no evidence → locked` (немає доказу → заблоковано). Оцінку
+спроєктовано так, що єдиний спосіб її підняти — **додати справжній доказ**, а не пом'якшити правила.
+Саме цю інженерну дисципліну проєкт і має продемонструвати.
 
-## Guards
+## Запобіжники (Guards)
 
-The formula has guards so the number stays principled even as the data changes:
+У формулі є запобіжники, щоб число лишалося принциповим навіть зі зміною даних:
 
-- **Per-category caps** — no single bucket can sink the score on its own.
-- **Conflict gate** — if any critical claim is in conflict, the verdict is capped in the Blocked
-  band until the contradiction is resolved. (A contradiction can never read as "ready".)
-- **Floor of zero** — the score never goes negative.
+- **Покатегорійні обмеження (per-category caps)** — жоден окремий блок не може сам по собі обвалити
+  оцінку.
+- **Конфліктний шлюз (conflict gate)** — якщо будь-яке критичне твердження перебуває в конфлікті,
+  вердикт обмежується зоною «Заблоковано», доки суперечність не розв'язана. (Суперечність ніколи не
+  може читатися як «готово».)
+- **Нижня межа — нуль (floor of zero)** — оцінка ніколи не стає від'ємною.
 
-These run in the tool today. The demo packages happen to have no conflicts and hit no caps, so the
-worked example above is unaffected (still 44/100).
+Ці механізми вже працюють в інструменті сьогодні. У демонстраційних пакетах випадково немає конфліктів
+і не спрацьовує жодне обмеження, тож наведений вище розбір на прикладі лишається незмінним (усе ще 44/100).
 
 **Простими словами:** єдиний чесний спосіб підняти оцінку — додати справжній доказ, а не пом'якшити
 правила. У цьому й сенс.

@@ -1,12 +1,16 @@
-# Architecture
+# Архітектура
 
-UAV Readiness & Evidence Copilot is a documentation QA pipeline built around one rule:
+*Українською · [English](architecture.en.md)*
+
+UAV Readiness & Evidence Copilot (помічник з оцінки готовності та доказів для БПЛА) — це конвеєр контролю якості документації (QA, quality assurance), побудований навколо одного правила:
 
 ```text
 No evidence -> locked.
 ```
 
-## Data Flow
+(Немає доказів — заблоковано.)
+
+## Потік даних (Data Flow)
 
 ```mermaid
 flowchart LR
@@ -26,35 +30,35 @@ flowchart LR
     I --> O
 ```
 
-## Runtime Path
+## Шлях виконання (Runtime Path)
 
-- `scripts/demoReadiness.ts` orchestrates the demo command.
-- `packages/parsers/` reads the active synthetic inputs.
-- `packages/core/` validates structured data with TypeScript/Zod schemas.
-- `packages/evidence/` builds the evidence graph.
-- `packages/rules/` evaluates readiness with deterministic scoring.
-- `packages/reports/` writes Markdown, JSON, CSV, hash, and portfolio outputs.
+- `scripts/demoReadiness.ts` оркеструє (керує послідовністю виконання) демонстраційну команду.
+- `packages/parsers/` зчитує активні синтетичні вхідні дані.
+- `packages/core/` валідує (перевіряє) структуровані дані за допомогою схем TypeScript/Zod.
+- `packages/evidence/` будує граф доказів (evidence graph).
+- `packages/rules/` обчислює готовність за допомогою детермінованого нарахування балів (deterministic scoring).
+- `packages/reports/` записує вихідні файли у форматах Markdown, JSON, CSV, hash та портфоліо.
 
-## Active Inputs
+## Активні вхідні дані (Active Inputs)
 
-The current MVP reads:
+Поточний MVP (minimum viable product — мінімально життєздатний продукт) зчитує:
 
 - `examples/demo-uav-readiness/BOM.csv`
 - `examples/demo-uav-readiness/demo_manual.md`
 - `examples/demo-uav-readiness/test_log.csv`
 - `examples/demo-uav-readiness/qa_notes.md`
 
-Future fixtures are stored under:
+Майбутні фікстури (fixtures — заздалегідь підготовлені тестові дані) зберігаються в каталозі:
 
 ```text
 examples/demo-uav-readiness/future-fixtures/
 ```
 
-They are not parsed by the current MVP.
+Поточний MVP їх не парсить (не обробляє).
 
-## Generated Outputs
+## Згенеровані вихідні файли (Generated Outputs)
 
-The demo command writes:
+Демонстраційна команда записує:
 
 - `readiness-report.md`
 - `evidence-graph.json`
@@ -66,7 +70,6 @@ The demo command writes:
 - `portfolio-demo.en.html`
 - `portfolio-demo.uk.html`
 
-## Safety Boundary
+## Межа безпеки (Safety Boundary)
 
-The system evaluates documentation readiness only. It must not become a drone control, route planning, payload, targeting, telemetry, or tactical workflow.
-
+Система оцінює виключно готовність документації. Вона не повинна перетворюватися на робочий процес керування дроном, планування маршруту, корисного навантаження, наведення, телеметрії чи тактики.

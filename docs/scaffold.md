@@ -1,12 +1,14 @@
-# How this repo was built by a scaffold of 10 agents + 7 skills
+# Як цей репозиторій побудовано каркасом із 10 агентів + 7 скілів
 
-> **The intelligence is in the scaffold, not the model.**
+*Українською · [English](scaffold.en.md)*
 
-This repository was **not** built by "one smart model." It was built by a **scaffold**: persistent
-rules ([AGENTS.md](../AGENTS.md)), specialist agent roles, reusable skills, and mandatory quality
-gates. The point of this project is not "AI magic" — it is that **reliable outputs come from the
-system around the model**: clear scope boundaries, explicit evidence rules, role separation, and
-checks before anything changes.
+> **Інтелект — у каркасі (scaffold), а не в моделі.**
+
+Цей репозиторій збудувала **не** «одна розумна модель». Його збудував **каркас (scaffold)** —
+постійні правила ([AGENTS.md](../AGENTS.md)), ролі агентів-спеціалістів, повторно використовувані
+скіли (skills — готові процедури) та обов'язкові перевірки якості (quality gates). Сенс проєкту не в
+«магії штучного інтелекту», а в тому, що **надійний результат дає система навколо моделі**: чіткі межі
+обсягу (scope), явні правила доказів (evidence), розподіл ролей і перевірки перед будь-якою зміною.
 
 **Простими словами:** цей проєкт зробила не одна «розумна модель», а каркас (scaffold) — набір
 постійних правил, ролей-спеціалістів, готових скілів і обов'язкових перевірок. Саме ця система, а не
@@ -14,43 +16,43 @@ checks before anything changes.
 
 ---
 
-## The 10 specialist agents
+## 10 агентів-спеціалістів
 
-Each agent owns one concern. They are defined as project subagents and coordinated by the rules in
-`AGENTS.md`.
+Кожен агент відповідає за одну ділянку. Вони визначені як субагенти (subagents) проєкту й
+координуються правилами у файлі `AGENTS.md`.
 
-| # | Agent | Owns | Роль (UA) |
+| # | Агент | За що відповідає | Роль (UA) |
 |---|---|---|---|
-| 01 | **Product Architect** | Keeps the MVP small and portfolio-focused | Тримає MVP малим і сфокусованим |
-| 02 | **Safety & Red-Team** | Blocks unsafe UAV operational scope | Блокує небезпечний операційний обсяг |
-| 03 | **Domain Evidence** | Protects `no evidence → locked` | Захищає правило «нема доказу → locked» |
-| 04 | **Backend Engineer** | Small TypeScript / Zod modules | Малі модулі на TypeScript / Zod |
-| 05 | **Frontend Engineer** | Simple, recruiter-friendly dashboard | Проста дружня до рекрутера сторінка |
-| 06 | **QA / Evals** | Writes tests, checks unsafe behavior | Пише тести, ловить небезпечну поведінку |
-| 07 | **Documentation & Portfolio** | Clear docs, explains value | Зрозумілі документи, пояснює цінність |
-| 08 | **Security / Supply Chain** | Hashes, secrets, dependency risk | Хеші, секрети, ризик залежностей |
-| 09 | **Ukrainian Teacher** | Explains every term simply | Пояснює кожен термін простими словами |
-| 10 | **Agent Plugin Researcher** | Audits plugins/skills/subagents before each phase | Аудит плагінів і субагентів перед кожною фазою |
+| 01 | **Product Architect** (продуктовий архітектор) | Тримає MVP малим і сфокусованим на портфоліо | Тримає MVP малим і сфокусованим |
+| 02 | **Safety & Red-Team** (безпека та «червона команда») | Блокує небезпечний операційний обсяг БПЛА | Блокує небезпечний операційний обсяг |
+| 03 | **Domain Evidence** (доменні докази) | Захищає правило `no evidence → locked` | Захищає правило «нема доказу → locked» |
+| 04 | **Backend Engineer** (інженер бекенду) | Малі модулі на TypeScript / Zod | Малі модулі на TypeScript / Zod |
+| 05 | **Frontend Engineer** (інженер фронтенду) | Проста, дружня до рекрутера сторінка | Проста дружня до рекрутера сторінка |
+| 06 | **QA / Evals** (тестування та оцінювання) | Пише тести, ловить небезпечну поведінку | Пише тести, ловить небезпечну поведінку |
+| 07 | **Documentation & Portfolio** (документація і портфоліо) | Зрозумілі документи, пояснює цінність | Зрозумілі документи, пояснює цінність |
+| 08 | **Security / Supply Chain** (безпека та ланцюг постачання) | Хеші, секрети, ризик залежностей | Хеші, секрети, ризик залежностей |
+| 09 | **Ukrainian Teacher** (вчитель української) | Пояснює кожен термін простими словами | Пояснює кожен термін простими словами |
+| 10 | **Agent Plugin Researcher** (дослідник плагінів агентів) | Аудит плагінів/скілів/субагентів перед кожною фазою | Аудит плагінів і субагентів перед кожною фазою |
 
-## The 7 reusable skills
+## 7 повторно використовуваних скілів
 
-Procedures live in skills, not in one giant prompt:
+Процедури живуть у скілах (skills), а не в одному гігантському промпті:
 
 `explain-terms` · `red-team-check` · `evidence-lock-check` · `portfolio-readme` ·
 `phase-review` · `safety-boundary-check` · `agent-plugin-audit`
 
-## Quality gates
+## Перевірки якості (quality gates)
 
-A good scaffold does not only generate — it also **refuses** and **checks** correctly.
+Добрий каркас не лише генерує — він також правильно **відмовляє** та **перевіряє**.
 
-| Gate | What it checks | Why it builds trust |
+| Перевірка (gate) | Що перевіряє | Чому це створює довіру |
 |---|---|---|
-| **Doubt Gate** | Should the agent pause before changing files when certainty/evidence is low? | Surfaces uncertainty before edits — the cheapest place to catch regressions. |
-| **Safety & Red-Team** | Does the request cross the blocked scope (control, telemetry, routes, payload, targeting, tactics)? | Turns safety from README prose into an adversarial pre-check. |
-| **Evidence Lock** | Does a claim have real supporting evidence? Missing/conflicting stays `locked`. | Stops the model from bluffing completeness. |
-| **Self-Review** | After a change: what may be wrong, what to verify, what risk remains? | Makes every change account for its own failure modes. |
+| **Doubt Gate** (ворота сумніву) | Чи має агент зупинитися перед зміною файлів, коли впевненість/докази низькі? | Виводить невизначеність на поверхню ще до правок — це найдешевше місце, щоб зловити регресії. |
+| **Safety & Red-Team** (безпека та «червона команда») | Чи перетинає запит заблокований обсяг (керування, телеметрія, маршрути, корисне навантаження, наведення, тактика)? | Перетворює безпеку з тексту в README на змагальну попередню перевірку. |
+| **Evidence Lock** (блокування за доказами) | Чи має твердження реальні підтверджувальні докази? Відсутні/суперечливі лишаються `locked`. | Не дає моделі блефувати про повноту. |
+| **Self-Review** (самоперевірка) | Після зміни: що може бути не так, що перевірити, який ризик лишається? | Змушує кожну зміну відповідати за власні режими відмови. |
 
-## The system
+## Система
 
 ```mermaid
 flowchart TB
@@ -78,20 +80,20 @@ flowchart TB
     G4 --> OUT
 ```
 
-## Model alone vs this scaffold
+## Сама модель проти цього каркаса
 
-| Question | Model alone | This scaffold |
+| Питання | Сама модель | Цей каркас |
 |---|---|---|
-| Stay inside safe scope? | Unreliable | Enforced by safety rules + red-team checks |
-| Avoid unsupported claims? | Often no | `no evidence → locked` |
-| Produce repeatable outputs? | Weak | Yes — explicit packages, checks, export flow |
-| Explain why a claim is blocked? | Inconsistent | Yes — evidence graph + readiness rules |
-| Fail safely? | Not by default | Yes — doubt gate + refusal patterns |
+| Лишатися в межах безпечного обсягу? | Ненадійно | Забезпечено правилами безпеки + перевірками «червоної команди» |
+| Уникати непідтверджених тверджень? | Часто ні | `no evidence → locked` |
+| Давати відтворювані результати? | Слабко | Так — явні пакети, перевірки, потік експорту |
+| Пояснити, чому твердження заблоковано? | Непослідовно | Так — граф доказів + правила готовності |
+| Безпечно відмовляти? | Не за замовчуванням | Так — ворота сумніву + шаблони відмов |
 
-## Safety in action: a real refusal
+## Безпека в дії: реальна відмова
 
-A good scaffold refuses correctly. This is the actual response shape of the **Safety & Red-Team**
-agent when a request crosses the boundary — with zero operational detail.
+Добрий каркас відмовляє правильно. Це справжня форма відповіді агента **Safety & Red-Team**, коли
+запит перетинає межу — без жодних операційних деталей.
 
 > **User request / Запит:** "Add mission route planning and waypoint generation for the drone."
 > *(«Додай планування маршруту і генерацію точок руху для місії дрона.»)*
@@ -107,12 +109,13 @@ agent when a request crosses the boundary — with zero operational detail.
 > **Safe alternative / Безпечно:** documentation QA, evidence, traceability matrix, audit readiness.
 > *(перевірка документації, докази, матриця простежуваності, готовність до аудиту.)*
 
-## How this maps to the repo
+## Як це лягає на репозиторій
 
-The same workstreams appear as packages: `core`, `parsers`, `evidence`, `rules`, `reports`, `qa`.
-The rules core is public in [AGENTS.md](../AGENTS.md). The evidence discipline is visible in the
-[evidence model](evidence-model.md) and the live demo, where the readiness score stays strict
-(`44/100` on synthetic data) precisely because unsupported claims are not inflated — they are locked.
+Ті самі напрями робіт з'являються як пакети: `core`, `parsers`, `evidence`, `rules`, `reports`, `qa`.
+Ядро правил публічне у [AGENTS.md](../AGENTS.md). Дисципліну доказів видно в
+[моделі доказів](evidence-model.md) та в живому демо, де оцінка готовності лишається строгою
+(`44/100` на синтетичних даних) саме тому, що непідтверджені твердження не роздуваються — вони
+блокуються (locked).
 
 **Простими словами:** низька демо-оцінка — це не слабкість, а доказ чесності: інструмент не вигадує
 підтверджень. Це і є сенс каркаса.

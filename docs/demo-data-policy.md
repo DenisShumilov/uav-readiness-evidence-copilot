@@ -1,65 +1,67 @@
-# Demo Data Policy
+# Політика демонстраційних даних
 
-Demo data means example files used to show the project.
+*Українською · [English](demo-data-policy.en.md)*
 
-All demo data in this repository must be synthetic.
+Демонстраційні дані (demo data) — це приклади файлів, які використовуються для показу проєкту.
 
-Synthetic means fake, educational, and not copied from real operations.
+Усі демонстраційні дані в цьому репозиторії мають бути синтетичними (synthetic).
 
-## Allowed Demo Data
+Синтетичні означає вигадані, навчальні та не скопійовані з реальних операцій.
 
-Allowed examples:
+## Дозволені демонстраційні дані
 
-- fake BOM files, meaning fake lists of parts;
-- fake manual snippets, meaning fake instruction text;
-- fake QA notes, meaning fake quality notes;
-- fake test logs, meaning fake test tables;
-- fake config dumps, meaning fake settings text;
-- fake evidence locks, meaning fake blocked claims.
+Дозволені приклади:
 
-The examples may show:
+- вигадані файли BOM (bill of materials — специфікація матеріалів), тобто вигадані списки деталей;
+- вигадані фрагменти інструкцій, тобто вигаданий текст інструкцій;
+- вигадані нотатки QA (quality assurance — забезпечення якості), тобто вигадані нотатки щодо якості;
+- вигадані тестові журнали, тобто вигадані тестові таблиці;
+- вигадані дампи конфігурації (config dumps — вивантаження налаштувань), тобто вигаданий текст налаштувань;
+- вигадані блокування доказів (evidence locks), тобто вигадані заблоковані твердження.
 
-- document completeness;
-- missing evidence;
-- conflicting paperwork;
-- expired inspection notes;
-- training record presence;
-- maintenance record presence.
+Приклади можуть демонструвати:
 
-## Blocked Demo Data
+- повноту документації;
+- відсутні докази;
+- суперечливі документи;
+- прострочені нотатки з інспекцій;
+- наявність записів про навчання;
+- наявність записів про технічне обслуговування.
 
-Do not include:
+## Заблоковані демонстраційні дані
 
-- real coordinates;
-- real routes;
-- mission names;
-- targeting data;
-- payload data;
-- tactical notes;
-- live telemetry;
-- operational frequencies;
-- real serial numbers;
-- real names or personal data;
-- real photos with metadata.
+Не можна включати:
 
-Telemetry means data from a live system, such as position, speed, sensor values, or status.
+- реальні координати;
+- реальні маршрути;
+- назви місій;
+- дані наведення (targeting);
+- дані корисного навантаження (payload);
+- тактичні нотатки;
+- живу телеметрію;
+- робочі частоти;
+- реальні серійні номери;
+- реальні імена або персональні дані;
+- реальні фотографії з метаданими.
 
-## Labeling Rule
+Телеметрія (telemetry) означає дані з живої системи, наприклад положення, швидкість, значення датчиків або статус.
 
-Every demo folder must clearly say:
+## Правило маркування
+
+Кожна демонстраційна папка має чітко зазначати:
 
 `Synthetic demo data only. Not operationally valid.`
 
-Operationally valid means usable for real-world operation. Demo data must not be usable that way.
+Operationally valid (придатний для реального застосування) означає придатний для використання в реальній операції. Демонстраційні дані не повинні бути придатними для такого використання.
 
-## Mixing Rule
+## Правило змішування
 
-Do not mix synthetic evidence and real evidence.
+Не змішуйте синтетичні докази та реальні докази.
 
-If a future version supports user uploads, the UI must clearly label:
+Якщо майбутня версія підтримуватиме завантаження від користувачів, інтерфейс (UI) має чітко позначати:
 
-- synthetic;
-- user-provided;
-- generated output.
+- синтетичні;
+- надані користувачем;
+- згенерований результат.
 
-UI means user interface, the screen a person clicks and reads.
+UI (user interface — інтерфейс користувача) означає екран, на якому людина натискає кнопки та читає інформацію.

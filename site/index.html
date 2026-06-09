@@ -1100,6 +1100,7 @@
         <span class="chip" data-i18n="proof.demo">статичне демо на GitHub Pages</span>
         <span class="chip" data-i18n="proof.synthetic">синтетичні навчальні дані</span>
         <a
+          id="scaffoldChip"
           class="chip chip-link"
           href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/blob/main/docs/scaffold.md"
           data-i18n="proof.scaffold"
@@ -1695,6 +1696,12 @@
           b.setAttribute("aria-pressed", b.getAttribute("data-lang") === l ? "true" : "false");
         });
         applyI18n();
+        var sc = document.getElementById("scaffoldChip");
+        if (sc) {
+          sc.href =
+            "https://github.com/DenisShumilov/uav-readiness-evidence-copilot/blob/main/docs/scaffold" +
+            (l === "en" ? ".en" : "") + ".md";
+        }
         renderSources();
         renderAgents();
         renderSkills();

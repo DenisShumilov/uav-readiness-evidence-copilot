@@ -1,139 +1,141 @@
-# Safety Boundaries
+# Межі безпеки
 
-Safety boundaries mean the clear line between what this project may do and what it must never do.
+*Українською · [English](safety-boundaries.en.md)*
 
-## Allowed Scope
+Межі безпеки (safety boundaries) — це чітка лінія між тим, що цей проєкт може робити, і тим, чого він ніколи не повинен робити.
 
-This project may help with:
+## Дозволена сфера
 
-- QA, meaning quality checks;
-- documentation, meaning writing and organizing project files;
-- evidence tracking, meaning connecting claims to proof;
-- traceability, meaning linking requirements to evidence and checks;
-- readiness reporting, meaning explaining documentation completeness;
-- synthetic demo data, meaning fake learning data;
-- training documentation, meaning safe educational material.
+Цей проєкт може допомагати з:
 
-## Blocked Scope
+- QA (quality assurance — забезпечення якості), тобто перевірками якості;
+- документацією, тобто написанням та впорядкуванням файлів проєкту;
+- відстеженням доказів (evidence tracking), тобто поєднанням тверджень із підтвердженням;
+- простежуваністю (traceability), тобто пов'язуванням вимог із доказами та перевірками;
+- звітністю про готовність (readiness reporting), тобто поясненням повноти документації;
+- синтетичними демонстраційними даними (synthetic demo data), тобто несправжніми навчальними даними;
+- навчальною документацією (training documentation), тобто безпечними освітніми матеріалами.
 
-This project must never help with:
+## Заборонена сфера
 
-- drone control;
-- flight control;
-- live telemetry control;
-- mission planning;
-- route generation;
-- waypoint generation;
-- targeting;
-- payload control or payload selection;
-- tactical recommendations;
-- evasion or countermeasure advice;
-- autonomous attack behavior;
-- strike optimization;
-- battlefield use instructions.
+Цей проєкт ніколи не повинен допомагати з:
 
-## Keyword Context Rule
+- керуванням дроном;
+- керуванням польотом;
+- керуванням живою телеметрією;
+- плануванням місій;
+- генеруванням маршрутів;
+- генеруванням точок маршруту (waypoint);
+- наведенням на ціль (targeting);
+- керуванням корисним навантаженням (payload) або його вибором;
+- тактичними рекомендаціями;
+- порадами щодо ухилення або протидії;
+- автономною атакувальною поведінкою;
+- оптимізацією ударів;
+- інструкціями для застосування на полі бою.
 
-Unsafe keywords such as `mission`, `payload`, `targeting`, `route`, `waypoint`, and `telemetry` are blocked in user/demo input artifacts.
+## Правило контексту ключових слів
 
-Active input artifact means a file the current MVP reads as project data, such as `BOM.csv`, `demo_manual.md`, `test_log.csv`, or `qa_notes.md`.
+Небезпечні ключові слова, такі як `mission` (місія), `payload` (корисне навантаження), `targeting` (наведення на ціль), `route` (маршрут), `waypoint` (точка маршруту) та `telemetry` (телеметрія), заблоковані у вхідних артефактах користувача/демонстрації.
 
-Future fixtures such as `future-fixtures/wiring_notes.yaml` and `future-fixtures/config_dump.txt` are kept for later documentation-only parser work and are not read by the current MVP.
+Активний вхідний артефакт (active input artifact) означає файл, який поточний MVP (minimum viable product — мінімально життєздатний продукт) читає як дані проєкту, наприклад `BOM.csv`, `demo_manual.md`, `test_log.csv` або `qa_notes.md`.
 
-Safety documentation may mention unsafe keywords only as prohibited items.
+Майбутні фікстури (future fixtures), такі як `future-fixtures/wiring_notes.yaml` та `future-fixtures/config_dump.txt`, зберігаються для подальшої роботи парсера (parser) виключно над документацією і не читаються поточним MVP.
 
-Allowed safety documentation example:
+Документація з безпеки може згадувати небезпечні ключові слова лише як заборонені елементи.
+
+Приклад дозволеної документації з безпеки:
 
 `No mission planning.`
 
-Blocked demo/input example:
+Приклад заблокованих демонстраційних/вхідних даних:
 
 `mission plan details`
 
-Simple meaning:
+Простими словами:
 
-Docs may say what is forbidden. Demo data must not contain operational content.
+Документація може зазначати, що заборонено. Демонстраційні дані не повинні містити операційного вмісту.
 
-## Sensitive Data Rule
+## Правило чутливих даних
 
-Do not include:
+Не включайте:
 
-- real coordinates;
-- real routes;
-- real missions;
-- real targets;
-- real payload details;
-- radio/control links;
-- live telemetry streams;
-- personal data of operators;
-- serial numbers from real equipment;
-- photos with EXIF/GPS data.
+- реальні координати;
+- реальні маршрути;
+- реальні місії;
+- реальні цілі;
+- реальні дані про корисне навантаження;
+- радіо/командні канали зв'язку;
+- потоки живої телеметрії;
+- персональні дані операторів;
+- серійні номери з реального обладнання;
+- фотографії з даними EXIF/GPS.
 
-EXIF means hidden metadata inside an image, sometimes including camera or location information.
+EXIF означає приховані метадані всередині зображення, які іноді містять інформацію про камеру або місцезнаходження.
 
-## Ambiguous Requests
+## Неоднозначні запити
 
-If a request is unclear, choose the safer interpretation:
+Якщо запит незрозумілий, обирайте безпечнішу інтерпретацію:
 
-documentation, QA, audit, and evidence only.
+лише документація, QA, аудит та докази.
 
-If a request asks for operational UAV help, refuse it and offer a safe alternative.
+Якщо запит просить операційної допомоги з БПЛА (безпілотний літальний апарат), відмовте в ньому та запропонуйте безпечну альтернативу.
 
-Safe alternative:
+Безпечна альтернатива:
 
 `I can help create a QA checklist, evidence lock, or documentation review instead.`
 
-## Public Portfolio Rule
+## Правило публічного портфоліо
 
-Everything in this repository should be safe to show to:
+Усе в цьому репозиторії має бути безпечним для демонстрації:
 
-- a recruiter;
-- a technical interviewer;
-- a university mentor;
-- a public GitHub visitor.
+- рекрутеру;
+- технічному інтерв'юеру;
+- університетському наставнику;
+- публічному відвідувачу GitHub.
 
-Public GitHub means a public code hosting page where anyone can see the project.
+Публічний GitHub означає публічну сторінку для розміщення коду, де будь-хто може побачити проєкт.
 
-## Agent Tooling Safety
+## Безпека інструментів агента
 
-Agent tooling means tools that help the AI agent work.
+Інструменти агента (agent tooling) означають інструменти, які допомагають AI-агенту працювати.
 
-Examples:
+Приклади:
 
-- Claude Code plugins;
-- skills;
-- subagents;
-- MCP servers;
-- LSP plugins;
-- hooks;
-- monitors;
-- built-in slash commands.
+- плагіни Claude Code;
+- навички (skills);
+- субагенти (subagents);
+- сервери MCP (Model Context Protocol);
+- плагіни LSP (Language Server Protocol);
+- гачки (hooks);
+- монітори (monitors);
+- вбудовані слеш-команди (slash commands).
 
-Default rule:
+Правило за замовчуванням:
 
-Do not connect or install external agent tools unless the user explicitly confirms.
+Не підключайте і не встановлюйте зовнішні інструменти агента, доки користувач явно не підтвердить.
 
-Allowed agent tools must support only:
+Дозволені інструменти агента мають підтримувати лише:
 
-- engineering QA;
-- evidence tracking;
-- documentation;
-- traceability;
-- readiness reporting;
-- testing;
-- safe portfolio work.
+- інженерний QA;
+- відстеження доказів;
+- документацію;
+- простежуваність;
+- звітність про готовність;
+- тестування;
+- безпечну роботу над портфоліо.
 
-Blocked agent tools:
+Заблоковані інструменти агента:
 
-- tools for live drone control;
-- tools for mission planning;
-- tools for route or waypoint generation;
-- tools for targeting;
-- tools for payload control;
-- tools for tactical recommendations;
-- tools for evasion or countermeasure advice;
-- tools that process real-time operational UAV data.
+- інструменти для живого керування дроном;
+- інструменти для планування місій;
+- інструменти для генерування маршрутів або точок маршруту;
+- інструменти для наведення на ціль;
+- інструменти для керування корисним навантаженням;
+- інструменти для тактичних рекомендацій;
+- інструменти для порад щодо ухилення або протидії;
+- інструменти, що обробляють операційні дані БПЛА в реальному часі.
 
-If an agent tool can access outside services, private accounts, shell commands, or unknown code, explain the risk before using it.
+Якщо інструмент агента може отримати доступ до зовнішніх сервісів, приватних облікових записів, команд оболонки (shell) або невідомого коду, поясніть ризик перед використанням.
 
-If the source, license, permissions, or safety are unclear, mark it `locked`, `later`, or `reject`.
+Якщо джерело, ліцензія, дозволи або безпека незрозумілі, позначте його як `locked`, `later` або `reject`.
