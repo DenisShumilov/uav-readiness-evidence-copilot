@@ -1,7 +1,9 @@
-# Synthetic conflict-readiness demo
+# Синтетична демонстрація готовності в умовах конфлікту даних
 
-A **third** synthetic bundle that contains a deliberate contradiction, to showcase the
-**conflict gate** in the readiness rules.
+*Українською · [English](README.en.md)*
+
+**Третій** синтетичний (повністю штучний) набір даних, який містить навмисну суперечність, щоб
+продемонструвати **бар'єр конфлікту** (conflict gate) у правилах оцінки готовності.
 
 ```text
 Intended use:  educational documentation QA demo only.
@@ -11,20 +13,21 @@ Limitations:   not operationally valid; revisions, IDs, and contents are artific
 Safety:        no real coordinates, routes, telemetry, serial numbers, names, or operational content.
 ```
 
-## Run
+## Запуск
 
 ```powershell
 npm run demo:conflict
 ```
 
-Output is written to `examples/demo-conflict-readiness/output/` (not committed).
+Результат записується до `examples/demo-conflict-readiness/output/` (не комітиться у репозиторій).
 
-## What it shows
+## Що це показує
 
-This package is almost fully evidenced — 10 verified claims. But one claim is in **conflict**: the
-document index lists one revision while the audit note shows another.
+Цей пакет майже повністю підкріплений доказами — 10 підтверджених тверджень (verified claims). Але одне
+твердження перебуває в стані **конфлікту** (conflict): покажчик документів (document index) вказує одну
+ревізію, тоді як аудиторська примітка (audit note) показує іншу.
 
-Based on deductions alone the package would score ~90/100. But the **conflict gate** caps the verdict
-at **49/100 (Blocked)**: a contradiction can never read as "ready" until the sources agree. This is
-the honest behavior the whole project is built to demonstrate — evidence and consistency over
-optimism.
+Лише на основі логічних висновків (deductions) пакет отримав би оцінку ~90/100. Але **бар'єр конфлікту**
+(conflict gate) обмежує вердикт до **49/100 (Blocked)**: суперечність ніколи не може читатися як «готово»
+(ready), доки джерела не узгоджуються між собою. Саме цю чесну поведінку покликаний продемонструвати весь
+проєкт — докази та узгодженість понад оптимізм.

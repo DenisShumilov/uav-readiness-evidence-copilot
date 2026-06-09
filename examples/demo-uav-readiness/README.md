@@ -1,24 +1,25 @@
-# Demo UAV Readiness Example
+# Демонстраційний приклад готовності БПЛА (UAV Readiness)
+
+*Українською · [English](README.en.md)*
 
 Synthetic demo data only. Not operationally valid.
 
-## Active Parsed Inputs
+## Активні розпарсовані вхідні дані (parsed inputs)
 
-The MVP currently reads these files:
+MVP (мінімально життєздатний продукт) наразі читає такі файли:
 
 - `BOM.csv`
 - `demo_manual.md`
 - `test_log.csv`
 - `qa_notes.md`
 
-## Planned Future Fixtures
+## Заплановані майбутні фікстури (fixtures)
 
-These files are kept for future documentation-only parser work and are not read by the current MVP:
+Ці файли зберігаються для майбутньої роботи парсера (parser) виключно над документацією та не читаються поточним MVP:
 
 - `future-fixtures/wiring_notes.yaml`
 - `future-fixtures/config_dump.txt`
 
-## Safety
+## Безпека (Safety)
 
-This folder must not contain real UAV data, live telemetry, real control links, operational routes, payload handling, targeting, tactical notes, or real-world deployment details.
-
+Ця тека не повинна містити реальних даних БПЛА, живої телеметрії (telemetry), реальних каналів керування, операційних маршрутів, поводження з корисним навантаженням, наведення на ціль, тактичних нотаток чи деталей реального розгортання.

@@ -1,5 +1,7 @@
 # Contributing
 
+*English · [Українською](CONTRIBUTING.uk.md)*
+
 Thanks for improving UAV Readiness & Evidence Copilot.
 
 This project is a safe, public portfolio demo for documentation QA, evidence tracking, traceability, and readiness reporting.

@@ -1,8 +1,8 @@
-# Synthetic maintenance-readiness demo
+# Синтетичне демо готовності до обслуговування
 
-A **second** synthetic example bundle, in a different shape from `demo-uav-readiness`. It exercises
-the same pipeline (parsers → evidence graph → readiness rules → reports) on maintenance-style
-records, and produces a clearly different, higher readiness score (a mostly-organized package).
+*Українською · [English](README.en.md)*
+
+**Другий** набір синтетичних прикладів (synthetic example bundle), за формою відмінний від `demo-uav-readiness`. Він задіює той самий конвеєр (pipeline): парсери (parsers) → граф доказів (evidence graph) → правила готовності (readiness rules) → звіти (reports), але працює на записах у стилі технічного обслуговування (maintenance) і дає помітно вищу оцінку готовності (здебільшого впорядкований пакет).
 
 ```text
 Intended use:  educational documentation QA demo only.
@@ -13,16 +13,14 @@ Limitations:   not operationally valid; dates, IDs, and contents are artificial.
 Safety:        no real coordinates, routes, telemetry, serial numbers, names, or operational content.
 ```
 
-## Run
+## Запуск
 
 ```powershell
 npm run demo:maintenance
 ```
 
-Output is written to `examples/demo-maintenance-readiness/output/` (not committed).
+Результат записується до `examples/demo-maintenance-readiness/output/` (не комітиться).
 
-## What it shows
+## Що це демонструє
 
-Unlike the strict `demo-uav-readiness` package (44/100, "Blocked"), this package is mostly evidenced
-and lands in the **"Reviewable, but incomplete"** band — but the tool still does its job: it flags a
-partial record and keeps a missing disposal sign-off **locked**. Evidence, not optimism.
+На відміну від суворого пакета `demo-uav-readiness` (44/100, "Blocked"), цей пакет здебільшого підкріплений доказами і потрапляє у смугу **"Reviewable, but incomplete"** (придатний до перегляду, але неповний) — проте інструмент усе одно виконує свою роботу: він позначає частковий запис і залишає відсутнє підтвердження утилізації (disposal sign-off) **заблокованим** (locked). Докази, а не оптимізм.

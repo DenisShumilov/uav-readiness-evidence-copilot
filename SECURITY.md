@@ -1,5 +1,7 @@
 # Security Policy
 
+*English · [Українською](SECURITY.uk.md)*
+
 ## Project scope
 
 This repository is a safe, offline documentation QA portfolio project.
