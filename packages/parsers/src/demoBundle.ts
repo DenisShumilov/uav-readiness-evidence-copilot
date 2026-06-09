@@ -5,6 +5,7 @@ import {
   type DemoBundle,
   type EvidenceSource
 } from "../../core/src/schemas";
+import { detectCrossDocumentConflicts } from "../../core/src/crossCheck";
 import { parseBOMCsv } from "./bom";
 import { parseManualMd } from "./manual";
 import { parseQaNotesMd } from "./qaNotes";
@@ -18,21 +19,27 @@ export function parseDemoBundle(
   const testLog = parseTestLogCsv(readFixture(fixtureDir, "test_log.csv"));
   const qaNotes = parseQaNotesMd(readFixture(fixtureDir, "qa_notes.md"));
 
+  const evidenceSources = mergeEvidenceSources([
+    ...bom.evidenceSources,
+    ...manual.evidenceSources,
+    ...testLog.evidenceSources,
+    ...qaNotes.evidenceSources
+  ]);
+  const evidenceClaims = [
+    ...bom.evidenceClaims,
+    ...manual.evidenceClaims,
+    ...testLog.evidenceClaims,
+    ...qaNotes.evidenceClaims,
+    // Derived by real cross-document analysis (compares declared revisions across
+    // documents), not read from a hand-typed status column:
+    ...detectCrossDocumentConflicts(evidenceSources)
+  ];
+
   return DemoBundleSchema.parse({
     artifacts: [bom.artifact, manual.artifact, testLog.artifact, qaNotes.artifact],
     bomItems: bom.bomItems,
-    evidenceSources: mergeEvidenceSources([
-      ...bom.evidenceSources,
-      ...manual.evidenceSources,
-      ...testLog.evidenceSources,
-      ...qaNotes.evidenceSources
-    ]),
-    evidenceClaims: [
-      ...bom.evidenceClaims,
-      ...manual.evidenceClaims,
-      ...testLog.evidenceClaims,
-      ...qaNotes.evidenceClaims
-    ],
+    evidenceSources,
+    evidenceClaims,
     evidenceLocks: qaNotes.evidenceLocks,
     qaItems: testLog.qaItems,
     readinessFindings: [

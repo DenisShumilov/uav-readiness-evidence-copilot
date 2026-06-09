@@ -35,6 +35,30 @@ describe("conflict readiness demo (conflict gate)", () => {
     expect(rawScore).toBeGreaterThan(assessment.readinessScore);
   });
 
+  it("derives the conflict by comparing revisions across documents, not from a hand-typed status", () => {
+    const outputDir = mkdtempSync(join(tmpdir(), "conflict-output-"));
+    runReadinessDemo({ fixtureDir, outputDir });
+    const graph = JSON.parse(
+      readFileSync(join(outputDir, "evidence-graph.json"), "utf8")
+    ) as {
+      evidenceClaims: Array<{
+        id: string;
+        status: string;
+        evidenceSourceIds: string[];
+        lockReason?: string;
+      }>;
+    };
+
+    const derived = graph.evidenceClaims.find((c) =>
+      c.id.startsWith("claim.crosscheck")
+    );
+    expect(derived).toBeDefined();
+    expect(derived?.status).toBe("conflict");
+    expect(derived?.evidenceSourceIds.length).toBe(2);
+    expect(derived?.lockReason).toContain("TM-3");
+    expect(derived?.lockReason).toContain("TM-2");
+  });
+
   it("keeps the generated report inside safe wording", () => {
     const outputDir = mkdtempSync(join(tmpdir(), "conflict-output-"));
     runReadinessDemo({ fixtureDir, outputDir });

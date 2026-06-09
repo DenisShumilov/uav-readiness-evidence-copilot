@@ -25,6 +25,12 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
   proving the pipeline generalizes to a different document shape with a different, higher score.
 - Third synthetic example bundle `demo-conflict-readiness` (`npm run demo:conflict`, 49/100) that
   contains a deliberate contradiction to showcase the conflict gate (deductions ~90, gated to 49).
+- **Real cross-document conflict detection** (`detectCrossDocumentConflicts`, `packages/core`): the
+  conflict gate now DERIVES a conflict by comparing declared revision values across documents
+  (`rev:<subject>=<value>` tokens) instead of reading a hand-typed status. The conflict demo computes
+  `TM-3` (document index) vs `TM-2` (audit note) → a derived `conflict` claim → capped at 49/100.
+- Published the actual AI scaffold under `meta/ai-workflows/` (10 subagent + 7 skill files + the rules
+  core), so the "built by a scaffold of 10 agents" claim is verifiable from real files.
 
 ### Changed
 

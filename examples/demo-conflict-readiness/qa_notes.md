@@ -10,7 +10,7 @@ These notes are fake document-control training data for evidence review.
 |---|---|---|
 | EV-QA-001 | verified | Document index is present and linked to this QA note |
 | EV-QA-002 | verified | Sign-off sheet exists and explains the review scope |
-| EV-QA-003 | conflict | Document index lists revision TM-3 but the audit note shows TM-2 in the packet |
+| EV-QA-003 | verified | Packet audit note records the training manual at rev:training-manual=TM-2 |
 
 ## Warning Finding
 
