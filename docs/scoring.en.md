@@ -26,6 +26,28 @@ The weights reflect how much each issue hurts trust: a **conflict** (sources act
 a **locked** claim (no supporting evidence) hurt most, a **partial** claim (some evidence, not
 enough) hurts less, and a process **warning** is the lightest signal.
 
+## Ingested labels vs engine-derived status
+
+The synthetic inputs carry a reviewer-written `Status` column. The engine treats that column as an
+**assertion to check, not a fact to copy**. For every claim it independently re-derives a status from
+the structure of the evidence (`packages/rules/src/deriveStatus.ts`) and may only ever make the
+verdict **more conservative** than the reviewer claimed — it never inflates a status:
+
+- **No / dangling evidence → `locked`.** A claim whose linked source does not exist cannot be
+  supported, whatever the column says.
+- **Test-record claims are graded by their own logged outcome.** A check marked `verified` whose test
+  result is `fail`/`blocked` is overridden to `locked`; a `warning` result (ingested as `not_tested`)
+  becomes `partial`.
+- **Cross-document contradiction → `conflict`.** Declared revisions are compared across documents
+  (`packages/core/src/crossCheck.ts`); the disagreement is derived, never typed.
+
+For every other claim the reviewer's status is accepted only as an **upper bound** once the
+evidence-presence gate passes. When the documents are internally consistent (as in the demos) the
+engine arrives at exactly the reviewer's verdict — which is *why* the demo numbers reproduce — but
+`evaluateReadiness` reports an `engineAdjustments` list whenever its verdict and the reviewer's label
+diverge. The override is covered by tests (`packages/rules/src/deriveStatus.test.ts`): a `verified`
+row whose check actually fails drops the score and records an adjustment.
+
 ## Worked example (the live demo)
 
 The synthetic demo package produces:

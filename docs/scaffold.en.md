@@ -108,6 +108,24 @@ agent when a request crosses the boundary — with zero operational detail.
 > **Safe alternative / Безпечно:** documentation QA, evidence, traceability matrix, audit readiness.
 > *(перевірка документації, докази, матриця простежуваності, готовність до аудиту.)*
 
+## Runtime gate: from prose to a tested rule
+
+The refusal above is the *policy*. The same boundary is also enforced as an **executable runtime
+rule**. A `PreToolUse` hook — [`meta/ai-workflows/hooks/scaffold-gate.mjs`](../meta/ai-workflows/hooks/scaffold-gate.mjs),
+wired in [`.claude/settings.json`](../.claude/settings.json) — runs before every `Edit`/`Write`/`Bash`
+tool call, logs it, and **exits non-zero to block** any call whose text contains operational UAV
+terminology (the same denylist the Zod schemas enforce at the type level).
+
+This is the part agent-savvy readers ask to see *demonstrated*, not asserted:
+
+- a committed [`scaffold-activity.sample.log`](../meta/ai-workflows/scaffold-activity.sample.log)
+  shows the gate **allowing** a docs edit and **denying** a "mission/route" edit;
+- it is covered by tests in [`packages/qa/src/scaffoldGate.test.ts`](../packages/qa/src/scaffoldGate.test.ts),
+  which spawn the hook and assert a forbidden tool call is actually blocked (exit code 2).
+
+So for the safety boundary the thesis "the intelligence is in the scaffold" is a *measurable* claim:
+the scaffold changes an outcome — a tool call that would cross the line never runs.
+
 ## How this maps to the repo
 
 The same workstreams appear as packages: `core`, `parsers`, `evidence`, `rules`, `reports`, `qa`.

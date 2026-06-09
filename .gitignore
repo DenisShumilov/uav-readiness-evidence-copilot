@@ -26,6 +26,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+# ...but keep the committed scaffold-gate demonstration artifact (the live
+# runtime log scaffold-activity.log stays ignored via *.log above).
+!meta/ai-workflows/scaffold-activity.sample.log
 
 # OS and editor files
 .DS_Store

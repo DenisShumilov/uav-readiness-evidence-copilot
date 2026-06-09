@@ -1,0 +1,16 @@
+{
+  "$comment": "Runtime scaffold gate for the UAV Readiness & Evidence Copilot. The PreToolUse hook below runs before every Edit/Write/Bash call, logs it to meta/ai-workflows/scaffold-activity.log, and DENIES any change that introduces operational UAV terminology — enforcing the documentation-QA-only safety boundary as a measurable runtime rule. See meta/ai-workflows/hooks/scaffold-gate.mjs and packages/qa/src/scaffoldGate.test.ts.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node meta/ai-workflows/hooks/scaffold-gate.mjs"
+          }
+        ]
+      }
+    ]
+  }
+}

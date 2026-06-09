@@ -4,7 +4,7 @@
 
 > Explainable readiness rules for documentation QA.
 
-Part of the [UAV Readiness & Evidence Copilot](../../README.en.md) monorepo.
+Part of the [UAV Readiness & Evidence Copilot](../../README.md) monorepo.
 
 ## What it provides
 

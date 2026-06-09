@@ -34,6 +34,8 @@ export const EvidenceStatusSchema = z.enum([
   "conflict"
 ]);
 
+export type EvidenceStatus = z.infer<typeof EvidenceStatusSchema>;
+
 export const FindingSeveritySchema = z.enum([
   "info",
   "warning",

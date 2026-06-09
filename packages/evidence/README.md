@@ -4,7 +4,7 @@
 
 > Builds the evidence graph from a parsed demo bundle.
 
-Part of the [UAV Readiness & Evidence Copilot](../../README.en.md) monorepo.
+Part of the [UAV Readiness & Evidence Copilot](../../README.md) monorepo.
 
 ## What it provides
 

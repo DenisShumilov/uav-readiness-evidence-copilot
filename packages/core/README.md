@@ -4,7 +4,7 @@
 
 > Shared TypeScript/Zod schemas and safe synthetic examples for the documentation-readiness data model.
 
-Part of the [UAV Readiness & Evidence Copilot](../../README.en.md) monorepo.
+Part of the [UAV Readiness & Evidence Copilot](../../README.md) monorepo.
 
 ## What it provides
 

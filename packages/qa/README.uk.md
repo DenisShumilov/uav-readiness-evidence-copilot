@@ -4,7 +4,7 @@
 
 > Наскрізні димові тести (smoke tests — базові перевірки працездатності) для демонстраційного процесу CLI (command-line interface — інтерфейс командного рядка) оцінки готовності.
 
-Частина монорепозиторію [UAV Readiness & Evidence Copilot](../../README.md).
+Частина монорепозиторію [UAV Readiness & Evidence Copilot](../../README.uk.md).
 
 ## Що містить
 

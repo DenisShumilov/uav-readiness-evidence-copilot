@@ -4,7 +4,7 @@
 
 > Safe parsers for the active synthetic demo inputs.
 
-Part of the [UAV Readiness & Evidence Copilot](../../README.en.md) monorepo.
+Part of the [UAV Readiness & Evidence Copilot](../../README.md) monorepo.
 
 ## What it provides
 

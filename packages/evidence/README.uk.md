@@ -4,7 +4,7 @@
 
 > Будує граф доказів (evidence graph) з розібраного демонстраційного пакета (parsed demo bundle).
 
-Частина монорепозиторію [UAV Readiness & Evidence Copilot](../../README.md).
+Частина монорепозиторію [UAV Readiness & Evidence Copilot](../../README.uk.md).
 
 ## Що містить
 

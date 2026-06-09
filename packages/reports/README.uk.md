@@ -4,7 +4,7 @@
 
 > Генератори звітів та експорту (export — вивантаження даних) для безпечного демонстраційного процесу.
 
-Частина монорепозиторію [UAV Readiness & Evidence Copilot](../../README.md).
+Частина монорепозиторію [UAV Readiness & Evidence Copilot](../../README.uk.md).
 
 ## Що містить
 

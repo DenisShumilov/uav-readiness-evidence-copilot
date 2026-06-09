@@ -4,7 +4,7 @@
 
 > Спільні схеми TypeScript/Zod (схеми даних) і безпечні синтетичні приклади для моделі даних готовності документації.
 
-Частина монорепозиторію [UAV Readiness & Evidence Copilot](../../README.md).
+Частина монорепозиторію [UAV Readiness & Evidence Copilot](../../README.uk.md).
 
 ## Що містить
 

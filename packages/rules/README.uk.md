@@ -4,7 +4,7 @@
 
 > Пояснювані правила готовності (readiness rules) для контролю якості документації (documentation QA).
 
-Частина монорепозиторію [UAV Readiness & Evidence Copilot](../../README.md).
+Частина монорепозиторію [UAV Readiness & Evidence Copilot](../../README.uk.md).
 
 ## Що містить
 

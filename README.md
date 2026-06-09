@@ -1,88 +1,88 @@
 # UAV Readiness & Evidence Copilot
 
-[English version](README.en.md)
+[Українська версія](README.uk.md)
 
-> Доказово-орієнтований QA-інструмент для інженерної документації UAV / robotics: карта доказів, заблоковані висновки, оцінка готовності, простежуваність.
+> Evidence-first QA for UAV / robotics engineering documentation: evidence graph, locked findings, readiness score, traceability.
 >
-> **Розум — у каркасі, не в моделі.**
+> **The intelligence is in the scaffold, not the model.**
 
 [![CI](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/actions/workflows/ci.yml)
-[![Демо наживо](https://img.shields.io/badge/демо-наживо-2556c7)](https://denisshumilov.github.io/uav-readiness-evidence-copilot/)
+[![Live Demo](https://img.shields.io/badge/live-demo-2556c7)](https://denisshumilov.github.io/uav-readiness-evidence-copilot/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-1d7f58.svg)](LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-monorepo-3178C6)](#технології)
-[![Tests: Vitest](https://img.shields.io/badge/tests-Vitest-6E9F18)](#технології)
+[![TypeScript](https://img.shields.io/badge/TypeScript-monorepo-3178C6)](#tech-stack)
+[![Tests: Vitest](https://img.shields.io/badge/tests-Vitest-6E9F18)](#tech-stack)
 
 <p align="center">
   <a href="https://denisshumilov.github.io/uav-readiness-evidence-copilot/">
-    <img src="docs/assets/hero-dashboard.png" alt="Жива демо-сторінка: оцінка готовності 44/100, карта доказів і теза «Розум — у каркасі, не в моделі»" width="100%" />
+    <img src="docs/assets/hero-dashboard.png" alt="Live demo page: 44/100 readiness score, evidence map, and the thesis 'The intelligence is in the scaffold, not the model'" width="100%" />
   </a>
 </p>
 
-**Жива сторінка:** https://denisshumilov.github.io/uav-readiness-evidence-copilot/ — інтерактивний дашборд: перемикай джерела доказів і дивись, як оцінка готовності перераховується, а твердження стають `locked`.
+**Live demo:** https://denisshumilov.github.io/uav-readiness-evidence-copilot/ — an interactive dashboard: toggle evidence sources and watch the readiness score recompute while claims turn `locked`.
 
-UAV Readiness & Evidence Copilot читає синтетичні навчальні файли, будує карту доказів, показує заблоковані висновки, рахує оцінку готовності документації і генерує пакет перевірки: матрицю простежуваності, цифрові відбитки файлів, звіт і демо-сторінку. Усе будує не одна модель, а каркас із правил, ролей і перевірок навколо неї.
+UAV Readiness & Evidence Copilot turns synthetic engineering artifacts into an evidence-backed readiness package: parsed inputs, evidence graph, locked findings, traceability CSV, artifact hashes, markdown report, and a static portfolio demo. It is built not by one model, but by a scaffold of rules, roles, and checks around it.
 
 ## TL;DR
 
-- Читає 4 синтетичні навчальні файли (BOM, інструкція, журнал тестів, QA-нотатки).
-- Будує карту доказів для тверджень, джерел і блокувань.
-- Не вигадує підтверджень: **нема доказу → заблоковано**.
-- Рахує оцінку готовності документації прозорими правилами.
-- Генерує звіт, JSON, traceability CSV, цифрові відбитки і демо-сторінку.
-- Головне: надійність — у каркасі (правила, ролі, перевірки), а не в моделі.
+- Parses 4 synthetic inputs (BOM, manual, test log, QA notes).
+- Builds an evidence graph for claims, sources, and locks.
+- **Derives** each status from the evidence instead of trusting the reviewer's label: `no evidence -> locked`, test-record claims graded by their own logged outcome, and **cross-document contradictions override even a hand-typed "verified"** — the conflict demo lands at **49/100 Blocked** although every row is marked "verified" (see [docs/scoring.en.md](docs/scoring.en.md#ingested-labels-vs-engine-derived-status)).
+- Computes a documentation readiness score with explainable, capped rules — and a parity test keeps the live site's formula identical to the engine.
+- Exports a report, JSON, traceability CSV, artifact hashes, and a demo page.
+- The point: reliability comes from the scaffold (rules, roles, checks, and a runtime gate), not the model.
 
-## Демо-відео
+## Demo Video
 
-Фінальні MP4-відео опубліковані через GitHub Release, а не зберігаються як важкі файли в репозиторії.
+Final demo videos are published through GitHub Releases, not committed as binary files.
 
-- [Онлайн-сторінка демо](https://denisshumilov.github.io/uav-readiness-evidence-copilot/)
-- [Українське MP4-демо](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.5.0-demo-video/uav-readiness-demo.uk.final.mp4)
-- [Англійське MP4-демо](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.5.0-demo-video/uav-readiness-demo.en.final.mp4)
-- [Реліз демо-відео v5 (живий інтерактивний сайт)](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.5.0-demo-video)
+- [Online demo page](https://denisshumilov.github.io/uav-readiness-evidence-copilot/)
+- [Ukrainian MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.5.0-demo-video/uav-readiness-demo.uk.final.mp4)
+- [English MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.5.0-demo-video/uav-readiness-demo.en.final.mp4)
+- [Demo video release v5 (live interactive site)](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.5.0-demo-video)
 
-## Що робить
+## What It Does
 
-- Читає 4 навчальні вхідні файли.
-- Будує карту доказів для тверджень, джерел і блокувань.
-- Показує підтверджені, часткові та заблоковані докази.
-- Рахує оцінку готовності документації.
-- Генерує текстовий звіт, JSON, CSV і HTML-сторінки.
-- Перевіряється через TypeScript, Vitest, npm audit і GitHub Actions.
+- Parses 4 synthetic documentation inputs.
+- Builds an evidence graph for claims, sources, and locks.
+- Shows verified, partial, and locked evidence.
+- Calculates a documentation readiness score.
+- Generates markdown, JSON, CSV, and static HTML outputs.
+- Runs through TypeScript, Vitest, npm audit, and GitHub Actions CI.
 
-## Чому це важливо
+## Why It Matters
 
-Інженерні команди часто мають багато документів, логів і нотаток якості, але не завжди швидко бачать, що реально підтверджено доказами.
+Engineering teams often have scattered documents, logs, and QA notes, but need a fast way to see what is actually supported by evidence.
 
-Цей проєкт демонструє безпечний внутрішній інструмент для перевірки готовності документації, підготовки до аудиту та передачі матеріалів на рецензування.
+This project demonstrates a safe internal-tool workflow for documentation readiness, audit preparation, and handoff review.
 
-Головне правило:
+Core rule:
 
 ```text
-Немає доказу -> заблоковано.
+No evidence -> locked.
 ```
 
-## Межі безпеки
+## Safety Boundaries
 
-Сувора межа безпеки тут — це **перевага, а не дисклеймер**: вона показує інженерну дисципліну й контроль обсягу (scope). Це тільки проєкт для документації, QA і портфоліо.
+The strict safety boundary here is a **strength, not a disclaimer**: it shows engineering discipline and scope control. This is a documentation, QA, and portfolio project only.
 
-Проєкт не керує дронами або роботами, не обробляє живі дані з систем, не генерує маршрути або точки руху, не підтримує роботу з корисним навантаженням, наведення, тактичні поради і не підключається до реальних літальних апаратів, радіомодулів, сенсорів або польових систем.
+It does not control drones or robots, process live telemetry, generate routes or waypoints, support payload operation, support targeting, provide tactical advice, or connect to real aircraft, radios, sensors, or field systems.
 
-Усі демо-дані навчальні, статичні й не взяті з реального використання.
+All demo data is synthetic, static, and educational.
 
-## Швидкий запуск
+## Quick Start
 
 ```powershell
 npm install
 npm run demo:readiness
 ```
 
-Відкрити:
+Open:
 
 ```text
-examples/demo-uav-readiness/output/portfolio-demo.uk.html
+examples/demo-uav-readiness/output/portfolio-demo.html
 ```
 
-Запустити перевірки:
+Run checks:
 
 ```powershell
 npm run typecheck
@@ -90,39 +90,41 @@ npm test
 npm audit --audit-level=moderate
 ```
 
-## Три демо-набори
+## Three demo bundles
 
-- `npm run demo:readiness` — суворий набір `demo-uav-readiness` (**44/100**, «не готово»): багато прогалин і заблокованих пунктів.
-- `npm run demo:maintenance` — здебільшого зібраний набір `demo-maintenance-readiness` (**80/100**, «придатний до огляду, але неповний»): той самий конвеєр, інша форма документів, інший результат.
-- `npm run demo:conflict` — набір `demo-conflict-readiness` (**49/100**): майже все підтверджено, але одна **суперечність** між джерелами — і conflict-gate сам опускає вердикт у зону «заблоковано» (за дедукціями було б ~90).
+- `npm run demo:readiness` — the strict `demo-uav-readiness` bundle (**44/100**, "not ready"): many gaps and locked items.
+- `npm run demo:maintenance` — the mostly-organized `demo-maintenance-readiness` bundle (**80/100**, "reviewable, but incomplete"): same pipeline, different document shape, different result.
+- `npm run demo:conflict` — the `demo-conflict-readiness` bundle (**49/100**): almost fully evidenced, but one **contradiction** between sources — the conflict gate caps the verdict in the Blocked band (deductions alone would give ~90).
 
-Це показує, що інструмент працює на різних наборах і не «штампує» оцінку — він усе одно лишає `partial`, `locked` і не дає «готово», якщо джерела суперечать одне одному.
+This shows the tool generalizes and never rubber-stamps a score — it keeps claims `partial`/`locked` and refuses a "ready" verdict when sources disagree.
 
-## Вхідні файли
+## Inputs
 
-Активні вхідні файли, які читає MVP:
+Active parsed inputs:
 
 - `BOM.csv`
 - `demo_manual.md`
 - `test_log.csv`
 - `qa_notes.md`
 
-Майбутні навчальні файли, які поточний MVP ще не читає:
+Future-only fixtures:
 
 - `future-fixtures/wiring_notes.yaml`
 - `future-fixtures/config_dump.txt`
 
-## Результати
+The current MVP parses only the active inputs.
 
-Згенеровані результати створюються локально командою `npm run demo:readiness` тут:
+## Outputs
+
+Generated outputs are created locally by `npm run demo:readiness` in:
 
 ```text
 examples/demo-uav-readiness/output/
 ```
 
-Ця папка не зберігається в репозиторії. Для публічного перегляду використовуйте онлайн-демо сторінку та GitHub Release з MP4-відео.
+This folder is not committed to the repository. For public viewing, use the online demo page and GitHub Release MP4 videos.
 
-Поточні результати:
+Current outputs:
 
 - `portfolio-demo.md`
 - `portfolio-demo.html`
@@ -133,55 +135,52 @@ examples/demo-uav-readiness/output/
 - `readiness-assessment.json`
 - `traceability-matrix.csv`
 - `artifact-hashes.json`
-- `readiness.sarif` — SARIF 2.1.0 (формат GitHub code scanning)
+- `readiness.sarif` — SARIF 2.1.0 (GitHub code scanning format)
 
-## Архітектура
+## Architecture
 
 ```text
-навчальні демо-файли
-  -> читачі файлів
-  -> правила даних
-  -> карта доказів
-  -> правила оцінки готовності
-  -> звіти та демо-сторінки
+synthetic demo artifacts
+  -> parsers
+  -> schemas
+  -> evidence graph
+  -> readiness rules
+  -> reports and portfolio outputs
 ```
 
-Детальна схема потоку даних: [docs/architecture.md](docs/architecture.md).
+See [docs/architecture.en.md](docs/architecture.en.md) for the detailed data flow.
 
-## Як це побудовано — каркас із 10 агентів
+## How it was built — a scaffold of 10 agents
 
-Цей репозиторій зробила не одна модель, а **каркас (scaffold)**: постійні правила в [AGENTS.md](AGENTS.md), 10 агентів-спеціалістів, 7 готових скілів і обов'язкові перевірки (doubt-gate, red-team, evidence-lock, self-review).
+This repo was built not by one model, but by a **scaffold**: persistent rules in [AGENTS.md](AGENTS.md), 10 specialist agents, 7 reusable skills, and mandatory gates (doubt gate, red-team, evidence lock, self-review).
 
-Повний опис із діаграмою, ролями і реальним прикладом відмови агента безпеки: **[docs/scaffold.md](docs/scaffold.md)**.
-Реальні файли каркаса (10 субагентів + 7 скілів, кожен окремо): **[meta/ai-workflows/](meta/ai-workflows/README.md)**.
+Full write-up with a diagram, role table, and a real safety-agent refusal: **[docs/scaffold.en.md](docs/scaffold.en.md)**.
+The actual scaffold files (10 subagents + 7 skills, each its own file): **[meta/ai-workflows/](meta/ai-workflows/README.md)**.
 
-Головна теза: **інтелект — у каркасі навколо моделі, а не в самій моделі.**
+The scaffold also has **runtime teeth**: a `PreToolUse` hook ([meta/ai-workflows/hooks/scaffold-gate.mjs](meta/ai-workflows/hooks/scaffold-gate.mjs), wired in [.claude/settings.json](.claude/settings.json)) logs every tool call and **blocks** any edit or command that introduces operational UAV terminology — the documentation-QA-only boundary enforced as a measurable, *tested* rule rather than a prompt. A committed [sample log](meta/ai-workflows/scaffold-activity.sample.log) shows it allowing a docs edit and denying a "mission/route" edit.
 
-## Технології
+Core thesis: **the intelligence is in the scaffold around the model, not in the model itself.**
 
-Основні технології:
+## Tech Stack
 
 - TypeScript
 - Zod
 - Vitest
 - tsx
 - Node.js
-- GitHub Actions
-
-Технології для демо-відео:
-
 - Playwright
 - ffmpeg
+- GitHub Actions
 
-## Документація
+## Documentation
 
-- [Як це побудовано — каркас із 10 агентів](docs/scaffold.md)
-- [AGENTS.md — ядро правил](AGENTS.uk.md)
-- [Як працює оцінка готовності](docs/scoring.md)
-- [Схеми виводу та SARIF](schemas/README.uk.md)
-- [FAQ про проєкт](docs/project-faq.md)
-- [Архітектура](docs/architecture.md)
-- [Межі безпеки](docs/safety-boundaries.md)
-- [Модель доказів](docs/evidence-model.md)
-- [Політика демо-даних](docs/demo-data-policy.md)
-- [Словник понять](docs/glossary.md)
+- [How it was built — a scaffold of 10 agents](docs/scaffold.en.md)
+- [AGENTS.md — the rules core](AGENTS.md)
+- [How the readiness score works](docs/scoring.en.md)
+- [Output schemas & SARIF](schemas/README.md)
+- [Project FAQ](docs/project-faq.en.md)
+- [Architecture](docs/architecture.en.md)
+- [Safety boundaries](docs/safety-boundaries.en.md)
+- [Evidence model](docs/evidence-model.en.md)
+- [Demo data policy](docs/demo-data-policy.en.md)
+- [Glossary](docs/glossary.en.md)

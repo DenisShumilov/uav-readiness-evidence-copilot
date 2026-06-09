@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="uk">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -1033,8 +1033,8 @@
         </div>
         <div class="nav-right">
           <div class="lang" role="group" aria-label="Language">
-            <button data-lang="uk" aria-pressed="true">UA</button>
-            <button data-lang="en" aria-pressed="false">EN</button>
+            <button data-lang="uk" aria-pressed="false">UA</button>
+            <button data-lang="en" aria-pressed="true">EN</button>
           </div>
           <a
             class="btn btn-ghost btn-sm"
@@ -1401,8 +1401,8 @@
           "gauge.bandHigh": "Готова до рецензування",
           "dash.eyebrow": "Інтерактив",
           "dash.title": "Жива перевірка готовності",
-          "dash.intro": "Вмикай і вимикай джерела доказів зліва. Дивись, як твердження стають <b>заблокованими</b> і як оцінка перераховується за справжніми вагами й cap'ами інструменту (locked −6, partial −3, warning −2).",
-          "dash.honesty": "Дані реальні — узяті з виводу демо (8 підтверджено, 4 частково, 5 заблоковано → 44/100). Ваги дедукцій справжні: locked −6, partial −3, warning −2. Це жива ілюстрація головного правила; точний офіційний рахунок завжди дає сам інструмент командою npm run demo:readiness.",
+          "dash.intro": "Вмикай і вимикай джерела доказів зліва. Дивись, як твердження стають <b>заблокованими</b> і як оцінка перераховується за справжніми вагами й cap'ами інструменту (locked −6, partial −3, warning −2; conflict −8 і missing-artifact −10 спрацьовують в інших демо).",
+          "dash.honesty": "Дані реальні — узяті з виводу демо (8 підтверджено, 4 частково, 5 заблоковано → 44/100). Цей віджет застосовує повну формулу з 5 категорій; тут активні 3 (conflict і missing-artifact = 0 у цьому сценарії). Ваги дзеркалять движок (packages/rules), і parity-тест тримає їх синхронними. Точний офіційний рахунок завжди дає сам інструмент командою npm run demo:readiness.",
           "dash.sourcesTitle": "Джерела доказів",
           "dash.sourcesHint": "Кожне джерело — це рядок таблиці, нотатка або документ. Прибери джерело — і пов'язані твердження втрачають доказ.",
           "dash.active": "активних",
@@ -1461,8 +1461,8 @@
           "gauge.bandHigh": "Ready for review",
           "dash.eyebrow": "Interactive",
           "dash.title": "Live readiness check",
-          "dash.intro": "Toggle evidence sources on the left. Watch claims turn <b>locked</b> and the readiness score recompute with the tool's real weights and caps (locked −6, partial −3, warning −2).",
-          "dash.honesty": "Data is real — taken from the demo output (8 verified, 4 partial, 5 locked → 44/100). Deduction weights are real: locked −6, partial −3, warning −2. This is a live illustration of the core rule; the exact official score always comes from the tool itself via npm run demo:readiness.",
+          "dash.intro": "Toggle evidence sources on the left. Watch claims turn <b>locked</b> and the readiness score recompute with the tool's real weights and caps (locked −6, partial −3, warning −2; conflict −8 and missing-artifact −10 apply in the other demos).",
+          "dash.honesty": "Data is real — taken from the demo output (8 verified, 4 partial, 5 locked → 44/100). This widget applies the full 5-category formula; 3 categories are active here (conflict and missing-artifact are 0 in this scenario). The weights mirror the engine (packages/rules) and a parity test keeps them in sync. The exact official score always comes from the tool itself via npm run demo:readiness.",
           "dash.sourcesTitle": "Evidence sources",
           "dash.sourcesHint": "Each source is a table row, a note or a document. Remove a source and the linked claims lose their proof.",
           "dash.active": "active",
@@ -1500,7 +1500,15 @@
         }
       };
 
-      var lang = "uk";
+      var lang = (function () {
+        try {
+          var q = new URLSearchParams(location.search).get("lang");
+          if (q === "en" || q === "uk") return q;
+          var saved = localStorage.getItem("lang");
+          if (saved === "en" || saved === "uk") return saved;
+        } catch (e) {}
+        return "en";
+      })();
 
       // ---------- Rendering ----------
       var state = {};
@@ -1520,18 +1528,43 @@
         return t("dash.locked");
       }
 
+      // SINGLE SOURCE OF TRUTH — mirrors packages/rules/src/readiness.ts
+      // (DEDUCTION_CONFIG + CONFLICT_CEILING). A parity test
+      // (packages/qa/src/siteParity.test.ts) FAILS if these numbers ever drift
+      // from the engine, so this widget can never silently disagree with the CLI.
+      var DEDUCTIONS = {
+        lockedCritical: { pointsEach: 6, cap: 48 },
+        conflict: { pointsEach: 8, cap: 24 },
+        partial: { pointsEach: 3, cap: 24 },
+        warning: { pointsEach: 2, cap: 16 },
+        missingArtifact: { pointsEach: 10, cap: 30 }
+      };
+      var CONFLICT_CEILING = 49;
+
+      function cappedDeduction(count, cfg) {
+        return Math.min(count * cfg.pointsEach, cfg.cap);
+      }
+
       function compute() {
         var v = 0, p = 0, l = 0;
         CLAIMS.forEach(function (c) {
           var s = statusOf(c);
           if (s === "verified") v++; else if (s === "partial") p++; else l++;
         });
-        var warnings = p + 3; // 3 fixed process/traceability warnings at baseline
-        // Same per-category capped deductions as the real engine (packages/rules):
-        var dLocked = Math.min(l * 6, 48);
-        var dPartial = Math.min(p * 3, 24);
-        var dWarn = Math.min(warnings * 2, 16);
-        var score = Math.max(0, Math.min(100, 100 - dLocked - dPartial - dWarn));
+        // This interactive illustration exercises 3 of the engine's 5 deduction
+        // categories: it has no cross-document conflicts and no missing
+        // artifacts, so those two terms are 0 here. The full 5-category formula
+        // and the conflict ceiling are still applied, exactly as the engine does.
+        var conflicts = 0, missingArtifacts = 0;
+        var warnings = p + 3; // 3 fixed process/traceability findings + 1 per partial claim
+        var deductions =
+          cappedDeduction(l, DEDUCTIONS.lockedCritical) +
+          cappedDeduction(conflicts, DEDUCTIONS.conflict) +
+          cappedDeduction(p, DEDUCTIONS.partial) +
+          cappedDeduction(warnings, DEDUCTIONS.warning) +
+          cappedDeduction(missingArtifacts, DEDUCTIONS.missingArtifact);
+        var ceiling = conflicts > 0 ? CONFLICT_CEILING : 100;
+        var score = Math.min(ceiling, Math.max(0, 100 - deductions));
         return { v: v, p: p, l: l, warnings: warnings, score: score };
       }
 
@@ -1694,6 +1727,7 @@
 
       function setLang(l) {
         lang = l;
+        try { localStorage.setItem("lang", l); } catch (e) {}
         document.querySelectorAll(".lang button").forEach(function (b) {
           b.setAttribute("aria-pressed", b.getAttribute("data-lang") === l ? "true" : "false");
         });
@@ -1720,11 +1754,9 @@
         update(true);
       });
 
-      renderSources();
-      renderAgents();
-      renderSkills();
-      applyI18n();
-      update(false);
+      // Apply the resolved initial language (?lang= / localStorage / default en),
+      // which also wires aria-pressed, i18n, the scaffold link, and the first render.
+      setLang(lang);
 
       // Reveal on scroll
       var io = new IntersectionObserver(

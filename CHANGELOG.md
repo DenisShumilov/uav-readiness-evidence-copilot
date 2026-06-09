@@ -31,12 +31,33 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
   `TM-3` (document index) vs `TM-2` (audit note) → a derived `conflict` claim → capped at 49/100.
 - Published the actual AI scaffold under `meta/ai-workflows/` (10 subagent + 7 skill files + the rules
   core), so the "built by a scaffold of 10 agents" claim is verifiable from real files.
+- **Engine-derived evidence status** (`packages/rules/src/deriveStatus.ts`): the readiness engine now
+  re-derives every claim's status from the evidence instead of trusting the reviewer's `Status`
+  column, and may only make a verdict *more conservative* (never inflate). It locks dangling/absent
+  evidence, grades `test_record` claims by their own logged outcome (a "verified" check that actually
+  failed is overridden to `locked`), and surfaces an `engineAdjustments` list when its verdict and the
+  reviewer label diverge. Demo scores are unchanged (44/80/49) and proven so by tests
+  (`deriveStatus.test.ts`: `engineAdjustedCount === 0` for the internally consistent demo fixtures).
+- **Site↔engine score parity test** (`packages/qa/src/siteParity.test.ts`): the live dashboard now
+  applies the full 5-category formula + conflict ceiling from a single config mirroring `packages/rules`,
+  and the test fails if any weight/cap drifts between the site and the engine.
+- **Runtime scaffold gate** ([`.claude/settings.json`](.claude/settings.json) +
+  [`meta/ai-workflows/hooks/scaffold-gate.mjs`](meta/ai-workflows/hooks/scaffold-gate.mjs)): a
+  `PreToolUse` hook logs every tool call and blocks any edit/command introducing operational UAV
+  terminology — the documentation-QA-only boundary as a measurable, tested runtime rule, with a
+  committed sample log and tests (`scaffoldGate.test.ts`).
+- Hardened cross-document conflict detection: the `rev:<subject>=<value>` token now tolerates
+  whitespace, the input contract is documented, and `findMalformedRevisionMentions` surfaces malformed
+  revision declarations instead of failing open silently.
 
 ### Changed
 
 - Scoring guards in the readiness rules: a conflict deduction plus a **conflict gate** (a
   contradiction on a critical claim caps the verdict in the Blocked band) and **per-category caps**
   so one noisy bucket cannot dominate. Demo scores are unchanged (44/100 and 80/100).
+- `evaluateReadiness` now takes a `DemoBundle` directly (removed an unused graph-input overload that
+  silently dropped findings) and counts engine-derived statuses; demo scores stay 44/80/49.
+- Removed the unreferenced, divergent `site/styles.css`; the page ships a single inline stylesheet.
 
 ### Fixed
 
