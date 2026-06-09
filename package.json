@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "demo:readiness": "tsx scripts/demoReadiness.ts",
+    "demo:maintenance": "tsx scripts/demoMaintenance.ts",
     "demo:video:check": "node demo-video/check-video-assets.mjs",
     "demo:video:screenshots": "node demo-video/capture-screenshots.mjs",
     "demo:video:record": "node demo-video/record-demo.mjs",

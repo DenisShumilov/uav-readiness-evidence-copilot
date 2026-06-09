@@ -21,6 +21,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 - Repository hygiene: `CODE_OF_CONDUCT.md`, issue forms, Dependabot config, and this changelog.
 - Machine-readable outputs: **SARIF 2.1.0** (`readiness.sarif`) for GitHub code-scanning ingest,
   and JSON Schemas for the output contracts (`schemas/`).
+- Second synthetic example bundle `demo-maintenance-readiness` (`npm run demo:maintenance`, 80/100)
+  proving the pipeline generalizes to a different document shape with a different, higher score.
 
 ### Notes
 

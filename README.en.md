@@ -91,6 +91,13 @@ npm test
 npm audit --audit-level=moderate
 ```
 
+## Two demo bundles
+
+- `npm run demo:readiness` — the strict `demo-uav-readiness` bundle (**44/100**, "not ready"): many gaps and locked items.
+- `npm run demo:maintenance` — the mostly-organized `demo-maintenance-readiness` bundle (**80/100**, "reviewable, but incomplete"): same pipeline, different document shape, different result.
+
+This shows the tool generalizes and never rubber-stamps a score — it still keeps incomplete claims `partial` and `locked`.
+
 ## Inputs
 
 Active parsed inputs:

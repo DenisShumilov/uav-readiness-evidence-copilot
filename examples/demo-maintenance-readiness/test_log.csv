@@ -1,0 +1,6 @@
+check_id,check_name,check_type,result,evidence_status,evidence_id,notes
+CHECK-001,Maintenance packet present,documentation,pass,verified,EV-TEST-001,Synthetic maintenance packet exists
+CHECK-002,Service log present,documentation,pass,verified,EV-TEST-002,Synthetic service log exists
+CHECK-003,Inspection record present,documentation,pass,verified,EV-TEST-003,Synthetic inspection record exists
+CHECK-004,Sign-off list present,documentation,pass,verified,EV-TEST-004,Synthetic sign-off list exists
+CHECK-005,Seal kit second sign-off,qa_review,warning,partial,EV-TEST-005,Seal kit record lacks a second sign-off

@@ -37,6 +37,7 @@ Thumbs.db
 generated/
 exports/
 examples/demo-uav-readiness/output/
+examples/demo-maintenance-readiness/output/
 demo-video/output/
 demo-video/output/frames/
 demo-video/frames/
