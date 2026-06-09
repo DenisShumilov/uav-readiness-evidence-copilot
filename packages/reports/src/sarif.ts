@@ -49,7 +49,8 @@ type SarifResult = {
 export function generateReadinessSarif(
   bundle: DemoBundle,
   graph: BuiltEvidenceGraph,
-  assessment: ReadinessAssessment
+  assessment: ReadinessAssessment,
+  exampleDir: string = EXAMPLE_DIR
 ): string {
   const filenameByArtifactId = new Map(
     bundle.artifacts.map((artifact) => [artifact.id, artifact.filename])
@@ -69,10 +70,10 @@ export function generateReadinessSarif(
         ? filenameByArtifactId.get(artifactId)
         : undefined;
       if (filename) {
-        return `${EXAMPLE_DIR}${filename}`;
+        return `${exampleDir}${filename}`;
       }
     }
-    return uriFromClaimId(claim.id);
+    return uriFromClaimId(claim.id, exampleDir);
   }
 
   const claimResults: SarifResult[] = graph.evidenceClaims.flatMap((claim) => {
@@ -114,7 +115,7 @@ export function generateReadinessSarif(
   const processResults: SarifResult[] = assessment.warnings
     .filter((warning) => !/: partial evidence$/.test(warning))
     .map((warning) =>
-      makeResult("DOC-WARN-001", "warning", warning, `${EXAMPLE_DIR}qa_notes.md`)
+      makeResult("DOC-WARN-001", "warning", warning, `${exampleDir}qa_notes.md`)
     );
 
   const sarif = {
@@ -162,12 +163,12 @@ function makeResult(
   };
 }
 
-function uriFromClaimId(id: string): string {
-  if (id.startsWith("claim.test")) return `${EXAMPLE_DIR}test_log.csv`;
-  if (id.startsWith("claim.manual")) return `${EXAMPLE_DIR}demo_manual.md`;
-  if (id.startsWith("claim.qa")) return `${EXAMPLE_DIR}qa_notes.md`;
+function uriFromClaimId(id: string, exampleDir: string): string {
+  if (id.startsWith("claim.test")) return `${exampleDir}test_log.csv`;
+  if (id.startsWith("claim.manual")) return `${exampleDir}demo_manual.md`;
+  if (id.startsWith("claim.qa")) return `${exampleDir}qa_notes.md`;
   if (id.startsWith("claim.comp") || id.startsWith("claim.doc")) {
-    return `${EXAMPLE_DIR}BOM.csv`;
+    return `${exampleDir}BOM.csv`;
   }
-  return EXAMPLE_DIR;
+  return exampleDir;
 }

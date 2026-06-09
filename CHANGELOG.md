@@ -32,6 +32,14 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
   contradiction on a critical claim caps the verdict in the Blocked band) and **per-category caps**
   so one noisy bucket cannot dominate. Demo scores are unchanged (44/100 and 80/100).
 
+### Fixed
+
+- Post-review polish (from an adversarial multi-agent review of the session): SARIF result URIs now
+  use each bundle's own example directory (was hardcoded to `demo-uav-readiness`); README demo-video
+  links point at `v0.4.0-demo-video`; the site readiness bands match `docs/scoring.md`; agent #7's
+  name is consistent ("Documentation & Portfolio"); added `og:image`/`twitter:card` social-preview
+  tags + `site/social-card.png`; removed orphaned screenshot assets.
+
 ### Notes
 
 - All demo data is synthetic and static. The project stays strictly within documentation QA,

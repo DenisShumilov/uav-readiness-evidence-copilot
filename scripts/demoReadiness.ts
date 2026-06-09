@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { buildEvidenceGraphFromBundle } from "../packages/evidence/src/evidenceGraph";
 import { parseDemoBundle } from "../packages/parsers/src/demoBundle";
@@ -22,6 +22,7 @@ export function runReadinessDemo(options: RunReadinessDemoOptions = {}) {
   const fixtureDir =
     options.fixtureDir ?? join(process.cwd(), "examples", "demo-uav-readiness");
   const outputDir = options.outputDir ?? join(fixtureDir, "output");
+  const exampleDir = `examples/${basename(fixtureDir)}/`;
 
   const bundle = parseDemoBundle(fixtureDir);
   const evidenceGraph = buildEvidenceGraphFromBundle(bundle);
@@ -99,7 +100,12 @@ export function runReadinessDemo(options: RunReadinessDemoOptions = {}) {
   );
   writeFileSync(
     join(outputDir, "readiness.sarif"),
-    generateReadinessSarif(bundle, evidenceGraph, readinessAssessment),
+    generateReadinessSarif(
+      bundle,
+      evidenceGraph,
+      readinessAssessment,
+      exampleDir
+    ),
     "utf8"
   );
   writeFileSync(join(outputDir, "portfolio-demo.md"), portfolioDemo, "utf8");

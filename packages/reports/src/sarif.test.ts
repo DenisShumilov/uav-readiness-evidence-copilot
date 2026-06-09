@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildEvidenceGraphFromBundle } from "../../evidence/src/evidenceGraph";
 import { parseDemoBundle } from "../../parsers/src/demoBundle";
@@ -41,6 +42,42 @@ describe("generateReadinessSarif", () => {
             physicalLocation: { artifactLocation: { uri: string } };
           }>;
         }) => r.locations[0].physicalLocation.artifactLocation.uri.length > 0
+      )
+    ).toBe(true);
+  });
+
+  it("uses the provided example directory in result URIs and flags conflicts", () => {
+    const bundle = parseDemoBundle(
+      join(process.cwd(), "examples", "demo-conflict-readiness")
+    );
+    const graph = buildEvidenceGraphFromBundle(
+      bundle,
+      "2026-06-06T00:00:00.000Z"
+    );
+    const assessment = evaluateReadiness(bundle);
+    const sarif = JSON.parse(
+      generateReadinessSarif(
+        bundle,
+        graph,
+        assessment,
+        "examples/demo-conflict-readiness/"
+      )
+    );
+    const results = sarif.runs[0].results;
+
+    expect(
+      results.some((r: { ruleId: string }) => r.ruleId === "EVID-CONFLICT-001")
+    ).toBe(true);
+    expect(
+      results.every(
+        (r: {
+          locations: Array<{
+            physicalLocation: { artifactLocation: { uri: string } };
+          }>;
+        }) =>
+          r.locations[0].physicalLocation.artifactLocation.uri.startsWith(
+            "examples/demo-conflict-readiness/"
+          )
       )
     ).toBe(true);
   });

@@ -36,9 +36,9 @@ UAV Readiness & Evidence Copilot читає синтетичні навчаль�
 Фінальні MP4-відео опубліковані через GitHub Release, а не зберігаються як важкі файли в репозиторії.
 
 - [Онлайн-сторінка демо](https://denisshumilov.github.io/uav-readiness-evidence-copilot/)
-- [Українське MP4-демо](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.3.0-demo-video/uav-readiness-demo.uk.final.mp4)
+- [Українське MP4-демо](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.4.0-demo-video/uav-readiness-demo.uk.final.mp4)
 - [Англійське MP4-демо](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.2.0-demo-video/uav-readiness-demo.en.final.mp4)
-- [Реліз українського демо v3](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.3.0-demo-video)
+- [Реліз українського демо v4](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.4.0-demo-video)
 - [Реліз англійського демо](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.2.0-demo-video)
 
 ## Що робить
