@@ -91,12 +91,13 @@ npm test
 npm audit --audit-level=moderate
 ```
 
-## Two demo bundles
+## Three demo bundles
 
 - `npm run demo:readiness` — the strict `demo-uav-readiness` bundle (**44/100**, "not ready"): many gaps and locked items.
 - `npm run demo:maintenance` — the mostly-organized `demo-maintenance-readiness` bundle (**80/100**, "reviewable, but incomplete"): same pipeline, different document shape, different result.
+- `npm run demo:conflict` — the `demo-conflict-readiness` bundle (**49/100**): almost fully evidenced, but one **contradiction** between sources — the conflict gate caps the verdict in the Blocked band (deductions alone would give ~90).
 
-This shows the tool generalizes and never rubber-stamps a score — it still keeps incomplete claims `partial` and `locked`.
+This shows the tool generalizes and never rubber-stamps a score — it keeps claims `partial`/`locked` and refuses a "ready" verdict when sources disagree.
 
 ## Inputs
 

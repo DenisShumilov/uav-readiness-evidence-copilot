@@ -23,6 +23,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
   and JSON Schemas for the output contracts (`schemas/`).
 - Second synthetic example bundle `demo-maintenance-readiness` (`npm run demo:maintenance`, 80/100)
   proving the pipeline generalizes to a different document shape with a different, higher score.
+- Third synthetic example bundle `demo-conflict-readiness` (`npm run demo:conflict`, 49/100) that
+  contains a deliberate contradiction to showcase the conflict gate (deductions ~90, gated to 49).
 
 ### Changed
 
