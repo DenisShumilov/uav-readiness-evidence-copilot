@@ -52,12 +52,17 @@ export function evaluateReadiness(
     graph.summary.partialCount,
     lockedCriticalItems.length,
     warnings.length,
-    missingArtifacts.length
+    missingArtifacts.length,
+    graph.summary.conflictCount
   );
-  const score = Math.max(
-    0,
-    100 - deductions.reduce((total, deduction) => total + deduction.total, 0)
+  const deductionTotal = deductions.reduce(
+    (total, deduction) => total + deduction.total,
+    0
   );
+  // A contradiction on a critical claim cannot yield a positive verdict: gate the
+  // score into the "Blocked" band until the conflict is resolved.
+  const conflictCeiling = graph.summary.conflictCount > 0 ? 49 : 100;
+  const score = Math.min(conflictCeiling, Math.max(0, 100 - deductionTotal));
 
   return {
     readinessScore: score,
@@ -75,7 +80,7 @@ export function evaluateReadiness(
       conflictCount: graph.summary.conflictCount,
       missingArtifacts,
       explanation:
-        "Score is documentation readiness only: 100 minus locked, partial, warning, and missing artifact deductions."
+        "Score is documentation readiness only: 100 minus capped deductions for locked, conflicting, partial, warning, and missing-artifact evidence. A conflict on a critical claim caps the verdict in the Blocked band."
     }
   };
 }
@@ -127,25 +132,29 @@ function buildDeductions(
   partialCount: number,
   lockedCriticalCount: number,
   warningCount: number,
-  missingArtifactCount: number
+  missingArtifactCount: number,
+  conflictCount: number
 ): ReadinessDeduction[] {
+  // Per-category caps keep one noisy bucket from dominating the whole score.
   return [
-    makeDeduction("locked critical evidence", lockedCriticalCount, 6),
-    makeDeduction("partial evidence", partialCount, 3),
-    makeDeduction("warnings", warningCount, 2),
-    makeDeduction("missing safe artifacts", missingArtifactCount, 10)
+    makeDeduction("locked critical evidence", lockedCriticalCount, 6, 48),
+    makeDeduction("conflicting evidence", conflictCount, 8, 24),
+    makeDeduction("partial evidence", partialCount, 3, 24),
+    makeDeduction("warnings", warningCount, 2, 16),
+    makeDeduction("missing safe artifacts", missingArtifactCount, 10, 30)
   ].filter((deduction) => deduction.count > 0);
 }
 
 function makeDeduction(
   reason: string,
   count: number,
-  pointsEach: number
+  pointsEach: number,
+  cap: number
 ): ReadinessDeduction {
   return {
     reason,
     count,
     pointsEach,
-    total: count * pointsEach
+    total: Math.min(count * pointsEach, cap)
   };
 }

@@ -24,6 +24,12 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 - Second synthetic example bundle `demo-maintenance-readiness` (`npm run demo:maintenance`, 80/100)
   proving the pipeline generalizes to a different document shape with a different, higher score.
 
+### Changed
+
+- Scoring guards in the readiness rules: a conflict deduction plus a **conflict gate** (a
+  contradiction on a critical claim caps the verdict in the Blocked band) and **per-category caps**
+  so one noisy bucket cannot dominate. Demo scores are unchanged (44/100 and 80/100).
+
 ### Notes
 
 - All demo data is synthetic and static. The project stays strictly within documentation QA,

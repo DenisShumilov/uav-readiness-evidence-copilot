@@ -13,16 +13,19 @@ The score starts at 100 and deducts points for what weakens trust in the record:
 
 ```text
 score = 100
-      − 6 × (locked critical claims)
-      − 3 × (partial claims)
-      − 2 × (warnings)
+      − 6  × (locked critical claims)       capped at 48
+      − 8  × (conflicting claims)           capped at 24
+      − 3  × (partial claims)               capped at 24
+      − 2  × (warnings)                     capped at 16
+      − 10 × (missing required artifacts)   capped at 30
 
 score = clamp(score, 0, 100)
+if any critical claim is in conflict → score is capped at 49 (Blocked)
 ```
 
-The weights reflect how much each issue hurts trust: a **locked** claim (no supporting evidence at
-all) hurts most, a **partial** claim (some evidence, not enough) hurts less, and a process
-**warning** is the lightest signal.
+The weights reflect how much each issue hurts trust: a **conflict** (sources actively disagree) and
+a **locked** claim (no supporting evidence) hurt most, a **partial** claim (some evidence, not
+enough) hurts less, and a process **warning** is the lightest signal.
 
 ## Worked example (the live demo)
 
@@ -56,12 +59,17 @@ The core rule of this project is `no evidence → locked`. The score is designed
 to raise it is to **add real evidence**, not to soften the rules. That is exactly the engineering
 discipline the project is meant to demonstrate.
 
-## Planned refinement
+## Guards
 
-A future revision (tracked in research notes) will move to fully orthogonal buckets with per-category
-caps and treat `conflict` as a hard gate (a contradiction on a critical claim cannot yield a positive
-verdict). That change will also be transparent and documented here. Until then, the formula above is
-the exact one the tool runs.
+The formula has guards so the number stays principled even as the data changes:
+
+- **Per-category caps** — no single bucket can sink the score on its own.
+- **Conflict gate** — if any critical claim is in conflict, the verdict is capped in the Blocked
+  band until the contradiction is resolved. (A contradiction can never read as "ready".)
+- **Floor of zero** — the score never goes negative.
+
+These run in the tool today. The demo packages happen to have no conflicts and hit no caps, so the
+worked example above is unaffected (still 44/100).
 
 **Простими словами:** єдиний чесний спосіб підняти оцінку — додати справжній доказ, а не пом'якшити
 правила. У цьому й сенс.
