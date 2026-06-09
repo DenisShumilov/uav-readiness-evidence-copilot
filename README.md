@@ -36,9 +36,9 @@ UAV Readiness & Evidence Copilot turns synthetic engineering artifacts into an e
 Final demo videos are published through GitHub Releases, not committed as binary files.
 
 - [Online demo page](https://denisshumilov.github.io/uav-readiness-evidence-copilot/)
-- [Ukrainian MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.5.0-demo-video/uav-readiness-demo.uk.final.mp4)
-- [English MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.5.0-demo-video/uav-readiness-demo.en.final.mp4)
-- [Demo video release v5 (live interactive site)](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.5.0-demo-video)
+- [Ukrainian MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.6.0-demo-video/uav-readiness-demo.uk.final.mp4)
+- [English MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.6.0-demo-video/uav-readiness-demo.en.final.mp4)
+- [Demo video release v6 (English-default live site)](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.6.0-demo-video)
 
 ## What It Does
 

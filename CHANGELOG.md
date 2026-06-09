@@ -74,6 +74,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## Demo video releases
 
+- `v0.6.0-demo-video` — re-recorded from the **English-default live site** after the honesty-audit
+  hardening cycle (engine-derived status, site/engine parity, runtime scaffold gate). UK + EN.
 - `v0.5.0-demo-video` — new video recorded from the **live interactive site**: shows the readiness
   score dropping 44 → 8 as evidence is toggled off, the 10-agent scaffold, and the safety refusal (UK + EN).
 - `v0.4.0-demo-video` — polished Ukrainian demo video and voiceover.
