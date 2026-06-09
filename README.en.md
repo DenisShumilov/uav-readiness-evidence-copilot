@@ -155,6 +155,7 @@ See [docs/architecture.en.md](docs/architecture.en.md) for the detailed data flo
 This repo was built not by one model, but by a **scaffold**: persistent rules in [AGENTS.md](AGENTS.md), 10 specialist agents, 7 reusable skills, and mandatory gates (doubt gate, red-team, evidence lock, self-review).
 
 Full write-up with a diagram, role table, and a real safety-agent refusal: **[docs/scaffold.en.md](docs/scaffold.en.md)**.
+The actual scaffold files (10 subagents + 7 skills, each its own file): **[meta/ai-workflows/](meta/ai-workflows/README.md)**.
 
 Core thesis: **the intelligence is in the scaffold around the model, not in the model itself.**
 

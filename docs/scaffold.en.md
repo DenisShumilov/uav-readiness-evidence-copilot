@@ -12,6 +12,9 @@ checks before anything changes.
 
 ---
 
+> 📂 **Verify it yourself:** these 10 agents and 7 skills are real files, not prose. Open
+> [`meta/ai-workflows/`](../meta/ai-workflows/README.md) — every subagent and skill is its own file.
+
 ## The 10 specialist agents
 
 Each agent owns one concern. They are defined as project subagents and coordinated by the rules in
