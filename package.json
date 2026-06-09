@@ -11,6 +11,7 @@
     "demo:video:screenshots": "node demo-video/capture-screenshots.mjs",
     "demo:video:record": "node demo-video/record-demo.mjs",
     "demo:video:record:hq": "node demo-video/record-high-quality-demo.mjs",
+    "demo:video:record:site": "node demo-video/record-site-demo.mjs",
     "demo:video:build": "node demo-video/build-video.mjs",
     "demo:video:voiceover": "node demo-video/generate-edge-voiceover.mjs",
     "demo:video:merge": "node demo-video/merge-voiceover.mjs",

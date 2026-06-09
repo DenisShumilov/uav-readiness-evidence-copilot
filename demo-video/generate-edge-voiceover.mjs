@@ -9,14 +9,14 @@ mkdirSync(audioRoot, { recursive: true });
 const voices = {
   en: {
     voice: "en-US-EmmaNeural",
-    rate: "+0%",
+    rate: "-4%",
     input: join(root, "demo-video", "voiceover.en.txt"),
     mp3: join(audioRoot, "voiceover.en.edge.mp3"),
     wav: join(audioRoot, "voiceover.en.wav")
   },
   uk: {
     voice: "uk-UA-PolinaNeural",
-    rate: "+0%",
+    rate: "-6%",
     input: join(root, "demo-video", "voiceover.uk.txt"),
     mp3: join(audioRoot, "voiceover.uk.edge.mp3"),
     wav: join(audioRoot, "voiceover.uk.wav")

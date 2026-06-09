@@ -1,20 +1,13 @@
-Engineering projects often contain many scattered files: a parts list, a manual, test logs, and QA notes.
-Before a review, the team needs one clear answer: what is actually supported by evidence?
+You have engineering documents. But are they actually ready?
 
-This is UAV Readiness & Evidence Copilot.
-It reads safe synthetic demo files and turns them into a documentation readiness package.
+This tool builds an evidence map and computes a readiness score. Right now it is forty-four out of a hundred.
 
-The demo page shows a documentation readiness score.
-It also shows three counters: verified, partial, and locked.
-Verified means the evidence is present.
-Partial means the evidence is incomplete.
-Locked means the tool will not approve a claim when proof is missing.
+Watch what happens when you remove a source of evidence. The linked claims become locked, and the score drops.
 
-Next, the page highlights warnings and locked items.
-This is the core behavior: the workflow does not invent confidence.
+No evidence, locked. The tool invents nothing. It shows the honest status.
 
-After the review, the tool generates useful outputs: a report, an evidence graph, a traceability table, and file hashes.
-That gives the team a clearer handoff package for engineering review.
+And the key point: this was built not by one model, but by a scaffold of ten agents and seven skills.
 
-This is not a drone-control system.
-It is a safe documentation QA workflow for engineering review.
+And when a request crosses the safety boundary, the agent refuses automatically.
+
+The intelligence is in the scaffold, not the model. Code and live demo in the link.
