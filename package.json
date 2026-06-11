@@ -1,11 +1,55 @@
 {
-  "name": "uav-readiness-evidence-copilot",
+  "name": "uav-readiness",
   "version": "0.8.1",
   "private": false,
+  "description": "Documentation readiness and evidence checks: builds an evidence map from engineering docs and computes an explainable readiness score. Safe documentation QA only.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DenisShumilov/uav-readiness-evidence-copilot.git"
+  },
+  "homepage": "https://denisshumilov.github.io/uav-readiness-evidence-copilot/",
+  "bugs": "https://github.com/DenisShumilov/uav-readiness-evidence-copilot/issues",
+  "keywords": [
+    "documentation",
+    "readiness",
+    "evidence",
+    "traceability",
+    "qa",
+    "sarif",
+    "cli"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "bin": {
     "uav-readiness": "./packages/cli/bin/uav-readiness.mjs"
   },
+  "files": [
+    "packages/cli/bin",
+    "packages/cli/src",
+    "packages/cli/package.json",
+    "packages/core/src",
+    "packages/core/package.json",
+    "packages/evidence/src",
+    "packages/evidence/package.json",
+    "packages/parsers/src",
+    "packages/parsers/package.json",
+    "packages/reports/src",
+    "packages/reports/package.json",
+    "packages/rules/src",
+    "packages/rules/package.json",
+    "scripts/demoReadiness.ts",
+    "examples/demo-uav-readiness/BOM.csv",
+    "examples/demo-uav-readiness/demo_manual.md",
+    "examples/demo-uav-readiness/test_log.csv",
+    "examples/demo-uav-readiness/qa_notes.md",
+    "examples/demo-uav-readiness/README.md",
+    "examples/demo-uav-readiness/README.en.md",
+    "README.md",
+    "LICENSE"
+  ],
   "workspaces": [
     "packages/*"
   ],

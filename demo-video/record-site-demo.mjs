@@ -27,6 +27,9 @@ const silentRoot = join(root, "demo-video", "videos", "silent");
 mkdirSync(rawRoot, { recursive: true });
 mkdirSync(silentRoot, { recursive: true });
 
+const headerGapPx = 20;
+const viewportBottomPaddingPx = 36;
+
 function ffprobeDuration(path) {
   const result = spawnSync(
     "ffprobe",
@@ -92,15 +95,214 @@ async function waitForSiteReady(page) {
   );
 }
 
-async function scrollToSelector(page, selector, block = "start") {
+async function smoothScrollToY(page, targetY, durationMs = 650) {
   await page.evaluate(
-    ({ selector: targetSelector, block: targetBlock }) => {
-      document.querySelector(targetSelector)?.scrollIntoView({
-        behavior: "smooth",
-        block: targetBlock
+    ({ y, duration }) => {
+      const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      const target = Math.max(0, Math.min(maxScroll, y));
+      const start = window.scrollY;
+      const delta = target - start;
+
+      if (Math.abs(delta) < 1 || duration <= 0) {
+        window.scrollTo(0, target);
+        return Promise.resolve();
+      }
+
+      return new Promise((resolve) => {
+        const startTime = performance.now();
+        const step = (now) => {
+          const p = Math.min(1, (now - startTime) / duration);
+          const eased = p * p * (3 - 2 * p);
+          window.scrollTo(0, start + delta * eased);
+          if (p < 1) requestAnimationFrame(step);
+          else {
+            window.scrollTo(0, target);
+            resolve();
+          }
+        };
+        requestAnimationFrame(step);
       });
     },
-    { selector, block }
+    { y: targetY, duration: durationMs }
+  );
+}
+
+async function targetYForHeading(page, sectionSelector, headingSelector = ".sec-head h2") {
+  return page.evaluate(
+    ({ sectionSelector: targetSectionSelector, headingSelector: targetHeadingSelector, gap }) => {
+      const section = document.querySelector(targetSectionSelector);
+      const heading = section?.querySelector(targetHeadingSelector);
+      const header = document.querySelector("header");
+      if (!section || !heading) {
+        throw new Error(`Missing section heading for ${targetSectionSelector}`);
+      }
+
+      const headerBottom = header?.getBoundingClientRect().bottom ?? 0;
+      const headingTop = heading.getBoundingClientRect().top + window.scrollY;
+      return Math.max(0, headingTop - headerBottom - gap);
+    },
+    { sectionSelector, headingSelector, gap: headerGapPx }
+  );
+}
+
+async function frameSectionHeading(page, language, beatNumber, label, sectionSelector, options = {}) {
+  const targetY = await targetYForHeading(page, sectionSelector, options.headingSelector);
+  await smoothScrollToY(page, targetY, options.durationMs ?? 650);
+  await page.waitForTimeout(options.settleMs ?? 250);
+  return assertHeadingFramed(page, language, beatNumber, label, sectionSelector, options);
+}
+
+async function assertHeadingFramed(page, language, beatNumber, label, sectionSelector, options = {}) {
+  const metrics = await page.evaluate(
+    ({ sectionSelector: targetSectionSelector, headingSelector: targetHeadingSelector, gap }) => {
+      const section = document.querySelector(targetSectionSelector);
+      const heading = section?.querySelector(targetHeadingSelector);
+      const header = document.querySelector("header");
+      if (!section || !heading) {
+        throw new Error(`Missing section heading for ${targetSectionSelector}`);
+      }
+
+      const headerBottom = header?.getBoundingClientRect().bottom ?? 0;
+      const rect = heading.getBoundingClientRect();
+      const gapFromHeader = rect.top - headerBottom;
+      return {
+        headerBottom,
+        headingTop: rect.top,
+        headingBottom: rect.bottom,
+        viewportHeight: window.innerHeight,
+        gapFromHeader,
+        headingText: heading.textContent?.trim() ?? "",
+        nearGap: Math.abs(gapFromHeader - gap) <= 10,
+        insideViewport: rect.top >= headerBottom + 1 && rect.bottom <= window.innerHeight - 1
+      };
+    },
+    {
+      sectionSelector,
+      headingSelector: options.headingSelector ?? ".sec-head h2",
+      gap: headerGapPx
+    }
+  );
+
+  if (!metrics.insideViewport || (options.requireHeaderGap && !metrics.nearGap)) {
+    throw new Error(
+      `[framing][${language}][beat${beatNumber}] ${label} failed: ` +
+        `heading "${metrics.headingText}" top=${metrics.headingTop.toFixed(1)}, ` +
+        `bottom=${metrics.headingBottom.toFixed(1)}, headerBottom=${metrics.headerBottom.toFixed(1)}, ` +
+        `gap=${metrics.gapFromHeader.toFixed(1)}, viewport=${metrics.viewportHeight}`
+    );
+  }
+
+  console.log(
+    `[framing][${language}][beat${beatNumber}] PASS ${label}: ` +
+      `heading top=${metrics.headingTop.toFixed(1)}, bottom=${metrics.headingBottom.toFixed(1)}, ` +
+      `headerBottom=${metrics.headerBottom.toFixed(1)}, gap=${metrics.gapFromHeader.toFixed(1)}`
+  );
+  return metrics;
+}
+
+async function assertElementsFullyVisible(page, language, beatNumber, label, selectors) {
+  const results = await page.evaluate(
+    ({ selectors: targetSelectors }) =>
+      targetSelectors.map((selector) => {
+        const element = document.querySelector(selector);
+        if (!element) return { selector, found: false };
+        const rect = element.getBoundingClientRect();
+        return {
+          selector,
+          found: true,
+          top: rect.top,
+          bottom: rect.bottom,
+          left: rect.left,
+          right: rect.right,
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
+          visible:
+            rect.top >= 0 &&
+            rect.left >= 0 &&
+            rect.bottom <= window.innerHeight &&
+            rect.right <= window.innerWidth
+        };
+      }),
+    { selectors }
+  );
+
+  const failed = results.filter((result) => !result.found || !result.visible);
+  if (failed.length > 0) {
+    throw new Error(
+      `[framing][${language}][beat${beatNumber}] ${label} failed: ` +
+        failed
+          .map((result) =>
+            !result.found
+              ? `${result.selector} missing`
+              : `${result.selector} rect=${result.top.toFixed(1)}-${result.bottom.toFixed(1)}`
+          )
+          .join("; ")
+    );
+  }
+
+  console.log(
+    `[framing][${language}][beat${beatNumber}] PASS ${label}: ${results
+      .map((result) => `${result.selector} ${result.top.toFixed(1)}-${result.bottom.toFixed(1)}`)
+      .join(", ")}`
+  );
+}
+
+async function slowScrollSectionContent(page, sectionSelector, contentSelector, durationMs) {
+  const targetY = await page.evaluate(
+    ({ sectionSelector: targetSectionSelector, contentSelector: targetContentSelector, bottomPad }) => {
+      const section = document.querySelector(targetSectionSelector);
+      const content = section?.querySelector(targetContentSelector);
+      if (!section || !content) {
+        throw new Error(`Missing scroll-through content for ${targetSectionSelector}`);
+      }
+
+      const contentBottom = content.getBoundingClientRect().bottom + window.scrollY;
+      const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      return Math.max(0, Math.min(maxScroll, contentBottom - window.innerHeight + bottomPad));
+    },
+    {
+      sectionSelector,
+      contentSelector,
+      bottomPad: viewportBottomPaddingPx
+    }
+  );
+  await smoothScrollToY(page, targetY, durationMs);
+}
+
+async function assertContentBottomVisible(page, language, beatNumber, label, sectionSelector, contentSelector) {
+  const metrics = await page.evaluate(
+    ({ sectionSelector: targetSectionSelector, contentSelector: targetContentSelector, bottomPad }) => {
+      const section = document.querySelector(targetSectionSelector);
+      const content = section?.querySelector(targetContentSelector);
+      if (!section || !content) {
+        throw new Error(`Missing content for ${targetSectionSelector}`);
+      }
+
+      const rect = content.getBoundingClientRect();
+      return {
+        top: rect.top,
+        bottom: rect.bottom,
+        viewportHeight: window.innerHeight,
+        visible: rect.bottom <= window.innerHeight - bottomPad + 2
+      };
+    },
+    {
+      sectionSelector,
+      contentSelector,
+      bottomPad: viewportBottomPaddingPx
+    }
+  );
+
+  if (!metrics.visible) {
+    throw new Error(
+      `[framing][${language}][beat${beatNumber}] ${label} failed: ` +
+        `content bottom=${metrics.bottom.toFixed(1)}, viewport=${metrics.viewportHeight}`
+    );
+  }
+
+  console.log(
+    `[framing][${language}][beat${beatNumber}] PASS ${label}: ` +
+      `content top=${metrics.top.toFixed(1)}, bottom=${metrics.bottom.toFixed(1)}`
   );
 }
 
@@ -225,40 +427,72 @@ try {
     await page.goto(pageUrl, { waitUntil: "networkidle" });
     await waitForSiteReady(page);
     await page.addStyleTag({
-      content: "*{cursor:none !important} ::-webkit-scrollbar{width:0 !important;height:0 !important}"
+      content:
+        "html{scroll-behavior:auto !important}" +
+        "*{cursor:none !important} ::-webkit-scrollbar{width:0 !important;height:0 !important}"
     });
-    await page.evaluate(() => window.scrollTo({ top: 0 }));
+    await page.evaluate(() => {
+      document.querySelectorAll(".reveal").forEach((element) => element.classList.add("in"));
+    });
+    await page.evaluate(() => window.scrollTo(0, 0));
     const leadIn = (Date.now() - recStart) / 1000;
 
     // 1. Hero + thesis.
+    await assertHeadingFramed(page, language, 1, "Hero + thesis", ".hero", {
+      headingSelector: "h1"
+    });
     await page.waitForTimeout(hold("hero"));
 
     // 2. Live readiness check: 44 -> 26, then reset to 44.
-    await scrollToSelector(page, "#live", "start");
+    await frameSectionHeading(page, language, 2, "Live readiness check", "#live", {
+      requireHeaderGap: true
+    });
+    await assertElementsFullyVisible(page, language, 2, "Live toggles and gauge visible", [
+      "#live .dash > .panel",
+      "#liveGauge"
+    ]);
     await page.waitForTimeout(hold("liveIntro"));
     await page.click('.switch[aria-label="EV-BOM-001"]');
+    await assertElementsFullyVisible(page, language, 2, "Live score drop after BOM toggle", [
+      "#live .dash > .panel",
+      "#liveGauge"
+    ]);
     await page.waitForTimeout(hold("toggleBom"));
     await page.click('.switch[aria-label="EV-MAN-001"]');
+    await assertElementsFullyVisible(page, language, 2, "Live score drop after manual toggle", [
+      "#live .dash > .panel",
+      "#liveGauge"
+    ]);
     await page.waitForTimeout(hold("toggleManual"));
     await page.click("#resetBtn");
     await page.waitForTimeout(hold("reset"));
 
     // 3. Evidence graph reacts to the same source state.
-    await scrollToSelector(page, "#evidence-graph", "start");
-    await page.waitForTimeout(Math.round(hold("graphIntro") * 0.55));
-    await page.evaluate(() => window.scrollBy({ top: 210, behavior: "smooth" }));
-    await page.waitForTimeout(Math.round(hold("graphIntro") * 0.45));
+    await frameSectionHeading(page, language, 3, "Evidence graph", "#evidence-graph", {
+      requireHeaderGap: true
+    });
+    await page.waitForTimeout(Math.round(hold("graphIntro") * 0.25));
+    await slowScrollSectionContent(page, "#evidence-graph", ".graph-panel", Math.round(hold("graphIntro") * 0.75));
+    await assertContentBottomVisible(page, language, 3, "Evidence graph scroll-through end", "#evidence-graph", ".graph-panel");
     await setSourceState(page, "EV-BOM-001", false);
     await page.waitForTimeout(hold("graphOff"));
     await setSourceState(page, "EV-BOM-001", true);
     await page.waitForTimeout(hold("graphOn"));
 
     // 4. Conflict gate: two hand-verified rows, derived 49/100 Blocked.
-    await scrollToSelector(page, "#conflict-gate", "start");
+    await frameSectionHeading(page, language, 4, "Conflict gate", "#conflict-gate", {
+      requireHeaderGap: true
+    });
+    await assertElementsFullyVisible(page, language, 4, "Conflict documents and verdict visible", [
+      "#conflict-gate .conflict-stage"
+    ]);
     await page.waitForTimeout(hold("conflict"));
 
     // 5. End card with URL and local command.
     await showEndCard(page, language);
+    await assertHeadingFramed(page, language, 5, "End card", "#videoEndCard", {
+      headingSelector: "h2"
+    });
     await page.waitForTimeout(hold("endCard"));
 
     const video = page.video();
