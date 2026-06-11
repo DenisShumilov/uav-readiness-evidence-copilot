@@ -274,3 +274,11 @@ examples/demo-uav-readiness/output/
 - [Модель доказів](docs/evidence-model.md)
 - [Політика демо-даних](docs/demo-data-policy.md)
 - [Словник понять](docs/glossary.md)
+
+## Про автора
+
+Проєкт створив **Денис Шумілов** — інженер, що працює над доказовими AI-інструментами із запобіжниками. Теза, яку демонструє це репо: інтелект — у каркасі, а не в моделі.
+
+Якщо ваша команда будує агентну інфраструктуру, системи доказової документації або defense-tech інструменти — напишіть мені.
+
+[LinkedIn](https://www.linkedin.com/in/denis-shumilov/) · [GitHub](https://github.com/DenisShumilov) · shumilov1999@gmail.com

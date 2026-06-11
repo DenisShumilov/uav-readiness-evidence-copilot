@@ -270,3 +270,11 @@ Core thesis: **the intelligence is in the scaffold around the model, not in the 
 - [Evidence model](docs/evidence-model.en.md)
 - [Demo data policy](docs/demo-data-policy.en.md)
 - [Glossary](docs/glossary.en.md)
+
+## About the author
+
+Built by **Denys Shumilov** — an engineer working on evidence-first, safety-gated AI tooling. The thesis this repo demonstrates: the intelligence is in the scaffold, not the model.
+
+If your team builds agent infrastructure, documentation/evidence systems, or defense-tech tooling — I'd like to hear from you.
+
+[LinkedIn](https://www.linkedin.com/in/denis-shumilov/) · [GitHub](https://github.com/DenisShumilov) · shumilov1999@gmail.com
