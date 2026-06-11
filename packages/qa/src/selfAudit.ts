@@ -155,7 +155,8 @@ export function gatherSelfAuditChecks(repoRoot = process.cwd()): SelfAuditCheck[
   const demos: Array<{ id: string; dir: string; doc: string }> = [
     { id: "score-readiness", dir: "examples/demo-uav-readiness", doc: "docs/scoring.en.md" },
     { id: "score-maintenance", dir: "examples/demo-maintenance-readiness", doc: "README.md" },
-    { id: "score-conflict", dir: "examples/demo-conflict-readiness", doc: "README.md" }
+    { id: "score-conflict", dir: "examples/demo-conflict-readiness", doc: "README.md" },
+    { id: "score-tdp", dir: "examples/demo-tdp-supplier-package", doc: "README.md" }
   ];
   for (const demo of demos) {
     const score = evaluateReadiness(

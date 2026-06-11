@@ -1,0 +1,84 @@
+name: "UAV Readiness / Docs Evidence Check"
+description: "Run the documentation readiness evidence check and optionally emit SARIF."
+inputs:
+  path:
+    description: "Directory containing the supported documentation inputs."
+    required: true
+  min-score:
+    description: "Minimum documentation readiness score required for success."
+    required: false
+    default: "0"
+  sarif:
+    description: "Write a SARIF report for GitHub code scanning."
+    required: false
+    default: "true"
+  summary:
+    description: "Write the markdown report into GITHUB_STEP_SUMMARY."
+    required: false
+    default: "true"
+outputs:
+  sarif:
+    description: "Path to the generated SARIF report, when enabled."
+    value: ${{ steps.run.outputs.sarif }}
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node
+      uses: actions/setup-node@v6
+      with:
+        node-version: 24
+
+    - name: Install action dependencies
+      shell: bash
+      run: npm ci --omit=dev
+      working-directory: ${{ github.action_path }}
+      env:
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+    - name: Run readiness check
+      id: run
+      shell: bash
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        MIN_SCORE: ${{ inputs.min-score }}
+        WANT_SARIF: ${{ inputs.sarif }}
+        WANT_SUMMARY: ${{ inputs.summary }}
+      run: |
+        set -euo pipefail
+
+        case "$INPUT_PATH" in
+          /*) INPUT_ABS="$INPUT_PATH" ;;
+          *) INPUT_ABS="$GITHUB_WORKSPACE/$INPUT_PATH" ;;
+        esac
+
+        OUT_DIR="${RUNNER_TEMP:-/tmp}/uav-readiness"
+        mkdir -p "$OUT_DIR"
+        JSON_OUT="$OUT_DIR/readiness-assessment.json"
+        MD_OUT="$OUT_DIR/readiness-report.md"
+        SARIF_OUT="$OUT_DIR/readiness.sarif"
+
+        SARIF_ARGS=()
+        if [ "$WANT_SARIF" = "true" ]; then
+          SARIF_ARGS=(--sarif "$SARIF_OUT")
+        fi
+
+        set +e
+        node "$GITHUB_ACTION_PATH/packages/cli/bin/uav-readiness.mjs" check "$INPUT_ABS" \
+          --min-score "$MIN_SCORE" \
+          --json "$JSON_OUT" \
+          --md "$MD_OUT" \
+          "${SARIF_ARGS[@]}"
+        STATUS=$?
+        set -e
+
+        if [ "$WANT_SUMMARY" = "true" ] && [ -n "${GITHUB_STEP_SUMMARY:-}" ] && [ -f "$MD_OUT" ]; then
+          cat "$MD_OUT" >> "$GITHUB_STEP_SUMMARY"
+        fi
+
+        if [ "$WANT_SARIF" = "true" ]; then
+          echo "sarif=$SARIF_OUT" >> "$GITHUB_OUTPUT"
+        else
+          echo "sarif=" >> "$GITHUB_OUTPUT"
+        fi
+
+        exit "$STATUS"

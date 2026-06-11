@@ -172,6 +172,24 @@
         color: var(--ink);
       }
 
+      .brand span:last-child {
+        white-space: nowrap;
+      }
+
+      @media (max-width: 640px) {
+        .brand {
+          gap: 8px;
+          font-size: 10.5px;
+          letter-spacing: 0.05em;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .brand span:last-child {
+          display: none;
+        }
+      }
+
       .seal {
         display: grid;
         place-items: center;
@@ -679,6 +697,123 @@
       }
       .claim.flash {
         transform: translateY(-2px);
+      }
+
+      /* ---------- Evidence graph ---------- */
+      .graph-panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+        padding: 16px;
+        overflow-x: auto;
+      }
+      .graph-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 10px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .graph-legend span {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 4px 9px;
+        background: var(--panel-2);
+      }
+      .graph-legend .v {
+        color: var(--verified);
+        border-color: #b9dfcd;
+      }
+      .graph-legend .p {
+        color: var(--partial);
+        border-color: #e8c788;
+      }
+      .graph-legend .l {
+        color: var(--locked);
+        border-color: #efb9b1;
+      }
+      .evidence-graph-svg {
+        display: block;
+        width: 100%;
+        min-width: 860px;
+        height: auto;
+      }
+      .graph-edge {
+        fill: none;
+        stroke-width: 2.4;
+        opacity: 0.86;
+        transition: opacity 0.15s ease, stroke-width 0.15s ease;
+      }
+      .graph-edge.verified {
+        stroke: var(--verified);
+      }
+      .graph-edge.partial {
+        stroke: var(--partial);
+      }
+      .graph-edge.locked {
+        stroke: var(--locked);
+        stroke-dasharray: 7 6;
+      }
+      .graph-node {
+        cursor: default;
+        transition: opacity 0.15s ease;
+      }
+      .graph-node rect {
+        fill: var(--panel);
+        stroke: var(--line-strong);
+        stroke-width: 1.2;
+        transition: fill 0.15s ease, stroke 0.15s ease, stroke-width 0.15s ease;
+      }
+      .graph-node text {
+        pointer-events: none;
+        font-family: var(--font-mono);
+        letter-spacing: 0;
+      }
+      .graph-node .node-label {
+        fill: var(--ink);
+        font-size: 11.5px;
+        font-weight: 600;
+      }
+      .graph-node .node-id {
+        fill: var(--muted);
+        font-size: 9.5px;
+      }
+      .graph-node.verified rect {
+        fill: var(--verified-bg);
+        stroke: var(--verified);
+      }
+      .graph-node.partial rect {
+        fill: var(--partial-bg);
+        stroke: var(--partial);
+      }
+      .graph-node.locked rect,
+      .graph-node.source-off rect {
+        fill: var(--locked-bg);
+        stroke: var(--locked);
+      }
+      .graph-node.dim,
+      .graph-edge.dim {
+        opacity: 0.16;
+      }
+      .graph-edge.active {
+        opacity: 1;
+        stroke-width: 3.6;
+      }
+      .graph-node.active rect,
+      .graph-node:focus-visible rect {
+        stroke: var(--accent);
+        stroke-width: 2.6;
+      }
+      .graph-caption {
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-family: var(--font-mono);
+        font-size: 12px;
+        line-height: 1.5;
       }
 
       .rule-callout {
@@ -1326,6 +1461,35 @@
         </div>
       </section>
 
+      <section class="block" id="evidence-graph">
+        <div class="sec-head reveal">
+          <p class="eyebrow" data-i18n="graph.eyebrow">Граф доказів</p>
+          <h2 id="graphTitle" data-i18n="graph.title">Як джерела стають статусами тверджень</h2>
+          <p data-i18n="graph.intro">
+            Той самий стан перемикачів керує картою: джерела зліва, твердження справа, а ребра
+            показують виведений статус.
+          </p>
+        </div>
+        <div class="graph-panel reveal">
+          <div class="graph-legend" aria-hidden="true">
+            <span class="v" data-i18n="dash.verified">підтверджено</span>
+            <span class="p" data-i18n="dash.partial">частково</span>
+            <span class="l" data-i18n="dash.locked">заблоковано</span>
+          </div>
+          <svg
+            id="evidenceGraphSvg"
+            class="evidence-graph-svg"
+            viewBox="0 0 960 860"
+            role="img"
+            aria-labelledby="graphTitle"
+          ></svg>
+          <p class="graph-caption" data-i18n="graph.caption">
+            Реальний порядок виведення: спершу стан джерела, потім статус твердження, потім оцінка
+            з цих статусів.
+          </p>
+        </div>
+      </section>
+
       <section class="block" id="conflict-gate">
         <div class="sec-head reveal">
           <p class="eyebrow" data-i18n="conflict.eyebrow">Гейт конфлікту</p>
@@ -1597,6 +1761,10 @@
           "dash.locked": "заблоковано",
           "dash.ruleBig": "Нема доказу → <span class='lk'>заблоковано</span>",
           "dash.ruleText": "Інструмент не вигадує підтверджень. Якщо доказу немає, висновок лишається заблокованим, а не «майже готовим». Саме це викликає в рекрутерів довіру до інженерної чесності.",
+          "graph.eyebrow": "Граф доказів",
+          "graph.title": "Як джерела стають статусами тверджень",
+          "graph.intro": "Той самий стан перемикачів керує картою: джерела зліва, твердження справа, а ребра показують виведений статус.",
+          "graph.caption": "Реальний порядок виведення: спершу стан джерела, потім статус твердження, потім оцінка з цих статусів.",
           "conflict.eyebrow": "Гейт конфлікту",
           "conflict.title": "Рушій блокує суперечність, навіть коли рядки вручну позначені verified",
           "conflict.intro": "Два синтетичні документи виглядають підтвердженими окремо, але не погоджуються між собою.",
@@ -1669,6 +1837,10 @@
           "dash.locked": "locked",
           "dash.ruleBig": "No evidence → <span class='lk'>locked</span>",
           "dash.ruleText": "The tool never invents proof. When evidence is missing, the conclusion stays locked — not 'almost ready'. That is exactly what makes recruiters trust the engineering honesty.",
+          "graph.eyebrow": "Evidence graph",
+          "graph.title": "How sources become claim statuses",
+          "graph.intro": "The same toggle state drives this map: sources on the left, claims on the right, and edges showing the derived status.",
+          "graph.caption": "This is the real derivation order: source state first, claim status derived from it, score from the statuses.",
           "conflict.eyebrow": "Conflict gate",
           "conflict.title": "The engine blocks a disagreement even when rows are hand-marked verified",
           "conflict.intro": "Two synthetic documents look verified on their own, but they disagree with each other.",
@@ -1835,6 +2007,137 @@
         });
       }
 
+      function renderGraph() {
+        var svg = document.getElementById("evidenceGraphSvg");
+        if (!svg) return;
+        var NS = "http://www.w3.org/2000/svg";
+        var width = 960, height = 860;
+        var sourceX = 42, sourceW = 260, sourceH = 38;
+        var claimX = 590, claimW = 330, claimH = 30;
+        var sourceY = {};
+        var claimY = {};
+        svg.innerHTML = "";
+
+        SOURCES.forEach(function (s, i) {
+          sourceY[s.id] = SOURCES.length === 1
+            ? height / 2
+            : 70 + i * ((height - 140) / (SOURCES.length - 1));
+        });
+        CLAIMS.forEach(function (c, i) {
+          claimY[c.id] = CLAIMS.length === 1
+            ? height / 2
+            : 32 + i * ((height - 64) / (CLAIMS.length - 1));
+        });
+
+        function make(tag, attrs) {
+          var el = document.createElementNS(NS, tag);
+          Object.keys(attrs).forEach(function (key) {
+            el.setAttribute(key, attrs[key]);
+          });
+          return el;
+        }
+
+        function shortText(value, max) {
+          return value.length > max ? value.slice(0, max - 1) + "…" : value;
+        }
+
+        CLAIMS.forEach(function (c) {
+          var s = statusOf(c);
+          var y1 = c.src ? sourceY[c.src] : claimY[c.id];
+          var x1 = sourceX + sourceW;
+          var y2 = claimY[c.id];
+          var d = "M " + x1 + " " + y1 +
+            " C 420 " + y1 + ", 500 " + y2 + ", " + claimX + " " + y2;
+          var edge = make("path", {
+            class: "graph-edge " + s,
+            d: d,
+            "data-src": c.src || "none",
+            "data-claim": c.id
+          });
+          svg.appendChild(edge);
+        });
+
+        SOURCES.forEach(function (s) {
+          var g = make("g", {
+            class: "graph-node source-node " + (state[s.id] ? "verified" : "source-off"),
+            transform: "translate(" + sourceX + " " + (sourceY[s.id] - sourceH / 2) + ")",
+            tabindex: "0",
+            role: "group",
+            "aria-label": s.id + " " + s[lang],
+            "data-node-id": s.id
+          });
+          g.appendChild(make("rect", { width: sourceW, height: sourceH, rx: "8" }));
+          var label = make("text", { class: "node-label", x: "12", y: "16" });
+          label.textContent = shortText(s[lang], 30);
+          var id = make("text", { class: "node-id", x: "12", y: "30" });
+          id.textContent = s.id + " · " + s.conf;
+          g.appendChild(label);
+          g.appendChild(id);
+          addGraphFocusHandlers(g, s.id);
+          svg.appendChild(g);
+        });
+
+        CLAIMS.forEach(function (c) {
+          var s = statusOf(c);
+          var g = make("g", {
+            class: "graph-node claim-node " + s,
+            transform: "translate(" + claimX + " " + (claimY[c.id] - claimH / 2) + ")",
+            tabindex: "0",
+            role: "group",
+            "aria-label": c.id + " " + badgeText(s),
+            "data-node-id": c.id,
+            "data-src": c.src || "none"
+          });
+          g.appendChild(make("rect", { width: claimW, height: claimH, rx: "8" }));
+          var label = make("text", { class: "node-label", x: "12", y: "13" });
+          label.textContent = shortText(c[lang], 40);
+          var id = make("text", { class: "node-id", x: "12", y: "25" });
+          id.textContent = c.id + " · " + badgeText(s);
+          g.appendChild(label);
+          g.appendChild(id);
+          addGraphFocusHandlers(g, c.id);
+          svg.appendChild(g);
+        });
+
+        setGraphFocus(null);
+      }
+
+      function addGraphFocusHandlers(el, id) {
+        el.addEventListener("mouseenter", function () { setGraphFocus(id); });
+        el.addEventListener("mouseleave", function () { setGraphFocus(null); });
+        el.addEventListener("focus", function () { setGraphFocus(id); });
+        el.addEventListener("blur", function () { setGraphFocus(null); });
+      }
+
+      function setGraphFocus(id) {
+        var svg = document.getElementById("evidenceGraphSvg");
+        if (!svg) return;
+        var activeClaim = CLAIMS.filter(function (c) { return c.id === id; })[0];
+        var activeIsSource = SOURCES.some(function (s) { return s.id === id; });
+        var activeSource = activeClaim ? activeClaim.src : id;
+        var edges = svg.querySelectorAll(".graph-edge");
+        var nodes = svg.querySelectorAll(".graph-node");
+
+        edges.forEach(function (edge) {
+          var connected = !id ||
+            edge.getAttribute("data-src") === id ||
+            edge.getAttribute("data-claim") === id;
+          edge.classList.toggle("dim", !connected);
+          edge.classList.toggle("active", !!id && connected);
+        });
+
+        nodes.forEach(function (node) {
+          var nodeId = node.getAttribute("data-node-id");
+          var nodeSrc = node.getAttribute("data-src");
+          var connected = !id ||
+            nodeId === id ||
+            (activeIsSource && nodeSrc === id) ||
+            (!!activeClaim && nodeId === activeSource);
+          node.classList.toggle("dim", !connected);
+          node.classList.toggle("active", !!id && nodeId === id);
+        });
+      }
+
       function renderAgents() {
         var host = document.getElementById("agentList");
         host.innerHTML = "";
@@ -1913,6 +2216,7 @@
         document.getElementById("srcOnCount").textContent = on;
         renderFormula(r);
         renderClaims();
+        renderGraph();
         animateGauge(r.score);
         var statusEl = document.getElementById("liveStatus");
         if (statusEl) {

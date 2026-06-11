@@ -1,0 +1,23 @@
+{
+  "name": "@uav-readiness/cli",
+  "version": "0.8.0",
+  "private": true,
+  "type": "module",
+  "description": "Command-line interface for documentation readiness and evidence checks.",
+  "bin": {
+    "uav-readiness": "./bin/uav-readiness.mjs"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@uav-readiness/core": "0.8.0",
+    "@uav-readiness/evidence": "0.8.0",
+    "@uav-readiness/parsers": "0.8.0",
+    "@uav-readiness/reports": "0.8.0",
+    "@uav-readiness/rules": "0.8.0",
+    "tsx": "^4.22.4"
+  }
+}

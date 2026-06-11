@@ -15,7 +15,8 @@ import { evaluateReadiness } from "./readiness";
 const DEMO_DIRS = [
   "demo-uav-readiness",
   "demo-maintenance-readiness",
-  "demo-conflict-readiness"
+  "demo-conflict-readiness",
+  "demo-tdp-supplier-package"
 ];
 
 function source(id: string): EvidenceSource {

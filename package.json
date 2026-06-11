@@ -1,8 +1,11 @@
 {
   "name": "uav-readiness-evidence-copilot",
-  "version": "0.7.0",
-  "private": true,
+  "version": "0.8.0",
+  "private": false,
   "type": "module",
+  "bin": {
+    "uav-readiness": "./packages/cli/bin/uav-readiness.mjs"
+  },
   "workspaces": [
     "packages/*"
   ],
@@ -10,6 +13,7 @@
     "demo:readiness": "tsx scripts/demoReadiness.ts",
     "demo:maintenance": "tsx scripts/demoMaintenance.ts",
     "demo:conflict": "tsx scripts/demoConflict.ts",
+    "demo:tdp": "tsx scripts/demoTdp.ts",
     "demo:selfaudit": "tsx scripts/demoSelfAudit.ts",
     "demo:gate": "tsx scripts/demoScaffoldGate.ts",
     "demo:video:check": "node demo-video/check-video-assets.mjs",
@@ -26,6 +30,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@uav-readiness/cli": "file:packages/cli",
+    "@uav-readiness/core": "file:packages/core",
+    "@uav-readiness/evidence": "file:packages/evidence",
+    "@uav-readiness/parsers": "file:packages/parsers",
+    "@uav-readiness/reports": "file:packages/reports",
+    "@uav-readiness/rules": "file:packages/rules",
+    "tsx": "^4.22.4",
     "zod": "^4.0.0"
   },
   "devDependencies": {
@@ -35,7 +46,6 @@
     "ajv-formats": "^3.0.1",
     "eslint": "^10.4.1",
     "playwright": "^1.60.0",
-    "tsx": "^4.22.4",
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.61.0",
     "vitest": "^4.1.8"

@@ -1,0 +1,4 @@
+check_id,check_name,check_type,result,evidence_status,evidence_id,notes
+CHECK-001,Supplier package index present,documentation,pass,verified,EV-TDP-TEST-001,Synthetic package index is present
+CHECK-002,Acceptance record cross-reference,qa_review,warning,partial,EV-TDP-TEST-002,Acceptance record names one source but needs second reviewer note
+CHECK-003,Document labels present,documentation,pass,verified,EV-TDP-TEST-003,Synthetic-only labels are present on reviewed files

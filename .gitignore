@@ -43,6 +43,7 @@ exports/
 examples/demo-uav-readiness/output/
 examples/demo-maintenance-readiness/output/
 examples/demo-conflict-readiness/output/
+examples/demo-tdp-supplier-package/output/
 demo-video/output/
 demo-video/output/frames/
 demo-video/frames/

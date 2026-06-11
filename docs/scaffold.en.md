@@ -139,5 +139,6 @@ the scaffold changes an outcome — a tool call that would cross the line never 
 
 The same workstreams appear as packages: `core`, `parsers`, `evidence`, `rules`, `reports`, `qa`.
 The rules core is public in [AGENTS.md](../AGENTS.md). The evidence discipline is visible in the
-[evidence model](evidence-model.en.md) and the live demo, where the readiness score stays strict
+[evidence model](evidence-model.en.md), the category-level
+[standards crosswalk](standards.en.md), and the live demo, where the readiness score stays strict
 (`44/100` on synthetic data) precisely because unsupported claims are not inflated — they are locked.

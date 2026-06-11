@@ -8,6 +8,38 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 - No unreleased changes yet.
 
+## [0.8.0] - 2026-06-11
+
+### Added
+
+- New `@uav-readiness/cli` package with the `uav-readiness` binary:
+  - `uav-readiness check <dir>` scans a documentation folder for the four supported input contracts,
+    reports parsed/skipped files, keeps missing evidence `locked`, and can write JSON, SARIF, and
+    markdown outputs.
+  - `uav-readiness demo` runs the bundled strict demo path for instant zero-setup output.
+  - `--min-score` exits `1` when the documentation readiness score is below the configured gate, so
+    the CLI can be used directly in CI.
+- Root `bin` support for `npx github:DenisShumilov/uav-readiness-evidence-copilot`.
+- Composite GitHub Action `UAV Readiness / Docs Evidence Check` with markdown summary and SARIF output.
+- CI dogfood job that runs the local Action on `examples/demo-uav-readiness/input` and uploads SARIF
+  with category `uav-readiness`.
+- README sections in English and Ukrainian showing copy-paste CLI, GitHub Action, and strict demo usage.
+- Category-level standards crosswalk docs (`docs/standards.en.md`, `docs/standards.md`) connecting the
+  engine to public documentation-practice categories without claiming compliance.
+- Fourth synthetic example bundle `demo-tdp-supplier-package` (`npm run demo:tdp`, 49/100 Blocked)
+  framed as a TDP-style supplier package with locked claims, one partial cross-reference, and a
+  derived revision conflict.
+- Live-site evidence-graph section that renders sources, claims, and derived status edges from the
+  same toggle state as the readiness dashboard.
+
+### Changed
+
+- Bumped all package versions to `0.8.0`.
+- SARIF driver metadata now reports version `0.8.0` and maps QA warnings to the parsed QA-notes file
+  when the CLI is pointed at a custom folder.
+- README positioning and demo counts now cover all four bilingual demo bundles, including the
+  TDP-style supplier package.
+
 ## [0.7.0] - 2026-06-11
 
 ### Added

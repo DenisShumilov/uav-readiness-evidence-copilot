@@ -43,3 +43,27 @@ jobs:
 
       - name: Audit
         run: npm audit --audit-level=moderate
+
+  dogfood:
+    name: Dogfood Action
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Run local readiness action
+        id: readiness
+        uses: ./
+        with:
+          path: examples/demo-uav-readiness/input
+          min-score: 40
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: ${{ steps.readiness.outputs.sarif }}
+          category: uav-readiness

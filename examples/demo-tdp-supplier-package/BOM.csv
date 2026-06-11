@@ -1,0 +1,5 @@
+item_id,item_name,category,quantity,record_status,evidence_id,notes
+NW7-FRM-001,NORDWING-7 center frame panel,frame,1,verified,EV-TDP-BOM-001,Supplier index line for fictional kit at rev:nordwing-kit=R03
+NW7-FAST-002,NORDWING-7 fastener set,fastener,12,verified,EV-TDP-BOM-002,Fastener count appears in the supplier index
+NW7-DOC-003,NORDWING-7 drawing list,documentation,1,verified,EV-TDP-BOM-003,Drawing list is included for completeness review
+NW7-INS-004,NORDWING-7 material declaration,documentation,1,locked,,Supplier claim has no attached evidence record

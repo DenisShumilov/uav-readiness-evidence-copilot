@@ -5,7 +5,7 @@ describe("self-audit runs the real engine on the repo's own real content", () =>
   it("scores the repo's documentation and stays consistent (CI anti-drift guard)", () => {
     const result = runSelfAudit();
 
-    expect(result.summary.total).toBe(8);
+    expect(result.summary.total).toBe(9);
     // The engine runs on REAL content it did not author. A clean repo scores 100
     // with zero overrides — and if a doc later drifts from the engine's own
     // output (a stale score, a missing twin, a dead asset), this fails on purpose.

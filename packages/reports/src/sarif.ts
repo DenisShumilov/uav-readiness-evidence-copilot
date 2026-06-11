@@ -58,6 +58,12 @@ export function generateReadinessSarif(
   const artifactIdBySourceId = new Map(
     bundle.evidenceSources.map((source) => [source.id, source.artifactId])
   );
+  const qaNotesArtifact = bundle.artifacts.find(
+    (artifact) => artifact.kind === "qa_notes"
+  );
+  const qaNotesUri = qaNotesArtifact
+    ? `${exampleDir}${qaNotesArtifact.filename}`
+    : `${exampleDir}qa_notes.md`;
 
   function uriForClaim(claim: {
     id: string;
@@ -115,7 +121,7 @@ export function generateReadinessSarif(
   const processResults: SarifResult[] = assessment.warnings
     .filter((warning) => !/: partial evidence$/.test(warning))
     .map((warning) =>
-      makeResult("DOC-WARN-001", "warning", warning, `${exampleDir}qa_notes.md`)
+      makeResult("DOC-WARN-001", "warning", warning, qaNotesUri)
     );
 
   const sarif = {
@@ -128,7 +134,7 @@ export function generateReadinessSarif(
             name: "uav-readiness-evidence-copilot",
             informationUri:
               "https://github.com/DenisShumilov/uav-readiness-evidence-copilot",
-            version: "0.1.0",
+            version: "0.8.0",
             rules: RULES.map((rule) => ({
               id: rule.id,
               name: rule.name,
