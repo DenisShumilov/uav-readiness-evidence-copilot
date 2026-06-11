@@ -276,4 +276,4 @@ Built by **Denys Shumilov** — an engineer working on evidence-first, safety-ga
 
 If your team builds agent infrastructure, documentation/evidence systems, or defense-tech tooling — I'd like to hear from you.
 
-[LinkedIn](https://www.linkedin.com/in/denis-shumilov/) · [GitHub](https://github.com/DenisShumilov) · shumilov1999@gmail.com
+[LinkedIn](https://www.linkedin.com/in/denis-shumilov/) · [GitHub](https://github.com/DenisShumilov) · shmlvofficial@gmail.com

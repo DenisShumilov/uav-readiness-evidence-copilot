@@ -280,4 +280,4 @@ examples/demo-uav-readiness/output/
 
 Якщо ваша команда будує агентну інфраструктуру, системи доказової документації або defense-tech інструменти — напишіть мені.
 
-[LinkedIn](https://www.linkedin.com/in/denis-shumilov/) · [GitHub](https://github.com/DenisShumilov) · shumilov1999@gmail.com
+[LinkedIn](https://www.linkedin.com/in/denis-shumilov/) · [GitHub](https://github.com/DenisShumilov) · shmlvofficial@gmail.com
