@@ -1,7 +1,15 @@
 {
   "name": "@uav-readiness/core",
-  "version": "0.1.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
-  "description": "Shared TypeScript/Zod schemas, cross-document checks, and synthetic examples."
+  "description": "Shared TypeScript/Zod schemas and cross-document checks.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "zod": "^4.0.0"
+  }
 }

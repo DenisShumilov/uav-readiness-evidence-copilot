@@ -10,13 +10,10 @@ const pages = [
   "portfolio-demo.uk.html"
 ];
 
-let playwrightAvailable = false;
-try {
-  await import("playwright");
-  playwrightAvailable = true;
-} catch {
-  playwrightAvailable = false;
-}
+const playwrightAvailable = await import("playwright").then(
+  () => true,
+  () => false
+);
 
 const ffmpeg = spawnSync("ffmpeg", ["-version"], { encoding: "utf8" });
 const ffmpegAvailable = ffmpeg.status === 0;

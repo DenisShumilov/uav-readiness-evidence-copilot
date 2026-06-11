@@ -1,12 +1,12 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { parseDemoBundle } from "../../parsers/src/demoBundle";
+import { parseDemoBundle } from "@uav-readiness/parsers";
 import {
   CONFLICT_CEILING,
   DEDUCTION_CONFIG,
   evaluateReadiness
-} from "../../rules/src/readiness";
+} from "@uav-readiness/rules";
 
 // The interactive site (site/index.html) recomputes the score in browser JS.
 // These tests bind that copy to the TypeScript engine so the two can never
@@ -110,7 +110,6 @@ describe("site/index.html score parity with the engine", () => {
       "return compute();"
     ].join("\n");
 
-    // eslint-disable-next-line @typescript-eslint/no-implied-eval
     const result = new Function(program)() as {
       v: number;
       p: number;

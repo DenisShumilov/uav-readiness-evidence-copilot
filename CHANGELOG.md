@@ -6,10 +6,14 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+- No unreleased changes yet.
+
+## [0.7.0] - 2026-06-11
+
 ### Added
 
 - Public AI scaffold as a first-class artifact: [`AGENTS.md`](AGENTS.md) rules core and
-  [`docs/scaffold.md`](docs/scaffold.md) with the 10 specialist agents, 7 skills, quality gates,
+  [`docs/scaffold.en.md`](docs/scaffold.en.md) with the 10 specialist agents, 7 skills, quality gates,
   a Mermaid diagram, a model-vs-scaffold comparison, and a real safety-agent refusal example.
 - Rebuilt GitHub Pages site (`site/index.html`) into a single page with a live interactive readiness
   dashboard (toggle evidence sources → score and locked claims recompute), a scaffold showcase, and
@@ -17,7 +21,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 - README hero (both languages): thesis, badges, live-demo link, hero screenshot, and a TL;DR.
 - First-screen clarity + accessibility: synthetic-data labeling on the score, a proof strip, a third
   recruiter CTA, a `role="status"` live region for the readiness score, and `:focus-visible` outlines.
-- [`docs/scoring.md`](docs/scoring.md): transparent explanation of the readiness formula and bands.
+- [`docs/scoring.en.md`](docs/scoring.en.md): transparent explanation of the readiness formula and bands.
 - Repository hygiene: `CODE_OF_CONDUCT.md`, issue forms, Dependabot config, and this changelog.
 - Machine-readable outputs: **SARIF 2.1.0** (`readiness.sarif`) for GitHub code-scanning ingest,
   and JSON Schemas for the output contracts (`schemas/`).
@@ -49,6 +53,18 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 - Hardened cross-document conflict detection: the `rev:<subject>=<value>` token now tolerates
   whitespace, the input contract is documented, and `findMalformedRevisionMentions` surfaces malformed
   revision declarations instead of failing open silently.
+- **Self-audit on real content** (`npm run demo:selfaudit`, `packages/qa/src/selfAudit.ts`): points the
+  SAME derivation engine at this repository's own real documentation (not synthetic fixtures) — checks
+  that documented demo scores match the engine's computed output, scaffold counts are real files,
+  bilingual twins exist, and referenced assets resolve. A clean repo scores 100/100 with zero overrides;
+  drift (a stale score, a missing twin) makes the engine override the documented claim
+  (`verified -> locked`) and **fails CI**. The derivation now also accepts structural inputs
+  (`DerivableClaim`/`DerivableSource`/`DerivableQaItem`) so it runs on real, non-operational evidence
+  without forcing it through the synthetic-only schema. This is the first time the engine derives a
+  verdict on input it did not author.
+- **Reproducible gate demo** (`npm run demo:gate`): spawns the real `PreToolUse` hook for one allowed
+  documentation edit and one blocked fixture, prints the exit codes and DENY stderr, and regenerates
+  the committed sample log from a real run.
 
 ### Changed
 
@@ -58,14 +74,24 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 - `evaluateReadiness` now takes a `DemoBundle` directly (removed an unused graph-input overload that
   silently dropped findings) and counts engine-derived statuses; demo scores stay 44/80/49.
 - Removed the unreferenced, divergent `site/styles.css`; the page ships a single inline stylesheet.
+- README and scaffold docs now make the zero-install demo, scaffold counts, runtime gate, and
+  fail-closed gate trade-off explicit in both English and Ukrainian.
 
 ### Fixed
 
 - Post-review polish (from an adversarial multi-agent review of the session): SARIF result URIs now
-  use each bundle's own example directory (was hardcoded to `demo-uav-readiness`); README demo-video
-  links point at `v0.4.0-demo-video`; the site readiness bands match `docs/scoring.md`; agent #7's
+  use each bundle's own example directory (was hardcoded to `demo-uav-readiness`); demo-video links
+  point at the current release tag; the site readiness bands match `docs/scoring.en.md`; agent #7's
   name is consistent ("Documentation & Portfolio"); added `og:image`/`twitter:card` social-preview
   tags + `site/social-card.png`; removed orphaned screenshot assets.
+- Site polish: release-asset URLs point at `v0.6.0-demo-video`, the missing `--accent-soft` token is
+  defined, contrast is improved, the favicon/theme color are set, video cards keep a 16:9 ratio, and
+  the on-screen formula shows zero-valued conflict and missing-artifact terms.
+- Documentation drift fixes: runtime-gate notes now describe the enforced hook, scoring docs distinguish
+  the 44/100 original bundle from the 49/100 conflict bundle, English docs link English twins, SARIF is
+  listed in architecture outputs, and demo-data policy labels are present on all example bundles.
+- Root `.gitignore` ignores only the local `/.claude/` directory while keeping the published scaffold
+  under `meta/ai-workflows/.claude/` tracked.
 
 ### Notes
 

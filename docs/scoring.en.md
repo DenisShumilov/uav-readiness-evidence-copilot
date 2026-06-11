@@ -26,6 +26,9 @@ The weights reflect how much each issue hurts trust: a **conflict** (sources act
 a **locked** claim (no supporting evidence) hurt most, a **partial** claim (some evidence, not
 enough) hurts less, and a process **warning** is the lightest signal.
 
+Derived `partial` claims compound intentionally: they deduct once in the `partial` bucket and also
+create an automatic warning, because weak evidence is both an evidence-quality gap and a review item.
+
 ## Ingested labels vs engine-derived status
 
 The synthetic inputs carry a reviewer-written `Status` column. The engine treats that column as an
@@ -89,5 +92,6 @@ The formula has guards so the number stays principled even as the data changes:
   band until the contradiction is resolved. (A contradiction can never read as "ready".)
 - **Floor of zero** — the score never goes negative.
 
-These run in the tool today. The demo packages happen to have no conflicts and hit no caps, so the
-worked example above is unaffected (still 44/100).
+These run in the tool today. The original `demo-uav-readiness` package has no conflicts and hits no
+caps, so the worked example above is unaffected (still 44/100). The `demo-conflict-readiness` bundle
+deliberately triggers the conflict gate and is capped at 49/100.

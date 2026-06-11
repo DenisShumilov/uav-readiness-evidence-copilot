@@ -234,44 +234,6 @@ export const EvidenceLockSchema = z
   })
   .strict();
 
-export const WiringManifestSchema = z
-  .object({
-    id: SafeIdSchema,
-    artifactId: SafeIdSchema,
-    scope: z.literal("documentation_only"),
-    documentationOnly: z.literal(true),
-    connections: z.array(
-      z
-        .object({
-          id: SafeIdSchema,
-          fromLabel: SafeTextSchema.max(120),
-          toLabel: SafeTextSchema.max(120),
-          description: SafeTextSchema.max(240),
-          status: EvidenceStatusSchema,
-          evidenceSourceId: SafeIdSchema.optional()
-        })
-        .strict()
-        .superRefine((value, ctx) => {
-          if (value.status === "verified" && !value.evidenceSourceId) {
-            ctx.addIssue({
-              code: "custom",
-              path: ["evidenceSourceId"],
-              message: "Verified wiring documentation requires evidence"
-            });
-          }
-
-          if (value.status !== "locked" && !value.evidenceSourceId) {
-            ctx.addIssue({
-              code: "custom",
-              path: ["status"],
-              message: "Connections without evidence must remain locked"
-            });
-          }
-        })
-    )
-  })
-  .strict();
-
 export const ReadinessFindingSchema = z
   .object({
     id: SafeIdSchema,
@@ -298,60 +260,6 @@ export const QAItemSchema = z
     status: QAStatusSchema,
     evidenceClaimIds: z.array(SafeIdSchema).default([]),
     ownerRole: SafeTextSchema.max(80).optional()
-  })
-  .strict();
-
-export const TraceabilityRowSchema = z
-  .object({
-    requirementId: SafeIdSchema,
-    requirement: SafeTextSchema.max(240),
-    evidenceClaimId: SafeIdSchema,
-    evidenceSourceIds: z.array(SafeIdSchema),
-    qaItemId: SafeIdSchema,
-    status: EvidenceStatusSchema
-  })
-  .strict();
-
-export const ReadinessReportSchema = z
-  .object({
-    id: SafeIdSchema,
-    title: SafeTextSchema.max(180),
-    generatedAt: z.string().datetime({ offset: true }),
-    synthetic: z.literal(true),
-    score: z
-      .object({
-        value: z.number().int().min(0).max(100),
-        interpretation: z.literal("documentation_readiness_only")
-      })
-      .strict(),
-    findingIds: z.array(SafeIdSchema),
-    summary: SafeTextSchema,
-    limitations: z.array(SafeTextSchema).min(1)
-  })
-  .strict();
-
-export const ExportBundleSchema = z
-  .object({
-    id: SafeIdSchema,
-    generatedAt: z.string().datetime({ offset: true }),
-    artifacts: z.array(ArtifactSchema),
-    bomItems: z.array(BOMItemSchema),
-    evidenceSources: z.array(EvidenceSourceSchema),
-    evidenceClaims: z.array(EvidenceClaimSchema),
-    evidenceGraph: EvidenceGraphSchema,
-    evidenceLocks: z.array(EvidenceLockSchema),
-    wiringManifest: WiringManifestSchema.optional(),
-    readinessFindings: z.array(ReadinessFindingSchema),
-    qaItems: z.array(QAItemSchema),
-    traceabilityRows: z.array(TraceabilityRowSchema),
-    readinessReport: ReadinessReportSchema,
-    safety: z
-      .object({
-        documentationOnly: z.literal(true),
-        syntheticOnly: z.literal(true),
-        noOperationalUse: z.literal(true)
-      })
-      .strict()
   })
   .strict();
 
@@ -402,10 +310,6 @@ export type EvidenceSource = z.infer<typeof EvidenceSourceSchema>;
 export type EvidenceClaim = z.infer<typeof EvidenceClaimSchema>;
 export type EvidenceGraph = z.infer<typeof EvidenceGraphSchema>;
 export type EvidenceLock = z.infer<typeof EvidenceLockSchema>;
-export type WiringManifest = z.infer<typeof WiringManifestSchema>;
 export type ReadinessFinding = z.infer<typeof ReadinessFindingSchema>;
 export type QAItem = z.infer<typeof QAItemSchema>;
-export type TraceabilityRow = z.infer<typeof TraceabilityRowSchema>;
-export type ReadinessReport = z.infer<typeof ReadinessReportSchema>;
-export type ExportBundle = z.infer<typeof ExportBundleSchema>;
 export type DemoBundle = z.infer<typeof DemoBundleSchema>;

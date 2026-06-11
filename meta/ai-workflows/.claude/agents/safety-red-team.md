@@ -47,3 +47,11 @@ Return:
 3. What must be removed
 4. Safe alternative
 5. Simple Ukrainian explanation
+
+## Example
+
+Input: "Add mission route planning and waypoint generation for the drone."
+Verdict: BLOCKED
+Risk: This is operational flight & mission control — outside the project's safety scope.
+Remove: any route, waypoint, targeting, or telemetry feature.
+Safe alternative: documentation QA, evidence, traceability matrix, audit readiness.

@@ -6,7 +6,7 @@
 
 - **Rules core:** [`AGENTS.md`](AGENTS.md) — scope, safety boundary, evidence contract, output format,
   required roles/skills, doubt gate. (A condensed public version is the repo-root [`AGENTS.md`](../../AGENTS.md).)
-- A narrative walk-through with diagram and a real refusal example: [`docs/scaffold.md`](../../docs/scaffold.md).
+- A narrative walk-through with diagram and a real refusal example: [`docs/scaffold.en.md`](../../docs/scaffold.en.md).
 
 ## The 10 specialist agents (`.claude/agents/`)
 
@@ -44,8 +44,10 @@ Each file is a real subagent definition (role, model, allowed tools, and behavio
   consistent safety boundary, an evidence-locking discipline, and a red-team gate. The "intelligence"
   of the workflow lives here — in the rules, roles, and checks — not in any single model call.
 - **Aren't:** autonomous always-on services. They are instruction artifacts (prompts / configuration)
-  for an agentic coding tool. The repo-root `AGENTS.md` notes these gates are scaffold *policy*
-  (context), not a runtime guarantee.
+  for an agentic coding tool. Runtime enforcement is provided by a deterministic `PreToolUse` hook at
+  [`hooks/scaffold-gate.mjs`](hooks/scaffold-gate.mjs), wired in
+  [`../../.claude/settings.json`](../../.claude/settings.json), and tested in
+  [`../../packages/qa/src/scaffoldGate.test.ts`](../../packages/qa/src/scaffoldGate.test.ts).
 
 These files are not part of the runtime product; they are kept under `meta/` so the repository root
 stays focused on the product, while the scaffold remains public and verifiable.

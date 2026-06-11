@@ -123,6 +123,15 @@ This is the part agent-savvy readers ask to see *demonstrated*, not asserted:
 - it is covered by tests in [`packages/qa/src/scaffoldGate.test.ts`](../packages/qa/src/scaffoldGate.test.ts),
   which spawn the hook and assert a forbidden tool call is actually blocked (exit code 2).
 
+### Try the gate yourself
+
+Run `npm run demo:gate` to spawn the real hook twice: one clean documentation edit exits 0, and one
+blocked fixture exits 2 with the hook's DENY stderr. The command also rewrites the committed sample
+log from the real run.
+
+The gate is deliberately fail-closed: only a small documented allowlist of benign collocations and
+safety-policy self-references is stripped before the denylist check; everything else still blocks.
+
 So for the safety boundary the thesis "the intelligence is in the scaffold" is a *measurable* claim:
 the scaffold changes an outcome — a tool call that would cross the line never runs.
 

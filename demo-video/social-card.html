@@ -1,0 +1,131 @@
+<!doctype html>
+<!-- Social card source. Render at exactly 1280x640:
+     npm run demo:video:screenshots regenerates PNGs, or see demo-video/capture-readme-assets.mjs -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600&display=swap"
+    />
+    <style>
+      :root {
+        --bg: #0c1320;
+        --bg-card: #0e1626;
+        --grid: rgba(120, 160, 220, 0.07);
+        --white: #f2f6fc;
+        --muted: #93a3bb;
+        --blue: #5b9bff;
+        --coral: #ff6f61;
+        --red: #d8412f;
+        --ring-track: #1d2a40;
+        --font-display: "Archivo", sans-serif;
+        --font-mono: "IBM Plex Mono", monospace;
+        --font-body: "Public Sans", sans-serif;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1280px; height: 640px; overflow: hidden; }
+      body {
+        background:
+          linear-gradient(transparent 63px, var(--grid) 64px),
+          linear-gradient(90deg, transparent 63px, var(--grid) 64px),
+          var(--bg);
+        background-size: 64px 64px, 64px 64px, auto;
+        font-family: var(--font-body);
+        color: var(--white);
+        display: flex;
+        align-items: center;
+        padding: 0 72px;
+        position: relative;
+      }
+      .left { width: 660px; }
+      .seal {
+        width: 46px; height: 46px; border-radius: 50%;
+        border: 2.5px solid var(--white);
+        display: flex; align-items: center; justify-content: center;
+        font-family: var(--font-display); font-weight: 800; font-size: 15px;
+        letter-spacing: 0.04em; margin-bottom: 34px;
+      }
+      .eyebrow {
+        font-family: var(--font-mono); font-weight: 600; font-size: 17px;
+        letter-spacing: 0.22em; color: var(--blue); margin-bottom: 22px;
+      }
+      h1 {
+        font-family: var(--font-display); font-weight: 900;
+        font-size: 64px; line-height: 1.02; letter-spacing: -0.015em;
+        margin-bottom: 24px;
+      }
+      .thesis {
+        font-family: var(--font-display); font-weight: 800;
+        font-size: 27px; line-height: 1.25; margin-bottom: 10px;
+      }
+      .thesis em { font-style: normal; color: var(--blue); }
+      .thesis-uk {
+        font-size: 18px; font-weight: 500; color: var(--muted); margin-bottom: 26px;
+      }
+      .pipeline {
+        font-family: var(--font-mono); font-size: 17px; font-weight: 500;
+        color: #b8c6da; margin-bottom: 30px;
+      }
+      .chip {
+        display: inline-flex; align-items: center; gap: 10px;
+        border: 1.5px solid var(--red); border-radius: 10px;
+        padding: 11px 18px;
+        font-family: var(--font-mono); font-weight: 600; font-size: 16px;
+        letter-spacing: 0.14em; color: #ff8a7d;
+      }
+      .chip .dot {
+        width: 14px; height: 14px; border-radius: 50%;
+        background: var(--coral);
+        box-shadow: inset 0 0 0 3px var(--bg);
+        border: 2px solid var(--coral);
+      }
+      .right {
+        position: absolute; right: 88px; top: 50%; transform: translateY(-50%);
+        text-align: center;
+      }
+      .gauge {
+        width: 320px; height: 320px; border-radius: 50%;
+        background: conic-gradient(var(--red) 0deg, var(--red) 158deg, var(--ring-track) 158deg);
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 26px;
+      }
+      .gauge-inner {
+        width: 252px; height: 252px; border-radius: 50%;
+        background: var(--bg-card);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+      }
+      .score {
+        font-family: var(--font-display); font-weight: 900;
+        font-size: 104px; line-height: 1; color: var(--coral); letter-spacing: -0.02em;
+      }
+      .of {
+        font-family: var(--font-mono); font-size: 24px; color: #aebcd2; margin-top: 6px;
+      }
+      .gauge-label {
+        font-family: var(--font-mono); font-weight: 600; font-size: 17px;
+        letter-spacing: 0.2em; color: #c4d0e2;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="left">
+      <div class="seal">URC</div>
+      <div class="eyebrow">PUBLIC DEMO &nbsp;·&nbsp; SAFE DOCS QA</div>
+      <h1>UAV Readiness &amp;<br />Evidence Copilot</h1>
+      <div class="thesis">The intelligence is in the <em>scaffold</em>, not&nbsp;the&nbsp;model.</div>
+      <div class="thesis-uk">Розум — у каркасі, не в моделі.</div>
+      <div class="pipeline">Synthetic docs &rarr; evidence graph &rarr; locked findings &rarr; report</div>
+      <div class="chip"><span class="dot"></span>NO OPERATIONAL CAPABILITY</div>
+    </div>
+    <div class="right">
+      <div class="gauge"><div class="gauge-inner">
+        <div class="score">44</div>
+        <div class="of">/ 100</div>
+      </div></div>
+      <div class="gauge-label">DOCUMENTATION READINESS</div>
+    </div>
+  </body>
+</html>

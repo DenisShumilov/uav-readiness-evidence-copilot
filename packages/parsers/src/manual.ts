@@ -6,7 +6,7 @@ import {
   type Artifact,
   type EvidenceClaim,
   type EvidenceSource
-} from "../../core/src/schemas";
+} from "@uav-readiness/core";
 import { extractMarkdownTable, toSafeIdPart } from "./text";
 
 const MANUAL_ARTIFACT_ID = "artifact.demo-manual";

@@ -12,13 +12,25 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-monorepo-3178C6)](#tech-stack)
 [![Tests: Vitest](https://img.shields.io/badge/tests-Vitest-6E9F18)](#tech-stack)
 
+**10** agents · **7** skills · **1** runtime gate · **~90** tests · **5** export formats · **3** demo bundles · **2** languages
+
 <p align="center">
   <a href="https://denisshumilov.github.io/uav-readiness-evidence-copilot/">
     <img src="docs/assets/hero-dashboard.png" alt="Live demo page: 44/100 readiness score, evidence map, and the thesis 'The intelligence is in the scaffold, not the model'" width="100%" />
   </a>
 </p>
 
-**Live demo:** https://denisshumilov.github.io/uav-readiness-evidence-copilot/ — an interactive dashboard: toggle evidence sources and watch the readiness score recompute while claims turn `locked`.
+*The strict demo deliberately scores 44/100 — no evidence means locked. The tool refuses to rubber-stamp.*
+
+<p align="center">
+  <img src="docs/assets/demo-evidence-toggle.gif" alt="Toggling two evidence sources off: seven claims flip to locked and the readiness score falls from 44 to 26, then reset restores the baseline" width="100%" />
+</p>
+
+**Try it in 10 seconds — no install:** https://denisshumilov.github.io/uav-readiness-evidence-copilot/ — an interactive dashboard: toggle evidence sources and watch the readiness score recompute while claims turn `locked`.
+
+Built by a scaffold of 10 Claude subagents, 7 skills, and a runtime gate that blocks unsafe edits — [how it was built](docs/scaffold.en.md).
+
+Give it a drone project's docs (parts list, manual, test log, QA notes) and it tells you — with proof — which claims are actually backed by evidence and how ready the documentation is.
 
 UAV Readiness & Evidence Copilot turns synthetic engineering artifacts into an evidence-backed readiness package: parsed inputs, evidence graph, locked findings, traceability CSV, artifact hashes, markdown report, and a static portfolio demo. It is built not by one model, but by a scaffold of rules, roles, and checks around it.
 
@@ -26,7 +38,8 @@ UAV Readiness & Evidence Copilot turns synthetic engineering artifacts into an e
 
 - Parses 4 synthetic inputs (BOM, manual, test log, QA notes).
 - Builds an evidence graph for claims, sources, and locks.
-- **Derives** each status from the evidence instead of trusting the reviewer's label: `no evidence -> locked`, test-record claims graded by their own logged outcome, and **cross-document contradictions override even a hand-typed "verified"** — the conflict demo lands at **49/100 Blocked** although every row is marked "verified" (see [docs/scoring.en.md](docs/scoring.en.md#ingested-labels-vs-engine-derived-status)).
+- **Derives** each status from the evidence instead of trusting the reviewer's label: `no evidence -> locked`, with test-record claims graded by their own logged outcome.
+- **A derived cross-document contradiction caps the verdict in the Blocked band even when every row is hand-marked "verified"** — the conflict demo scores **49/100 Blocked**.
 - Computes a documentation readiness score with explainable, capped rules — and a parity test keeps the live site's formula identical to the engine.
 - Exports a report, JSON, traceability CSV, artifact hashes, and a demo page.
 - The point: reliability comes from the scaffold (rules, roles, checks, and a runtime gate), not the model.
@@ -68,10 +81,11 @@ The strict safety boundary here is a **strength, not a disclaimer**: it shows en
 It does not control drones or robots, process live telemetry, generate routes or waypoints, support payload operation, support targeting, provide tactical advice, or connect to real aircraft, radios, sensors, or field systems.
 
 All demo data is synthetic, static, and educational.
+It is enforced, not promised: a tested PreToolUse gate blocks any edit introducing operational terminology (see the committed sample log and `packages/qa/src/scaffoldGate.test.ts`).
 
 ## Quick Start
 
-```powershell
+```bash
 npm install
 npm run demo:readiness
 ```
@@ -84,7 +98,7 @@ examples/demo-uav-readiness/output/portfolio-demo.html
 
 Run checks:
 
-```powershell
+```bash
 npm run typecheck
 npm test
 npm audit --audit-level=moderate
@@ -97,6 +111,12 @@ npm audit --audit-level=moderate
 - `npm run demo:conflict` — the `demo-conflict-readiness` bundle (**49/100**): almost fully evidenced, but one **contradiction** between sources — the conflict gate caps the verdict in the Blocked band (deductions alone would give ~90).
 
 This shows the tool generalizes and never rubber-stamps a score — it keeps claims `partial`/`locked` and refuses a "ready" verdict when sources disagree.
+
+## Self-audit on real content
+
+`npm run demo:selfaudit` points the **same engine** at this repository's own real documentation (not synthetic fixtures): it checks that every documented demo score matches what the engine actually computes, that the "10 agents / 7 skills" counts are real files, that bilingual twins exist, that referenced assets resolve, and that live-site release tags match `README.md`. A clean repo scores **100/100 with zero overrides** — and the moment a doc drifts (a stale score, a missing twin, or a stale release tag), the engine overrides the documented claim (`verified -> locked`) and **CI fails**. This is the engine deriving a verdict on input it did not author.
+
+> **What this does not yet prove:** the three demo bundles are synthetic and internally consistent, so on them the engine reproduces the reviewer's labels (it has not *yet* caught a human error there — `engineAdjustedCount === 0` by design). The self-audit is the first place the engine runs on **un-authored real content**, and it is wired into CI so documentation drift cannot creep back in.
 
 ## Inputs
 

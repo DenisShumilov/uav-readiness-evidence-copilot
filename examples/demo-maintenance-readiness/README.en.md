@@ -2,6 +2,8 @@
 
 *[Українською](README.md) · English*
 
+Synthetic demo data only. Not operationally valid.
+
 A **second** synthetic example bundle, in a different shape from `demo-uav-readiness`. It exercises
 the same pipeline (parsers → evidence graph → readiness rules → reports) on maintenance-style
 records, and produces a clearly different, higher readiness score (a mostly-organized package).

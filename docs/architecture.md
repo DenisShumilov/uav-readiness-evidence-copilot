@@ -24,10 +24,12 @@ flowchart LR
     E --> G["Traceability matrix CSV"]
     C --> H["Artifact hashes"]
     E --> I["Portfolio demo HTML/MD"]
+    E --> J["SARIF 2.1.0"]
     F --> O["examples/demo-uav-readiness/output"]
     G --> O
     H --> O
     I --> O
+    J --> O
 ```
 
 ## Шлях виконання (Runtime Path)
@@ -65,6 +67,7 @@ examples/demo-uav-readiness/future-fixtures/
 - `readiness-assessment.json`
 - `traceability-matrix.csv`
 - `artifact-hashes.json`
+- `readiness.sarif`
 - `portfolio-demo.md`
 - `portfolio-demo.html`
 - `portfolio-demo.en.html`

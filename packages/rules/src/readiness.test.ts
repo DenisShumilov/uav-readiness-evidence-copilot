@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseDemoBundle } from "../../parsers/src/demoBundle";
+import { parseDemoBundle } from "@uav-readiness/parsers";
 import { evaluateReadiness } from "./readiness";
 
 describe("evaluateReadiness", () => {

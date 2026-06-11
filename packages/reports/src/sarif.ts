@@ -1,6 +1,6 @@
-import type { DemoBundle } from "../../core/src/schemas";
-import type { BuiltEvidenceGraph } from "../../evidence/src/evidenceGraph";
-import type { ReadinessAssessment } from "../../rules/src/readiness";
+import type { DemoBundle } from "@uav-readiness/core";
+import type { BuiltEvidenceGraph } from "@uav-readiness/evidence";
+import type { ReadinessAssessment } from "@uav-readiness/rules";
 
 /**
  * Emits the readiness review as SARIF 2.1.0 (Static Analysis Results Interchange Format),

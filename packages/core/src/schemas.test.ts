@@ -4,17 +4,10 @@ import {
   ArtifactSchema,
   BOMItemSchema,
   EvidenceClaimSchema,
-  EvidenceGraphSchema,
-  ExportBundleSchema,
-  WiringManifestSchema
+  EvidenceGraphSchema
 } from "./schemas";
-import { syntheticExportBundle } from "./syntheticExamples";
 
 describe("Phase 2 schemas", () => {
-  it("accepts the synthetic export bundle", () => {
-    expect(() => ExportBundleSchema.parse(syntheticExportBundle)).not.toThrow();
-  });
-
   it("rejects operational terminology in artifact text", () => {
     const unsafeArtifact = {
       id: "artifact.safe-id",
@@ -92,55 +85,25 @@ describe("Phase 2 schemas", () => {
     );
   });
 
-  it("keeps wiring documentation locked without supporting evidence", () => {
-    const unsafeWiringManifest = {
-      id: "wiring.demo",
-      artifactId: "artifact.wiring-notes",
-      scope: "documentation_only",
-      documentationOnly: true,
-      connections: [
-        {
-          id: "connection.demo",
-          fromLabel: "Training connector",
-          toLabel: "Training board",
-          description: "Documentation note",
-          status: "verified"
-        }
-      ]
-    };
-
-    expect(() => WiringManifestSchema.parse(unsafeWiringManifest)).toThrow(
-      /requires evidence/i
-    );
-  });
-
   it("rejects graph links to unknown sources", () => {
     const graph = {
-      ...syntheticExportBundle.evidenceGraph,
+      id: "graph.demo-readiness",
+      artifactIds: ["artifact.bom"],
+      evidenceSourceIds: ["source.bom-row-1"],
+      evidenceClaimIds: ["claim.bom-present"],
       links: [
         {
           claimId: "claim.bom-present",
           evidenceSourceId: "source.missing",
           relation: "supports"
         }
-      ]
+      ],
+      generatedAt: "2026-06-05T09:00:00.000Z",
+      synthetic: true
     };
 
     expect(() => EvidenceGraphSchema.parse(graph)).toThrow(
       /unknown evidence source/i
     );
-  });
-
-  it("requires bundles to stay synthetic and documentation-only", () => {
-    const unsafeBundle = {
-      ...syntheticExportBundle,
-      safety: {
-        documentationOnly: true,
-        syntheticOnly: false,
-        noOperationalUse: true
-      }
-    };
-
-    expect(() => ExportBundleSchema.parse(unsafeBundle)).toThrow();
   });
 });

@@ -26,8 +26,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint
+        run: npm run lint
+
       - name: Demo readiness
         run: npm run demo:readiness
+
+      - name: Self-audit (docs vs engine — fails on drift)
+        run: npm run demo:selfaudit
 
       - name: Typecheck
         run: npm run typecheck

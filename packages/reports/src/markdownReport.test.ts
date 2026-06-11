@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { buildEvidenceGraphFromBundle } from "../../evidence/src/evidenceGraph";
-import { parseDemoBundle } from "../../parsers/src/demoBundle";
-import { evaluateReadiness } from "../../rules/src/readiness";
+import { buildEvidenceGraphFromBundle } from "@uav-readiness/evidence";
+import { parseDemoBundle } from "@uav-readiness/parsers";
+import { evaluateReadiness } from "@uav-readiness/rules";
 import { generateReadinessReportMarkdown } from "./markdownReport";
 
 describe("generateReadinessReportMarkdown", () => {

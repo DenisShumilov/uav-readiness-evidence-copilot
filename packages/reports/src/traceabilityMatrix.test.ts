@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseDemoBundle } from "../../parsers/src/demoBundle";
-import { evaluateReadiness } from "../../rules/src/readiness";
+import { parseDemoBundle } from "@uav-readiness/parsers";
+import { evaluateReadiness } from "@uav-readiness/rules";
 import {
   buildTraceabilityRows,
   generateTraceabilityMatrix

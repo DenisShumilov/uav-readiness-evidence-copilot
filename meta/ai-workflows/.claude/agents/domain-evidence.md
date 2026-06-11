@@ -38,3 +38,11 @@ Return:
 3. Locked-step logic
 4. Files or schemas needed
 5. Simple Ukrainian explanation
+
+## Example
+
+Input: "Claim C-12 references source EV-404, but EV-404 is absent."
+Verdict: locked
+Evidence: missing source; do not invent support.
+Traceability: keep C-12 linked to the missing ID for audit review.
+Next step: add a real source or leave the claim locked.

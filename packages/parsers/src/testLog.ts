@@ -13,7 +13,7 @@ import {
   type EvidenceSource,
   type QAItem,
   type ReadinessFinding
-} from "../../core/src/schemas";
+} from "@uav-readiness/core";
 import { parseCsvRows } from "./csv";
 import { toSafeIdPart } from "./text";
 

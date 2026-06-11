@@ -7,8 +7,8 @@ import {
   type EvidenceClaim,
   type EvidenceSource,
   type QAItem
-} from "../../core/src/schemas";
-import { parseDemoBundle } from "../../parsers/src/demoBundle";
+} from "@uav-readiness/core";
+import { parseDemoBundle } from "@uav-readiness/parsers";
 import { deriveEvidenceStatuses } from "./deriveStatus";
 import { evaluateReadiness } from "./readiness";
 

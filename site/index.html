@@ -3,27 +3,32 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>UAV Readiness &amp; Evidence Copilot — живе демо</title>
+    <title>UAV Readiness &amp; Evidence Copilot — live demo</title>
     <meta
       name="description"
-      content="Жива, безпечна перевірка інженерної документації БпЛА: інтерактивна оцінка готовності, карта доказів, заблоковані пункти — і система з 10 AI-агентів, що це побудувала."
+      content="Safe documentation QA for UAV/robotics: an interactive readiness score, evidence graph, and locked findings — built by a system of 10 AI agents (the intelligence is in the scaffold, not the model)."
     />
     <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#e9edf2" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e9edf2'/%3E%3Ccircle cx='32' cy='32' r='23' fill='%23fff' stroke='%230b57d0' stroke-width='4'/%3E%3Ctext x='32' y='38' text-anchor='middle' font-family='Arial,sans-serif' font-size='17' font-weight='700' fill='%230c1421'%3EURC%3C/text%3E%3C/svg%3E"
+    />
 
     <!-- Social preview -->
-    <meta property="og:title" content="UAV Readiness & Evidence Copilot" />
+    <meta property="og:title" content="UAV Evidence Copilot: derived conflict verdict" />
     <meta
       property="og:description"
-      content="Safe documentation QA for UAV/robotics: evidence graph, locked findings, readiness score. The intelligence is in the scaffold, not the model."
+      content="Derived evidence status exposes the conflict demo verdict: 49/100 Blocked, even when source rows are hand-marked verified. UA: безпечна QA документації."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://denisshumilov.github.io/uav-readiness-evidence-copilot/" />
     <meta property="og:image" content="https://denisshumilov.github.io/uav-readiness-evidence-copilot/social-card.png" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="UAV Readiness & Evidence Copilot" />
+    <meta name="twitter:title" content="UAV Evidence Copilot: derived conflict verdict" />
     <meta
       name="twitter:description"
-      content="Safe documentation QA. The intelligence is in the scaffold, not the model."
+      content="Derived evidence status catches a conflict demo verdict: 49/100 Blocked."
     />
     <meta name="twitter:image" content="https://denisshumilov.github.io/uav-readiness-evidence-copilot/social-card.png" />
 
@@ -31,7 +36,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
 
@@ -46,10 +51,11 @@
         --line-strong: #b4c0cd;
         --accent: #0b57d0;
         --accent-ink: #0a3f9e;
-        --amber: #d97a06;
+        --accent-soft: #e8effc;
+        --amber: #b05f00;
         --verified: #0e7a4b;
         --verified-bg: #e3f3eb;
-        --partial: #b26a00;
+        --partial: #96590a;
         --partial-bg: #fbefd9;
         --locked: #c0271c;
         --locked-bg: #fbe6e3;
@@ -586,6 +592,9 @@
       .formula .hl-w {
         color: var(--amber);
       }
+      .formula .zero {
+        color: #8b97a5;
+      }
       .formula .res {
         color: var(--ink);
         font-weight: 600;
@@ -631,7 +640,7 @@
         margin-left: auto;
         flex: none;
         font-family: var(--font-mono);
-        font-size: 9.5px;
+        font-size: 11px;
         letter-spacing: 0.06em;
         text-transform: uppercase;
         padding: 3px 7px;
@@ -695,6 +704,119 @@
         margin: 4px 0 0;
         color: #c4ccd6;
         font-size: 13px;
+      }
+
+      /* ---------- Conflict gate ---------- */
+      .conflict-stage {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1fr);
+        gap: 14px;
+        align-items: stretch;
+      }
+      .doc-card,
+      .verdict-panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+      }
+      .doc-card {
+        padding: 18px;
+        border-left: 5px solid var(--verified);
+      }
+      .doc-card .file {
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 20px;
+        letter-spacing: -0.01em;
+        margin-bottom: 8px;
+      }
+      .doc-card .rev {
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .verified-pill {
+        display: inline-flex;
+        align-items: center;
+        margin-top: 16px;
+        border-radius: 7px;
+        background: var(--verified-bg);
+        color: var(--verified);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 5px 8px;
+      }
+      .conflict-bridge {
+        display: grid;
+        place-items: center;
+        text-align: center;
+        color: var(--locked);
+        font-family: var(--font-mono);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .conflict-bridge span {
+        display: inline-flex;
+        border: 1px dashed #efaaa2;
+        border-radius: 999px;
+        background: var(--locked-bg);
+        padding: 7px 10px;
+      }
+      .verdict-panel {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 18px;
+        align-items: center;
+        margin-top: 6px;
+        padding: 18px;
+        border-left: 5px solid var(--locked);
+      }
+      .verdict-panel h3 {
+        margin: 0 0 6px;
+        font-family: var(--font-display);
+        font-size: clamp(1.2rem, 2.5vw, 1.7rem);
+        letter-spacing: -0.01em;
+      }
+      .verdict-panel p {
+        margin: 0;
+        color: var(--muted);
+      }
+      .conflict-score {
+        min-width: 170px;
+        border-radius: 12px;
+        border: 1px solid #efaaa2;
+        background: var(--locked-bg);
+        color: var(--locked);
+        text-align: center;
+        padding: 13px 16px;
+      }
+      .conflict-score b {
+        display: block;
+        font-family: var(--font-display);
+        font-size: 34px;
+        line-height: 1;
+      }
+      .conflict-score span {
+        display: block;
+        margin-top: 4px;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .run-line {
+        margin-top: 14px;
+        font-size: 13.5px;
+        color: var(--muted);
+      }
+      .run-line code {
+        font-family: var(--font-mono);
+        color: var(--ink);
       }
 
       /* ---------- Scaffold showcase ---------- */
@@ -902,6 +1024,7 @@
       }
       .vcard video {
         width: 100%;
+        aspect-ratio: 16/9;
         border-radius: 9px;
         border: 1px solid var(--line);
         background: #000;
@@ -1007,6 +1130,15 @@
         .refusal .req {
           border-right: 0;
           border-bottom: 1px solid var(--line);
+        }
+        .conflict-stage {
+          grid-template-columns: 1fr;
+        }
+        .conflict-bridge {
+          min-height: 54px;
+        }
+        .verdict-panel {
+          grid-template-columns: 1fr;
         }
       }
 
@@ -1194,6 +1326,58 @@
         </div>
       </section>
 
+      <section class="block" id="conflict-gate">
+        <div class="sec-head reveal">
+          <p class="eyebrow" data-i18n="conflict.eyebrow">Гейт конфлікту</p>
+          <h2 data-i18n="conflict.title">
+            Рушій блокує суперечність, навіть коли рядки вручну позначені verified
+          </h2>
+          <p data-i18n="conflict.intro">
+            Два синтетичні документи виглядають підтвердженими окремо, але не погоджуються між
+            собою.
+          </p>
+        </div>
+        <div class="conflict-stage reveal">
+          <article class="doc-card">
+            <div class="file">BOM.csv</div>
+            <div class="rev" data-i18n="conflict.bomRev">manual revision: TM-3</div>
+            <span class="verified-pill" data-i18n="conflict.verified">hand-marked verified</span>
+          </article>
+          <div class="conflict-bridge" aria-hidden="true">
+            <span data-i18n="conflict.detected">CONFLICT detected</span>
+          </div>
+          <article class="doc-card">
+            <div class="file">qa_notes.md</div>
+            <div class="rev" data-i18n="conflict.qaRev">manual revision: TM-2</div>
+            <span class="verified-pill" data-i18n="conflict.verified">hand-marked verified</span>
+          </article>
+          <div class="verdict-panel">
+            <div>
+              <h3 data-i18n="conflict.verdict">Conflict gate caps the verdict</h3>
+              <p data-i18n="conflict.path">
+                CONFLICT detected -&gt; conflict gate caps the verdict -&gt; 49/100 · Blocked
+              </p>
+              <div class="run-line">
+                <span data-i18n="conflict.caption">
+                  Deductions alone would give about 90; the gate refuses to rubber-stamp when
+                  sources disagree.
+                </span>
+                <a
+                  href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot#quick-start"
+                  data-i18n="conflict.run"
+                  >Run it yourself</a
+                >:
+                <code>npm run demo:conflict</code>
+              </div>
+            </div>
+            <div class="conflict-score" aria-label="49 out of 100, Blocked">
+              <b>49/100</b>
+              <span data-i18n="conflict.blocked">Blocked</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ============ SCAFFOLD SHOWCASE ============ -->
       <section class="block" id="scaffold">
         <div class="sec-head reveal">
@@ -1279,13 +1463,13 @@
             <h3 data-i18n="videos.uk">Українською</h3>
             <video controls preload="metadata" playsinline>
               <source
-                src="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.5.0-demo-video/uav-readiness-demo.uk.final.mp4"
+                src="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.6.0-demo-video/uav-readiness-demo.uk.final.mp4"
                 type="video/mp4"
               />
             </video>
             <p class="fallback">
               <a
-                href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.5.0-demo-video/uav-readiness-demo.uk.final.mp4"
+                href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.6.0-demo-video/uav-readiness-demo.uk.final.mp4"
                 data-i18n="videos.open"
                 >Відкрити MP4 напряму</a
               >
@@ -1295,13 +1479,13 @@
             <h3 data-i18n="videos.en">Англійською</h3>
             <video controls preload="metadata" playsinline>
               <source
-                src="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.5.0-demo-video/uav-readiness-demo.en.final.mp4"
+                src="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.6.0-demo-video/uav-readiness-demo.en.final.mp4"
                 type="video/mp4"
               />
             </video>
             <p class="fallback">
               <a
-                href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.5.0-demo-video/uav-readiness-demo.en.final.mp4"
+                href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.6.0-demo-video/uav-readiness-demo.en.final.mp4"
                 data-i18n="videos.open"
                 >Відкрити MP4 напряму</a
               >
@@ -1413,6 +1597,18 @@
           "dash.locked": "заблоковано",
           "dash.ruleBig": "Нема доказу → <span class='lk'>заблоковано</span>",
           "dash.ruleText": "Інструмент не вигадує підтверджень. Якщо доказу немає, висновок лишається заблокованим, а не «майже готовим». Саме це викликає в рекрутерів довіру до інженерної чесності.",
+          "conflict.eyebrow": "Гейт конфлікту",
+          "conflict.title": "Рушій блокує суперечність, навіть коли рядки вручну позначені verified",
+          "conflict.intro": "Два синтетичні документи виглядають підтвердженими окремо, але не погоджуються між собою.",
+          "conflict.bomRev": "ручна ревізія: TM-3",
+          "conflict.qaRev": "ручна ревізія: TM-2",
+          "conflict.verified": "вручну позначено verified",
+          "conflict.detected": "CONFLICT знайдено",
+          "conflict.verdict": "Гейт конфлікту обмежує вердикт",
+          "conflict.path": "CONFLICT знайдено -> гейт конфлікту обмежує вердикт -> 49/100 · Blocked",
+          "conflict.caption": "Самі дедукції дали б близько 90; гейт не ставить штамп, коли джерела суперечать одне одному.",
+          "conflict.run": "Запусти сам",
+          "conflict.blocked": "Blocked",
           "scaffold.eyebrow": "Метод",
           "scaffold.title": "Цей репозиторій побудувала система з 10 AI-агентів",
           "scaffold.intro": "Не «попросив модель — вона зробила». Над проєктом працює каркас (scaffold): постійні правила, ролі-спеціалісти, готові скіли та обов'язкові перевірки безпеки. Розум — у цій системі, а не в одній моделі.",
@@ -1473,6 +1669,18 @@
           "dash.locked": "locked",
           "dash.ruleBig": "No evidence → <span class='lk'>locked</span>",
           "dash.ruleText": "The tool never invents proof. When evidence is missing, the conclusion stays locked — not 'almost ready'. That is exactly what makes recruiters trust the engineering honesty.",
+          "conflict.eyebrow": "Conflict gate",
+          "conflict.title": "The engine blocks a disagreement even when rows are hand-marked verified",
+          "conflict.intro": "Two synthetic documents look verified on their own, but they disagree with each other.",
+          "conflict.bomRev": "manual revision: TM-3",
+          "conflict.qaRev": "manual revision: TM-2",
+          "conflict.verified": "hand-marked verified",
+          "conflict.detected": "CONFLICT detected",
+          "conflict.verdict": "Conflict gate caps the verdict",
+          "conflict.path": "CONFLICT detected -> conflict gate caps the verdict -> 49/100 · Blocked",
+          "conflict.caption": "Deductions alone would give about 90; the gate refuses to rubber-stamp when sources disagree.",
+          "conflict.run": "Run it yourself",
+          "conflict.blocked": "Blocked",
           "scaffold.eyebrow": "Method",
           "scaffold.title": "This repository was built by a system of 10 AI agents",
           "scaffold.intro": "Not 'asked a model, got an answer'. A scaffold runs the project: persistent rules, specialist roles, ready-made skills and mandatory safety checks. The intelligence is in this system, not in one model.",
@@ -1565,7 +1773,15 @@
           cappedDeduction(missingArtifacts, DEDUCTIONS.missingArtifact);
         var ceiling = conflicts > 0 ? CONFLICT_CEILING : 100;
         var score = Math.min(ceiling, Math.max(0, 100 - deductions));
-        return { v: v, p: p, l: l, warnings: warnings, score: score };
+        return {
+          v: v,
+          p: p,
+          l: l,
+          conflicts: conflicts,
+          warnings: warnings,
+          missingArtifacts: missingArtifacts,
+          score: score
+        };
       }
 
       function bandFor(score) {
@@ -1680,8 +1896,10 @@
         var html =
           "100 " +
           '<span class="hl-l">− ' + r.l + "×6</span> " +
+          '<span class="zero">− ' + r.conflicts + "×8</span> " +
           '<span class="hl-p">− ' + r.p + "×3</span> " +
-          '<span class="hl-w">− ' + r.warnings + "×2</span><br>= " +
+          '<span class="hl-w">− ' + r.warnings + "×2</span> " +
+          '<span class="zero">− ' + r.missingArtifacts + "×10</span><br>= " +
           '<span class="res">' + r.score + " / 100</span>";
         document.getElementById("formula").innerHTML = html;
       }
@@ -1728,6 +1946,8 @@
       function setLang(l) {
         lang = l;
         try { localStorage.setItem("lang", l); } catch (e) {}
+        document.title =
+          "UAV Readiness & Evidence Copilot — " + (l === "uk" ? "живе демо" : "live demo");
         document.querySelectorAll(".lang button").forEach(function (b) {
           b.setAttribute("aria-pressed", b.getAttribute("data-lang") === l ? "true" : "false");
         });

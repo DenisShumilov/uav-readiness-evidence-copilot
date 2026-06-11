@@ -1,5 +1,5 @@
-import type { DemoBundle } from "../../core/src/schemas";
-import type { ReadinessAssessment } from "../../rules/src/readiness";
+import type { DemoBundle } from "@uav-readiness/core";
+import type { ReadinessAssessment } from "@uav-readiness/rules";
 
 export type TraceabilityMatrixRow = {
   requirement: string;

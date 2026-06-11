@@ -26,6 +26,30 @@ const FORBIDDEN = [
   "ardupilot"
 ];
 const FORBIDDEN_RE = new RegExp(`\\b(${FORBIDDEN.join("|")})\\b`, "i");
+const SAFE_COLLOCATIONS = [
+  /\btarget[- ]audience\b/gi,
+  /\btarget[- ]score\b/gi,
+  /\bscore[- ]target\b/gi,
+  /\btarget[- ]build\b/gi,
+  /\bbuild[- ]target\b/gi
+];
+const SAFETY_SELF_REFERENCE_FILES = new Set([
+  "AGENTS.md",
+  "AGENTS.uk.md",
+  "docs/safety-boundaries.md",
+  "docs/safety-boundaries.en.md"
+]);
+const SAFETY_BOUNDARY_LINES = [
+  /^\s*-\s*drone or robot control;?\s*$/i,
+  /^\s*-\s*flight control;?\s*$/i,
+  /^\s*-\s*mission, route, or waypoint planning;?\s*$/i,
+  /^\s*-\s*targeting;?\s*$/i,
+  /^\s*-\s*payload operation or selection;?\s*$/i,
+  /^\s*-\s*live telemetry or control links;?\s*$/i,
+  /^\s*-\s*autonomous navigation;?\s*$/i,
+  /^\s*-\s*evasion, concealment, or countermeasure advice;?\s*$/i,
+  /^\s*-\s*tactical or operational deployment workflows\.?\s*$/i
+];
 
 function readStdin() {
   try {
@@ -35,7 +59,7 @@ function readStdin() {
   }
 }
 
-let input = {};
+let input;
 try {
   input = JSON.parse(readStdin() || "{}");
 } catch {
@@ -44,10 +68,11 @@ try {
 
 const toolName = input.tool_name ?? input.toolName ?? "unknown";
 const ti = input.tool_input ?? input.toolInput ?? {};
+const filePath = (ti.file_path || "").toString().replaceAll("\\", "/");
 // Inspect the parts of a tool call that could carry text into the repo
 // (including a Bash command's free-text `description`).
 const haystack = [
-  ti.file_path,
+  filePath,
   ti.command,
   ti.description,
   ti.content,
@@ -63,7 +88,24 @@ const logPath =
   join(process.cwd(), "meta", "ai-workflows", "scaffold-activity.log");
 const ts = process.env.SCAFFOLD_FAKE_TS ?? new Date().toISOString();
 
-const match = haystack.match(FORBIDDEN_RE);
+function stripAllowedText(text, path) {
+  let stripped = text;
+  for (const allowed of SAFE_COLLOCATIONS) {
+    stripped = stripped.replace(allowed, "");
+  }
+  if (SAFETY_SELF_REFERENCE_FILES.has(path)) {
+    stripped = stripped
+      .split(/\r?\n/)
+      .map((line) =>
+        SAFETY_BOUNDARY_LINES.some((allowed) => allowed.test(line)) ? "" : line
+      )
+      .join("\n");
+  }
+  return stripped;
+}
+
+const inspected = stripAllowedText(haystack, filePath);
+const match = inspected.match(FORBIDDEN_RE);
 const decision = match ? "DENY" : "ALLOW";
 const subject = (ti.file_path || ti.command || "").toString().slice(0, 80);
 

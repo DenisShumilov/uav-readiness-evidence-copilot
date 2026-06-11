@@ -1,7 +1,15 @@
 {
   "name": "@uav-readiness/parsers",
-  "version": "0.1.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
-  "description": "Safe parsers for the active synthetic demo inputs."
+  "description": "Safe parsers for the active synthetic demo inputs.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@uav-readiness/core": "0.7.0"
+  }
 }

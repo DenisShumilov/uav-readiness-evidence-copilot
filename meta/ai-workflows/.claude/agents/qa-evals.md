@@ -30,3 +30,11 @@ Must test in future phases:
 - generated outputs exist.
 
 Explain results simply for a beginner.
+
+## Example
+
+Input: "After report generation, verify required outputs and locked-step behavior."
+Verdict: NEEDS CHECKS
+Checks: typecheck, Vitest, demo command, generated file list.
+Fail if: missing evidence becomes verified or an expected output is absent.
+Report: list passing checks, failures, and residual risk in simple Ukrainian.

@@ -1,7 +1,16 @@
 {
   "name": "@uav-readiness/qa",
-  "version": "0.1.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
-  "description": "End-to-end smoke tests for the demo readiness flow."
+  "description": "End-to-end smoke tests for the demo readiness flow.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@uav-readiness/parsers": "0.7.0",
+    "@uav-readiness/rules": "0.7.0"
+  }
 }

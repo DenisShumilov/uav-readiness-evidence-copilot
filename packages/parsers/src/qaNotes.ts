@@ -13,7 +13,7 @@ import {
   type EvidenceLock,
   type EvidenceSource,
   type ReadinessFinding
-} from "../../core/src/schemas";
+} from "@uav-readiness/core";
 import {
   extractMarkdownField,
   extractMarkdownTable,

@@ -77,7 +77,7 @@ No evidence -> locked.
 
 ## Required Subagents (roles)
 
-The repo is built by 10 specialist agents (see [docs/scaffold.md](docs/scaffold.md)):
+The repo is built by 10 specialist agents (see [docs/scaffold.en.md](docs/scaffold.en.md)):
 
 1. **Product Architect** — keeps the MVP small and portfolio-focused.
 2. **Safety & Red-Team** — blocks unsafe UAV operational scope.
@@ -104,8 +104,9 @@ The repo is built by 10 specialist agents (see [docs/scaffold.md](docs/scaffold.
 - **Evidence Lock** — unsupported or conflicting claims stay `locked`.
 - **Self-Review** — after a change: what may be wrong, what to verify, what risk remains.
 
-> Note: these gates are scaffold policy (context), not a runtime guarantee. For enforced blocking,
-> the recommended next step is a deterministic pre-tool hook.
+> Runtime enforcement is active: a deterministic `PreToolUse` hook at
+> `meta/ai-workflows/hooks/scaffold-gate.mjs`, wired in `.claude/settings.json`, logs and blocks
+> unsafe edits before tool execution. It is tested in `packages/qa/src/scaffoldGate.test.ts`.
 
 ## Verification Before Done
 

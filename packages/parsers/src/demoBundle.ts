@@ -2,10 +2,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   DemoBundleSchema,
+  detectCrossDocumentConflicts,
   type DemoBundle,
   type EvidenceSource
-} from "../../core/src/schemas";
-import { detectCrossDocumentConflicts } from "../../core/src/crossCheck";
+} from "@uav-readiness/core";
 import { parseBOMCsv } from "./bom";
 import { parseManualMd } from "./manual";
 import { parseQaNotesMd } from "./qaNotes";

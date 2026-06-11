@@ -1,17 +1,17 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { buildEvidenceGraphFromBundle } from "../packages/evidence/src/evidenceGraph";
-import { parseDemoBundle } from "../packages/parsers/src/demoBundle";
-import { generateArtifactHashes } from "../packages/reports/src/artifactHashes";
-import { generateReadinessReportMarkdown } from "../packages/reports/src/markdownReport";
+import { buildEvidenceGraphFromBundle } from "@uav-readiness/evidence";
+import { parseDemoBundle } from "@uav-readiness/parsers";
 import {
+  generateArtifactHashes,
   generatePortfolioDemoHtml,
-  generatePortfolioDemoMarkdown
-} from "../packages/reports/src/portfolioDemo";
-import { generateTraceabilityMatrix } from "../packages/reports/src/traceabilityMatrix";
-import { generateReadinessSarif } from "../packages/reports/src/sarif";
-import { evaluateReadiness } from "../packages/rules/src/readiness";
+  generatePortfolioDemoMarkdown,
+  generateReadinessReportMarkdown,
+  generateReadinessSarif,
+  generateTraceabilityMatrix
+} from "@uav-readiness/reports";
+import { evaluateReadiness, ReadinessAssessmentSchema } from "@uav-readiness/rules";
 
 export type RunReadinessDemoOptions = {
   fixtureDir?: string;
@@ -26,7 +26,9 @@ export function runReadinessDemo(options: RunReadinessDemoOptions = {}) {
 
   const bundle = parseDemoBundle(fixtureDir);
   const evidenceGraph = buildEvidenceGraphFromBundle(bundle);
-  const readinessAssessment = evaluateReadiness(bundle);
+  const readinessAssessment = ReadinessAssessmentSchema.parse(
+    evaluateReadiness(bundle)
+  );
   const traceabilityMatrix = generateTraceabilityMatrix(
     bundle,
     readinessAssessment

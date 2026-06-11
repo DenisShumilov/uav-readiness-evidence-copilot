@@ -11,7 +11,7 @@ import {
   type BOMItem,
   type EvidenceClaim,
   type EvidenceSource
-} from "../../core/src/schemas";
+} from "@uav-readiness/core";
 import { parseCsvRows } from "./csv";
 
 const BOM_ARTIFACT_ID = "artifact.bom";

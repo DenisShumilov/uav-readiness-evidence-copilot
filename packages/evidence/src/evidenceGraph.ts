@@ -5,7 +5,7 @@ import {
   type EvidenceGraph,
   type EvidenceLock,
   type EvidenceSource
-} from "../../core/src/schemas";
+} from "@uav-readiness/core";
 
 export type EvidenceGraphSummary = {
   totalClaims: number;

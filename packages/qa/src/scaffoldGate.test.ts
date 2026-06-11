@@ -32,7 +32,7 @@ function runGate(
     },
     encoding: "utf8"
   });
-  let log = "";
+  let log;
   try {
     log = readFileSync(logFile, "utf8");
   } catch {
@@ -50,6 +50,30 @@ describe("scaffold-gate PreToolUse hook (runtime safety boundary)", () => {
 
     expect(r.status).toBe(0);
     expect(r.log).toContain("\tALLOW\t");
+  });
+
+  it("ALLOWS explicit benign collocations before denylist matching", () => {
+    const r = runGate({
+      file_path: "docs/portfolio-copy.md",
+      content:
+        "Clarify the target audience, target score, and build target for the documentation demo."
+    });
+
+    expect(r.status).toBe(0);
+    expect(r.log).toContain("\tALLOW\t");
+  });
+
+  it("ALLOWS policy files to quote their own safety-boundary bullets", () => {
+    const r = runGate({
+      file_path: "AGENTS.md",
+      content: [
+        "- mission, route, or waypoint planning;",
+        "- payload operation or selection;",
+        "- live telemetry or control links;"
+      ].join("\n")
+    });
+
+    expect(r.status).toBe(0);
   });
 
   it("DENIES a tool call that introduces operational UAV terminology", () => {

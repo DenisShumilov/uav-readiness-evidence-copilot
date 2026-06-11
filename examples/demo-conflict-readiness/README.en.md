@@ -2,6 +2,8 @@
 
 *[Українською](README.md) · English*
 
+Synthetic demo data only. Not operationally valid.
+
 A **third** synthetic bundle that contains a deliberate contradiction, to showcase the
 **conflict gate** in the readiness rules.
 

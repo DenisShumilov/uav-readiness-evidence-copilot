@@ -3,7 +3,17 @@ import type {
   EvidenceSource,
   EvidenceStatus,
   QAItem
-} from "../../core/src/schemas";
+} from "@uav-readiness/core";
+
+// Structural inputs so the SAME derivation runs on the synthetic demo bundle AND
+// on real, non-operational evidence (e.g. the self-audit over the repo's own
+// docs) without forcing real data through the `synthetic: true` schema literal.
+export type DerivableClaim = Pick<
+  EvidenceClaim,
+  "id" | "status" | "claimType" | "evidenceSourceIds"
+>;
+export type DerivableSource = Pick<EvidenceSource, "id">;
+export type DerivableQaItem = Pick<QAItem, "status" | "evidenceClaimIds">;
 
 /**
  * The engine's INDEPENDENT verdict on each claim.
@@ -57,12 +67,12 @@ export type DerivedStatus = {
 };
 
 export function deriveEvidenceStatuses(
-  claims: EvidenceClaim[],
-  sources: EvidenceSource[],
-  qaItems: QAItem[] = []
+  claims: DerivableClaim[],
+  sources: DerivableSource[],
+  qaItems: DerivableQaItem[] = []
 ): DerivedStatus[] {
   const sourceIds = new Set(sources.map((source) => source.id));
-  const qaByClaim = new Map<string, QAItem[]>();
+  const qaByClaim = new Map<string, DerivableQaItem[]>();
 
   for (const item of qaItems) {
     for (const claimId of item.evidenceClaimIds) {
@@ -81,9 +91,9 @@ export function deriveEvidenceStatuses(
 }
 
 function deriveOne(
-  claim: EvidenceClaim,
+  claim: DerivableClaim,
   sourceIds: Set<string>,
-  qaItems: QAItem[]
+  qaItems: DerivableQaItem[]
 ): DerivedStatus {
   const asserted = claim.status;
 
@@ -137,7 +147,7 @@ function deriveOne(
   );
 }
 
-function statusFromQa(status: QAItem["status"]): EvidenceStatus {
+function statusFromQa(status: DerivableQaItem["status"]): EvidenceStatus {
   switch (status) {
     case "pass":
       return "verified";
@@ -162,7 +172,7 @@ function moreConservative(a: EvidenceStatus, b: EvidenceStatus): EvidenceStatus 
 }
 
 function mark(
-  claim: EvidenceClaim,
+  claim: DerivableClaim,
   derivedStatus: EvidenceStatus,
   derivation: StatusDerivation,
   reason: string

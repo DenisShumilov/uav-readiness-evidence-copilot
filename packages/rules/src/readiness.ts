@@ -1,8 +1,11 @@
-import type {
-  DemoBundle,
-  EvidenceClaim,
-  ReadinessFinding
-} from "../../core/src/schemas";
+import {
+  EvidenceStatusSchema,
+  ReadinessFindingSchema,
+  type DemoBundle,
+  type EvidenceClaim,
+  type ReadinessFinding
+} from "@uav-readiness/core";
+import { z } from "zod";
 import { deriveEvidenceStatuses, type DerivedStatus } from "./deriveStatus";
 
 const expectedArtifactKinds = ["bom", "manual", "test_log", "qa_notes"] as const;
@@ -45,29 +48,75 @@ export type EngineAdjustment = {
   reason: string;
 };
 
-export type ReadinessAssessment = {
-  readinessScore: number;
-  formula: {
-    base: number;
-    deductions: ReadinessDeduction[];
-  };
-  findings: ReadinessFinding[];
-  warnings: string[];
-  lockedCriticalItems: LockedCriticalItem[];
-  /**
-   * Claims where the engine's derived status differs from the reviewer-typed
-   * status — i.e. where the tool overrode a human label from the evidence.
-   */
-  engineAdjustments: EngineAdjustment[];
-  summary: {
-    verifiedCount: number;
-    partialCount: number;
-    lockedCount: number;
-    conflictCount: number;
-    engineAdjustedCount: number;
-    missingArtifacts: string[];
-    explanation: string;
-  };
+export const ReadinessDeductionSchema = z
+  .object({
+    reason: z.string(),
+    count: z.number().int().min(0),
+    pointsEach: z.number().int().min(0),
+    total: z.number().int().min(0)
+  })
+  .strict();
+
+export const LockedCriticalItemSchema = z
+  .object({
+    id: z.string().min(1),
+    reason: z.string().min(1)
+  })
+  .strict();
+
+export const EngineAdjustmentSchema = z
+  .object({
+    claimId: z.string().min(1),
+    assertedStatus: EvidenceStatusSchema,
+    derivedStatus: EvidenceStatusSchema,
+    reason: z.string().min(1)
+  })
+  .strict();
+
+export const ReadinessAssessmentSchema = z
+  .object({
+    readinessScore: z.number().int().min(0).max(100),
+    formula: z
+      .object({
+        base: z.literal(100),
+        deductions: z.array(ReadinessDeductionSchema)
+      })
+      .strict(),
+    findings: z.array(ReadinessFindingSchema),
+    warnings: z.array(z.string()),
+    lockedCriticalItems: z.array(LockedCriticalItemSchema),
+    /**
+     * Claims where the engine's derived status differs from the reviewer-typed
+     * status — i.e. where the tool overrode a human label from the evidence.
+     */
+    engineAdjustments: z.array(EngineAdjustmentSchema),
+    summary: z
+      .object({
+        verifiedCount: z.number().int().min(0),
+        partialCount: z.number().int().min(0),
+        lockedCount: z.number().int().min(0),
+        conflictCount: z.number().int().min(0),
+        engineAdjustedCount: z.number().int().min(0),
+        missingArtifacts: z.array(z.string()),
+        explanation: z.string().min(1)
+      })
+      .strict()
+  })
+  .strict();
+
+export type ReadinessAssessment = z.infer<typeof ReadinessAssessmentSchema>;
+
+export type ReadinessScoreCounts = {
+  partialCount: number;
+  lockedCriticalCount: number;
+  warningCount: number;
+  missingArtifactCount: number;
+  conflictCount: number;
+};
+
+export type ReadinessScoreResult = {
+  score: number;
+  deductions: ReadinessDeduction[];
 };
 
 export function evaluateReadiness(bundle: DemoBundle): ReadinessAssessment {
@@ -95,21 +144,15 @@ export function evaluateReadiness(bundle: DemoBundle): ReadinessAssessment {
     }));
   const warnings = buildWarnings(derived, engineAdjustments, bundle.readinessFindings);
 
-  const deductions = buildDeductions(
-    counts.partialCount,
-    lockedCriticalItems.length,
-    warnings.length,
-    missingArtifacts.length,
-    counts.conflictCount
-  );
-  const deductionTotal = deductions.reduce(
-    (total, deduction) => total + deduction.total,
-    0
-  );
-  const conflictCeiling = counts.conflictCount > 0 ? CONFLICT_CEILING : 100;
-  const score = Math.min(conflictCeiling, Math.max(0, 100 - deductionTotal));
+  const { deductions, score } = scoreFromCounts({
+    partialCount: counts.partialCount,
+    lockedCriticalCount: lockedCriticalItems.length,
+    warningCount: warnings.length,
+    missingArtifactCount: missingArtifacts.length,
+    conflictCount: counts.conflictCount
+  });
 
-  return {
+  const assessment: ReadinessAssessment = {
     readinessScore: score,
     formula: {
       base: 100,
@@ -127,9 +170,31 @@ export function evaluateReadiness(bundle: DemoBundle): ReadinessAssessment {
       engineAdjustedCount: engineAdjustments.length,
       missingArtifacts,
       explanation:
-        "Score is documentation readiness only: 100 minus capped deductions for locked, conflicting, partial, warning, and missing-artifact evidence. Statuses are derived by the engine from the evidence (locked when a source is missing, graded from test outcomes, conflict from cross-document disagreement), not read from the reviewer's status column. A conflict on a critical claim caps the verdict in the Blocked band."
+        "Score is documentation readiness only: 100 minus capped deductions for locked, conflicting, partial, warning, and missing-artifact evidence. Statuses are derived by the engine from the evidence (locked when a source is missing, graded from test outcomes, conflict from cross-document disagreement), not read from the reviewer's status column. Derived partial claims intentionally count in the partial bucket and also create a warning, so weak evidence compounds without changing the formula weights. A conflict on a critical claim caps the verdict in the Blocked band."
     }
   };
+
+  return ReadinessAssessmentSchema.parse(assessment);
+}
+
+export function scoreFromCounts(
+  counts: ReadinessScoreCounts
+): ReadinessScoreResult {
+  const deductions = buildDeductions(
+    counts.partialCount,
+    counts.lockedCriticalCount,
+    counts.warningCount,
+    counts.missingArtifactCount,
+    counts.conflictCount
+  );
+  const deductionTotal = deductions.reduce(
+    (total, deduction) => total + deduction.total,
+    0
+  );
+  const conflictCeiling = counts.conflictCount > 0 ? CONFLICT_CEILING : 100;
+  const score = Math.min(conflictCeiling, Math.max(0, 100 - deductionTotal));
+
+  return { score, deductions };
 }
 
 function countStatuses(derived: DerivedStatus[]) {

@@ -1,6 +1,6 @@
 {
   "name": "uav-readiness-evidence-copilot",
-  "version": "0.1.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -10,6 +10,8 @@
     "demo:readiness": "tsx scripts/demoReadiness.ts",
     "demo:maintenance": "tsx scripts/demoMaintenance.ts",
     "demo:conflict": "tsx scripts/demoConflict.ts",
+    "demo:selfaudit": "tsx scripts/demoSelfAudit.ts",
+    "demo:gate": "tsx scripts/demoScaffoldGate.ts",
     "demo:video:check": "node demo-video/check-video-assets.mjs",
     "demo:video:screenshots": "node demo-video/capture-screenshots.mjs",
     "demo:video:record": "node demo-video/record-demo.mjs",
@@ -19,6 +21,7 @@
     "demo:video:voiceover": "node demo-video/generate-edge-voiceover.mjs",
     "demo:video:merge": "node demo-video/merge-voiceover.mjs",
     "demo:video:qa": "node demo-video/qa-video.mjs",
+    "lint": "eslint .",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
@@ -26,10 +29,15 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^24.0.0",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "eslint": "^10.4.1",
     "playwright": "^1.60.0",
     "tsx": "^4.22.4",
     "typescript": "^5.0.0",
+    "typescript-eslint": "^8.61.0",
     "vitest": "^4.1.8"
   }
 }

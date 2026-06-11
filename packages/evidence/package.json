@@ -1,7 +1,15 @@
 {
   "name": "@uav-readiness/evidence",
-  "version": "0.1.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
-  "description": "Evidence graph builder for the parsed demo bundle."
+  "description": "Evidence graph builder for the parsed demo bundle.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@uav-readiness/core": "0.7.0"
+  }
 }

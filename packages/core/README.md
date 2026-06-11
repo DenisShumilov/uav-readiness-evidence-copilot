@@ -2,15 +2,15 @@
 
 *English · [Українською](README.uk.md)*
 
-> Shared TypeScript/Zod schemas and safe synthetic examples for the documentation-readiness data model.
+> Shared TypeScript/Zod schemas for the documentation-readiness data model.
 
 Part of the [UAV Readiness & Evidence Copilot](../../README.md) monorepo.
 
 ## What it provides
 
 - Zod schemas for artifacts, evidence sources, claims, links, and locks
-- QA items, traceability rows, and readiness-report shapes
-- the demo-bundle shape plus safe synthetic example data
+- QA items, readiness findings, and the demo-bundle shape
+- cross-document revision conflict checks for documentation QA
 
 ## Safety scope
 
