@@ -1,4 +1,4 @@
-# TDP-style демо пакета постачальника
+# Technical Data Package (TDP, технічний пакет даних)-style демо пакета постачальника
 
 *Українською · [English](README.en.md)*
 
@@ -9,9 +9,10 @@ Synthetic demo data only. Not operationally valid.
 Це навчальна мапа публічно відомих категорій документації. Це **не** інструмент сертифікації чи
 відповідності стандартам.
 
-**Четвертий** синтетичний набір подано як вхідний пакет документації від постачальника для вигаданого
-малого UAS airframe kit: `NORDWING-7 trainer airframe kit`. Сценарій упізнаваний для defense-tech
-документаційних команд, але кожен рядок вигаданий і статичний.
+**Четвертий** синтетичний набір подано як review worksheet (робочий аркуш перевірки), який
+документаційна команда готує з вхідного пакета постачальника для вигаданого малого UAS airframe kit:
+`NORDWING-7 trainer airframe kit`. Сценарій упізнаваний для defense-tech документаційних команд, але
+кожен рядок вигаданий і статичний.
 
 ## Запуск
 
@@ -23,7 +24,7 @@ npm run demo:tdp
 
 ## Що це показує
 
-Видимі файли постачальника лежать в `input/`:
+Видимі worksheet-файли лежать в `input/`:
 
 - `vendor_BOM.csv`
 - `acceptance_test_log.csv`
@@ -36,10 +37,11 @@ npm run demo:tdp
 
 Закладені знахідки рецензування:
 
-- два непідтверджені твердження лишаються `locked`;
-- один acceptance cross-reference лишається `partial`;
-- supplier index каже `rev:nordwing-kit=R03`, а QA note каже `rev:nordwing-kit=R02`, тому спрацьовує
-  conflict gate.
+- два непідтверджені worksheet-твердження лишаються `locked`;
+- fastener set lot certificate cross-reference лишається `partial`, бо certificate посилається на lot id,
+  якого немає в BOM index;
+- worksheet BOM-комірка `revision` каже `nordwing-kit=R03`, а рядок QA notes каже
+  `Revision: nordwing-kit=R02`, тому спрацьовує conflict gate.
 
 Очікуваний вердикт: **49/100 (Blocked)**. Оцінка стосується тільки повноти й узгодженості
 документації; це не реальний дозвільний висновок.

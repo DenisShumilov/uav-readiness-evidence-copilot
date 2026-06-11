@@ -1,4 +1,4 @@
-# TDP-style supplier package demo
+# Technical Data Package (TDP)-style supplier package demo
 
 *[Українською](README.md) · English*
 
@@ -9,9 +9,9 @@ Synthetic demo data only. Not operationally valid.
 Educational mapping of publicly known documentation categories only. This is **not** a certification
 or compliance tool.
 
-A **fourth** synthetic bundle framed as an incoming supplier documentation package for a fictional
-small UAS airframe kit: `NORDWING-7 trainer airframe kit`. The scenario is recognizable to
-defense-tech documentation teams, but every row is fake and static.
+A **fourth** synthetic bundle framed as the review worksheet a documentation team prepares from an
+incoming supplier package for a fictional small UAS airframe kit: `NORDWING-7 trainer airframe kit`.
+The scenario is recognizable to defense-tech documentation teams, but every row is fake and static.
 
 ## Run
 
@@ -23,7 +23,7 @@ Output is written to `examples/demo-tdp-supplier-package/output/` (not committed
 
 ## What it shows
 
-The visible supplier files live in `input/`:
+The visible worksheet files live in `input/`:
 
 - `vendor_BOM.csv`
 - `acceptance_test_log.csv`
@@ -36,10 +36,11 @@ parser code.
 
 Planted review findings:
 
-- two unevidenced claims stay `locked`;
-- one acceptance cross-reference stays `partial`;
-- the supplier index says `rev:nordwing-kit=R03`, while the QA note says `rev:nordwing-kit=R02`, so
-  the conflict gate fires.
+- two unevidenced worksheet claims stay `locked`;
+- the fastener set lot certificate cross-reference stays `partial` because the certificate references
+  a lot id absent from the BOM index;
+- the worksheet BOM `revision` cell says `nordwing-kit=R03`, while the QA notes line says
+  `Revision: nordwing-kit=R02`, so the conflict gate fires.
 
 Expected verdict: **49/100 (Blocked)**. The score is about documentation completeness and
 consistency only; it is not a real approval result.

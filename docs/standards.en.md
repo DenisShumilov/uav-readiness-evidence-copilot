@@ -31,19 +31,16 @@ or acceptance criteria.
 
 ## STANAG 4671 category-level fit
 
-UAV airworthiness frameworks such as NATO STANAG 4671 define which documentation artifact families
-must exist for a review context. At a public, high-level category view, those families can include
-system descriptions, configuration records, requirements evidence, verification records, conformity
-evidence, change records, and continued-documentation records.
+UAV airworthiness frameworks such as NATO STANAG 4671 anchor certification processes that require
+such artifact families for a review context. At a public, high-level category view, those families
+can include system descriptions, configuration records, requirements evidence, verification records,
+conformity evidence, change records, and continued-documentation records.
+
+For light UAS under ~150 kg — the class the fictional NORDWING-7 kit would sit in — NATO STANAG 4703
+plays the analogous role to 4671. The point here stays category-level documentation practice, not a
+claim that any demo file satisfies either standard.
 
 This tool demonstrates a narrower question: how the presence, traceability, and consistency of such
 artifact categories could be machine-checked in a synthetic folder. It does **not** decide whether a
 real evidence package satisfies any standard, and it does not claim STANAG 4671, MIL-STD-31000, or
 DO-178C compliance.
-
-> **Scope disclaimer**
->
-> Educational mapping of publicly known documentation categories only. This is **not** a
-> certification or compliance tool. Synthetic demo data only. Not operationally valid.
->
-> Лише синтетичні демо-дані. Не є операційно достовірними.

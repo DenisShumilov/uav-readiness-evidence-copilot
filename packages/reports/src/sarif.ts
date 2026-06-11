@@ -134,7 +134,7 @@ export function generateReadinessSarif(
             name: "uav-readiness-evidence-copilot",
             informationUri:
               "https://github.com/DenisShumilov/uav-readiness-evidence-copilot",
-            version: "0.8.0",
+            version: "0.8.1",
             rules: RULES.map((rule) => ({
               id: rule.id,
               name: rule.name,

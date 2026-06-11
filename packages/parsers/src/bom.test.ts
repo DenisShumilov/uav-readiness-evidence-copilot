@@ -11,7 +11,7 @@ const fixturePath = join(
 );
 
 const header =
-  "item_id,item_name,category,quantity,record_status,evidence_id,notes";
+  "item_id,item_name,category,quantity,revision,record_status,evidence_id,notes";
 
 describe("parseBOMCsv", () => {
   it("parses the valid synthetic BOM fixture", () => {
@@ -22,12 +22,23 @@ describe("parseBOMCsv", () => {
     expect(parsed.bomItems).toHaveLength(4);
     expect(parsed.evidenceSources).toHaveLength(3);
     expect(parsed.evidenceClaims).toHaveLength(4);
+    const withRevision = parseBOMCsv(
+      [
+        header,
+        "DOC-INDEX-001,Training document index,documentation,1,training-manual=TM-3,verified,EV-BOM-001,Document index row"
+      ].join("\n")
+    );
+
+    expect(withRevision.bomItems[0].version).toBe("training-manual=TM-3");
+    expect(withRevision.evidenceSources[0].excerpt).toContain(
+      "Revision: training-manual=TM-3"
+    );
   });
 
   it("keeps rows without evidence locked", () => {
     const csv = [
       header,
-      "COMP-LOCK-001,Training review part,other,1,verified,,Missing source keeps this locked"
+      "COMP-LOCK-001,Training review part,other,1,,verified,,Missing source keeps this locked"
     ].join("\n");
 
     const parsed = parseBOMCsv(csv);
@@ -44,7 +55,7 @@ describe("parseBOMCsv", () => {
   it("rejects unsafe operational keywords", () => {
     const csv = [
       header,
-      "COMP-UNSAFE-001,Training payload adapter,other,1,verified,EV-UNSAFE-001,Unsafe word should fail"
+      "COMP-UNSAFE-001,Training payload adapter,other,1,,verified,EV-UNSAFE-001,Unsafe word should fail"
     ].join("\n");
 
     expect(() => parseBOMCsv(csv)).toThrow(/blocked operational/i);
@@ -53,7 +64,7 @@ describe("parseBOMCsv", () => {
   it("rejects invalid rows", () => {
     const csv = [
       header,
-      "COMP-BAD-001,Training invalid part,other,0,verified,EV-BAD-001,Quantity must be positive"
+      "COMP-BAD-001,Training invalid part,other,0,,verified,EV-BAD-001,Quantity must be positive"
     ].join("\n");
 
     expect(() => parseBOMCsv(csv)).toThrow();

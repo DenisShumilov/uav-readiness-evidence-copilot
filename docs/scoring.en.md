@@ -41,8 +41,10 @@ verdict **more conservative** than the reviewer claimed — it never inflates a 
 - **Test-record claims are graded by their own logged outcome.** A check marked `verified` whose test
   result is `fail`/`blocked` is overridden to `locked`; a `warning` result (ingested as `not_tested`)
   becomes `partial`.
-- **Cross-document contradiction → `conflict`.** Declared revisions are compared across documents
-  (`packages/core/src/crossCheck.ts`); the disagreement is derived, never typed.
+- **Cross-document contradiction → `conflict`.** Structured revision declarations are compared across
+  documents (`packages/core/src/crossCheck.ts`): a BOM `revision` cell and a QA-notes `Revision:
+  subject=value` line are the preferred path, while legacy `rev:subject=value` free-text tokens remain
+  a fallback. The disagreement is derived, never typed.
 
 For every other claim the reviewer's status is accepted only as an **upper bound** once the
 evidence-presence gate passes. When the documents are internally consistent (as in the demos) the

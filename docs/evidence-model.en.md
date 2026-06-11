@@ -38,6 +38,10 @@ Example:
 
 Bench test means a safe table/lab check, not a flight mission.
 
+Revision evidence can be structured: the BOM CSV has a `revision` column using `subject=value`, and
+QA notes can include a `Revision: subject=value` line. The engine compares those fields to derive a
+`conflict` when documents disagree; older `rev:subject=value` text is still accepted as a fallback.
+
 ## Evidence Claim
 
 Evidence claim means a statement the system wants to make.

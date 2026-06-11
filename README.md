@@ -12,7 +12,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-monorepo-3178C6)](#tech-stack)
 [![Tests: Vitest](https://img.shields.io/badge/tests-Vitest-6E9F18)](#tech-stack)
 
-**10** agents · **7** skills · **1** runtime gate · **~90** tests · **5** export formats · **4** demo bundles · **2** languages
+**10** agents · **7** skills · **1** runtime gate · **94** tests · **5** export formats · **4** demo bundles · **2** languages
 
 <p align="center">
   <a href="https://denisshumilov.github.io/uav-readiness-evidence-copilot/">
@@ -34,9 +34,21 @@
 npx github:DenisShumilov/uav-readiness-evidence-copilot check ./docs
 ```
 
-The CLI detects only the four documented input kinds: BOM-style CSV, manual Markdown, test-log CSV,
-and QA-notes Markdown. Missing evidence stays `locked`; unsupported files are ignored and reported in
-the ingest summary.
+Zero setup, instant output on the bundled strict bundle, no docs folder needed:
+
+```bash
+npx github:DenisShumilov/uav-readiness-evidence-copilot demo
+```
+
+For your own docs, `check <dir>` detects only these four contract-based inputs:
+
+- BOM CSV: any `.csv` with `item_id,item_name,category,quantity,revision,record_status,evidence_id,notes`
+- manual Markdown: `SYNTHETIC DEMO` line and a `| Claim | Status | Evidence |` table
+- test-log CSV: any `.csv` with `check_id,check_name,check_type,result,evidence_status,evidence_id,notes`
+- QA-notes Markdown: `SYNTHETIC DEMO` line, `| Evidence ID | Status | Meaning |` table, and `Finding ID` / `Status` / `Reason` / `Impact` fields
+
+Detection is contract-based: anything else is reported as skipped, `--help` prints the contracts, and
+missing evidence stays `locked` by design.
 
 ### 2. GitHub Action
 
@@ -76,7 +88,7 @@ Built by a scaffold of 10 Claude subagents, 7 skills, and a runtime gate that bl
 
 Give it a drone project's docs (parts list, manual, test log, QA notes) and it tells you — with proof — which claims are actually backed by evidence and how ready the documentation is.
 
-UAV Readiness & Evidence Copilot turns synthetic engineering artifacts into an evidence-backed readiness package: parsed inputs, evidence graph, locked findings, traceability CSV, artifact hashes, markdown report, and a static portfolio demo. It is built not by one model, but by a scaffold of rules, roles, and checks around it.
+UAV Readiness & Evidence Copilot turns synthetic engineering artifacts into an evidence-backed readiness package: parsed inputs, evidence graph, locked findings, traceability CSV, artifact hashes, SARIF for code scanning, markdown report, and a static portfolio demo. It is built not by one model, but by a scaffold of rules, roles, and checks around it.
 
 ## TL;DR
 
@@ -85,13 +97,16 @@ UAV Readiness & Evidence Copilot turns synthetic engineering artifacts into an e
 - **Derives** each status from the evidence instead of trusting the reviewer's label: `no evidence -> locked`, with test-record claims graded by their own logged outcome.
 - **A derived cross-document contradiction caps the verdict in the Blocked band even when every row is hand-marked "verified"** — the conflict demo scores **49/100 Blocked**.
 - Computes a documentation readiness score with explainable, capped rules — and a parity test keeps the live site's formula identical to the engine.
-- Exports a report, JSON, traceability CSV, artifact hashes, and a demo page.
+- Exports a report, JSON, traceability CSV, artifact hashes, SARIF for code scanning, and a demo page.
 - Also ships as a CLI and GitHub Action you can point at your own documentation folder.
 - The point: reliability comes from the scaffold (rules, roles, checks, and a runtime gate), not the model.
 
 ## Demo Video
 
 Final demo videos are published through GitHub Releases, not committed as binary files.
+
+*These MP4s were recorded before the v0.8.0 evidence-graph and conflict-gate panels; the live demo
+shows the current state.*
 
 - [Online demo page](https://denisshumilov.github.io/uav-readiness-evidence-copilot/)
 - [Ukrainian MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.6.0-demo-video/uav-readiness-demo.uk.final.mp4)
@@ -104,7 +119,7 @@ Final demo videos are published through GitHub Releases, not committed as binary
 - Builds an evidence graph for claims, sources, and locks.
 - Shows verified, partial, and locked evidence.
 - Calculates a documentation readiness score.
-- Generates markdown, JSON, CSV, and static HTML outputs.
+- Generates markdown, JSON, CSV, SARIF for code scanning, and static HTML outputs.
 - Runs through TypeScript, Vitest, npm audit, and GitHub Actions CI.
 
 ## Why It Matters
@@ -115,7 +130,7 @@ This project demonstrates a safe internal-tool workflow for documentation readin
 
 ## Why this resonates in defense-tech documentation
 
-Defense-tech documentation work is built around evidence packages: records, indexes, traceability, and review queues. This project mirrors that culture at toy scale by refusing to treat a claim as ready when its evidence is missing or contradictory. The new [TDP-style supplier package demo](examples/demo-tdp-supplier-package/README.en.md) shows a recognizable intake scenario: a package arrives, a revision mismatch appears, and the score stays Blocked. See the category-level [standards crosswalk](docs/standards.en.md). No compliance claims are made.
+Defense-tech documentation work is built around evidence packages: records, indexes, traceability, and review queues. This project mirrors that culture at toy scale by refusing to treat a claim as ready when its evidence is missing or contradictory. The new [Technical Data Package (TDP)-style supplier package demo](examples/demo-tdp-supplier-package/README.en.md) shows a recognizable intake scenario: a package arrives, a revision mismatch appears, and the score stays Blocked. See the category-level [standards crosswalk](docs/standards.en.md). No compliance claims are made.
 
 Core rule:
 
@@ -158,13 +173,13 @@ npm audit --audit-level=moderate
 - `npm run demo:readiness` — the strict `demo-uav-readiness` bundle (**44/100**, "not ready"): many gaps and locked items.
 - `npm run demo:maintenance` — the mostly-organized `demo-maintenance-readiness` bundle (**80/100**, "reviewable, but incomplete"): same pipeline, different document shape, different result.
 - `npm run demo:conflict` — the `demo-conflict-readiness` bundle (**49/100**): almost fully evidenced, but one **contradiction** between sources — the conflict gate caps the verdict in the Blocked band (deductions alone would give ~90).
-- `npm run demo:tdp` — the `demo-tdp-supplier-package` bundle (**49/100**, Blocked): a TDP-style supplier package with two locked claims, one partial cross-reference, and a derived revision conflict.
+- `npm run demo:tdp` — the `demo-tdp-supplier-package` bundle (**49/100**, Blocked): a Technical Data Package (TDP)-style supplier worksheet with two locked claims, one partial cross-reference, and a derived revision conflict.
 
 This shows the tool generalizes and never rubber-stamps a score — it keeps claims `partial`/`locked` and refuses a "ready" verdict when sources disagree.
 
 ## Self-audit on real content
 
-`npm run demo:selfaudit` points the **same engine** at this repository's own real documentation (not synthetic fixtures): it checks that every documented demo score matches what the engine actually computes, that the "10 agents / 7 skills" counts are real files, that bilingual twins exist, that referenced assets resolve, and that live-site release tags match `README.md`. A clean repo scores **100/100 with zero overrides** — and the moment a doc drifts (a stale score, a missing twin, or a stale release tag), the engine overrides the documented claim (`verified -> locked`) and **CI fails**. This is the engine deriving a verdict on input it did not author.
+`npm run demo:selfaudit` points the **same engine** at this repository's own real documentation (not synthetic fixtures): it runs **10 checks** covering every documented demo score, the "10 agents / 7 skills" counts, the derived README test count, bilingual twins, referenced assets, and live-site release tags matching `README.md`. A clean repo scores **100/100 with zero overrides** — and the moment a doc drifts (a stale score, a missing twin, or a stale release tag), the engine overrides the documented claim (`verified -> locked`) and **CI fails**. This is the engine deriving a verdict on input it did not author.
 
 > **What this does not yet prove:** the four demo bundles are synthetic and internally consistent, so on them the engine reproduces the reviewer's labels (it has not *yet* caught a human error there — `engineAdjustedCount === 0` by design). The self-audit is the first place the engine runs on **un-authored real content**, and it is wired into CI so documentation drift cannot creep back in.
 

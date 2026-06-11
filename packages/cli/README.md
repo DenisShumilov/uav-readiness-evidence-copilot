@@ -15,7 +15,7 @@ uav-readiness demo
 
 `check` scans `.csv` and `.md` files for the four supported input contracts:
 
-- BOM CSV: `item_id,item_name,category,quantity,record_status,evidence_id,notes`
+- BOM CSV: `item_id,item_name,category,quantity,revision,record_status,evidence_id,notes`
 - manual Markdown: `SYNTHETIC DEMO` line and a `| Claim | Status | Evidence |` table
 - test-log CSV: `check_id,check_name,check_type,result,evidence_status,evidence_id,notes`
 - QA-notes Markdown: `SYNTHETIC DEMO` line, a `| Evidence ID | Status | Meaning |` table, and `Finding ID` / `Status` / `Reason` / `Impact` fields

@@ -11,6 +11,8 @@ The project rule is simple: whenever a technical word appears, it should be expl
 - **manual** — the instruction sheet or technical datasheet for a part.
 - **pinout** — a map of the contacts on a board.
 - **BOM** — a bill of materials (a list of parts).
+- **TDP** — Technical Data Package, a structured set of technical records and indexes.
+- **STANAG** — NATO Standardization Agreement, a shared standard used by NATO members.
 - **config dump** — a file with settings.
 - **evidence** — proof.
 - **evidence graph** — a map of evidence: what is linked to what, and what backs it up.

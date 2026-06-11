@@ -8,6 +8,31 @@ and this project aims to follow [Semantic Versioning](https://semver.org/).
 
 - No unreleased changes yet.
 
+## [0.8.1] - 2026-06-11
+
+### Added
+
+- CLI first-touch guidance when `check` parses zero supported inputs: it now prints all four input
+  contracts and points users to `uav-readiness demo`.
+- Self-audit check #10 derives the Vitest test count and verifies the README by-the-numbers strip.
+- Structured revision conflict detection via the BOM `revision` column and QA-notes
+  `Revision: subject=value` lines, with the legacy `rev:subject=value` token as fallback.
+
+### Changed
+
+- Bumped all package versions to `0.8.1`.
+- Refreshed README, standards, glossary, and TDP bundle docs in English and Ukrainian.
+- Reframed the TDP demo as a documentation-team review worksheet with domain-shaped synthetic rows.
+- Inverted the live site's static fallback copy to English under `lang="en"` while preserving the
+  existing JS language switch.
+
+### Fixed
+
+- Traceability CSV conflict rows now carry the derived conflict reason instead of `none`.
+- ESLint ignores local `.claude/**` scratch files so the lint gate stays stable.
+- Live-site mobile tap targets, anchor scroll margin, no-JS reveal fallback, and video preload
+  behavior were hardened.
+
 ## [0.8.0] - 2026-06-11
 
 ### Added

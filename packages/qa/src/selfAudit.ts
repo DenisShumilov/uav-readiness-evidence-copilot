@@ -244,6 +244,21 @@ export function gatherSelfAuditChecks(repoRoot = process.cwd()): SelfAuditCheck[
       : `README.md tags: ${[...readmeTagSet].join(", ") || "none"}; site tags: ${[...siteTagSet].join(", ") || "none"}`
   });
 
+  // 6. README test count must be derived from the real Vitest suite, not guessed.
+  const testCount = countVitestCases(repoRoot);
+  const readmeTestCount = documentedCount(read("README.md"), "tests");
+  const readmeUkTestCount = documentedCount(read("README.uk.md"), "тестів");
+  const testsMatch =
+    readmeTestCount === testCount && readmeUkTestCount === testCount;
+  checks.push({
+    id: "count-tests",
+    description: `README by-the-numbers strip states ${testCount} tests`,
+    outcome: testsMatch ? "pass" : "fail",
+    detail: testsMatch
+      ? `derived Vitest test cases: ${testCount}`
+      : `derived Vitest test cases: ${testCount}; README.md states ${readmeTestCount ?? "none"}; README.uk.md states ${readmeUkTestCount ?? "none"}`
+  });
+
   return checks;
 }
 
@@ -255,4 +270,61 @@ function releaseTags(text: string): string[] {
   return [...text.matchAll(/releases\/download\/([^/]+)/g)].map(
     (match) => match[1]
   );
+}
+
+function documentedCount(text: string, label: string): number | undefined {
+  const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = text.match(new RegExp(`\\*\\*(\\d+)\\*\\* ${escapedLabel}`));
+  return match ? Number(match[1]) : undefined;
+}
+
+function countVitestCases(repoRoot: string): number {
+  return listTestFiles(repoRoot)
+    .map((file) => readFileSync(file, "utf8"))
+    .reduce((total, text) => total + countTestCasesInText(text), 0);
+}
+
+function countTestCasesInText(text: string): number {
+  const normalCases = [...text.matchAll(/(^|[^\w.])(?:it|test)\s*\(/gm)].length;
+  const eachCases = [...text.matchAll(/(^|[^\w.])(?:it|test)\.each\((\w+)\)/gm)]
+    .reduce((total, match) => total + countConstArrayItems(text, match[2]), 0);
+
+  return normalCases + eachCases;
+}
+
+function countConstArrayItems(text: string, name: string): number {
+  const match = text.match(
+    new RegExp(`const\\s+${name}\\s*=\\s*\\[([\\s\\S]*?)\\]\\s*(?:as\\s+const)?\\s*;`)
+  );
+  if (!match) {
+    return 1;
+  }
+
+  return [...match[1].matchAll(/(["'`])(?:(?!\1).)+\1/g)].length;
+}
+
+function listTestFiles(root: string): string[] {
+  const files: string[] = [];
+  const stack = [root];
+
+  while (stack.length > 0) {
+    const current = stack.pop()!;
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      if ([".git", "node_modules", "output", "coverage", "dist"].includes(entry.name)) {
+        continue;
+      }
+
+      const path = join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(path);
+        continue;
+      }
+
+      if (entry.isFile() && entry.name.endsWith(".test.ts")) {
+        files.push(path);
+      }
+    }
+  }
+
+  return files.sort();
 }

@@ -33,7 +33,7 @@ export async function runCli(
   }
 
   if (command === "--version" || command === "-v") {
-    io.stdout.write("0.8.0\n");
+    io.stdout.write("0.8.1\n");
     return 0;
   }
 
@@ -99,6 +99,14 @@ function runCheck(args: string[], io: CliIO): number {
           process.stdout.isTTY
         )
       );
+      if (!parsed.ingestSummary.some((item) => item.status === "parsed")) {
+        io.stdout.write(firstTouchHelp());
+      }
+      if (options.minScore === undefined) {
+        io.stdout.write(
+          "Analysis completed; exit code 0 reports completion, not readiness. Add --min-score <n> to gate CI (exit 1 below n).\n"
+        );
+      }
     }
 
     if (
@@ -185,6 +193,19 @@ function helpText(): string {
     "  0  check passed",
     "  1  score is below --min-score",
     "  2  usage or parse setup error",
+    ""
+  ].join("\n");
+}
+
+function firstTouchHelp(): string {
+  return [
+    "",
+    "No supported inputs parsed.",
+    "Expected input contracts:",
+    ...expectedInputContracts.map((line) => `  - ${line}`),
+    "",
+    "For instant output on the bundled strict bundle, run:",
+    "  uav-readiness demo",
     ""
   ].join("\n");
 }

@@ -32,6 +32,15 @@ const BOMCsvRowSchema = z
       "other"
     ]),
     quantity: z.coerce.number().int().positive(),
+    revision: z
+      .string()
+      .trim()
+      .refine(
+        (value) => value === "" || /^[a-z0-9-]+\s*=\s*[a-z0-9.-]+$/i.test(value),
+        {
+          message: "Revision must be empty or use subject=value"
+        }
+      ),
     record_status: EvidenceStatusSchema,
     evidence_id: z
       .string()
@@ -48,6 +57,7 @@ const expectedHeaders = [
   "item_name",
   "category",
   "quantity",
+  "revision",
   "record_status",
   "evidence_id",
   "notes"
@@ -104,18 +114,23 @@ function buildBOMItem(row: BOMCsvRow): BOMItem {
     name: row.item_name,
     category: row.category,
     quantity: row.quantity,
+    version: row.revision || undefined,
     evidenceSourceIds,
     status
   });
 }
 
 function buildEvidenceSource(row: BOMCsvRow): EvidenceSource {
+  const excerpt = row.revision
+    ? `Revision: ${row.revision}\n${row.notes}`
+    : row.notes;
+
   return EvidenceSourceSchema.parse({
     id: row.evidence_id,
     artifactId: BOM_ARTIFACT_ID,
     label: `BOM row for ${row.item_name}`,
     sourceType: "table",
-    excerpt: row.notes,
+    excerpt,
     confidence: row.record_status === "verified" ? "high" : "medium",
     synthetic: true
   });

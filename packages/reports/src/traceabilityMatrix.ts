@@ -58,6 +58,8 @@ export function buildTraceabilityRows(
     risk:
       claim.status === "locked"
         ? lockedByClaimId.get(claim.id) ?? claim.lockReason ?? "missing evidence"
+        : claim.status === "conflict"
+          ? claim.lockReason ?? "conflicting evidence"
         : claim.status === "partial"
           ? "partial evidence"
           : "none"

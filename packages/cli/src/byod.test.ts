@@ -9,7 +9,7 @@ describe("BYOD input detection", () => {
     expect(
       detectSupportedInputKind(
         "parts.csv",
-        "item_id,item_name,category,quantity,record_status,evidence_id,notes\n"
+        "item_id,item_name,category,quantity,revision,record_status,evidence_id,notes\n"
       )
     ).toBe("bom");
     expect(
@@ -38,8 +38,8 @@ describe("BYOD input detection", () => {
     writeFileSync(
       join(dir, "BOM.csv"),
       [
-        "item_id,item_name,category,quantity,record_status,evidence_id,notes",
-        "COMP-001,Training frame,frame,1,verified,EV-BOM-001,Synthetic row"
+        "item_id,item_name,category,quantity,revision,record_status,evidence_id,notes",
+        "COMP-001,Training frame,frame,1,,verified,EV-BOM-001,Synthetic row"
       ].join("\n"),
       "utf8"
     );

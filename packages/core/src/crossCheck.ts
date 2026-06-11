@@ -7,13 +7,18 @@ import {
 /**
  * Real cross-document analysis.
  *
- * Scans evidence-source text for declared revision tokens and DERIVES a
- * `conflict` claim when the same subject is given different values by different
- * source documents. The conflict status is computed by comparing the documents
- * — it is never read from a hand-typed status column. Documentation QA only;
- * this does not touch operational data.
+ * Scans evidence-source text for structured revision declarations and DERIVES
+ * a `conflict` claim when the same subject is given different values by
+ * different source documents. The conflict status is computed by comparing the
+ * documents — it is never read from a hand-typed status column. Documentation
+ * QA only; this does not touch operational data.
  *
- * INPUT CONTRACT — a revision declaration is written as:
+ * PREFERRED INPUT CONTRACT — a structured revision declaration is written as a
+ * standalone line:
+ *
+ *     Revision: <subject>=<value>
+ *
+ * FALLBACK INPUT CONTRACT — older free-text declarations are still accepted as:
  *
  *     rev:<subject>=<value>
  *
@@ -29,6 +34,7 @@ import {
  * the contract is reported by {@link findMalformedRevisionMentions} so the
  * fail-open case is visible rather than silently dropped.
  */
+const STRUCTURED_REVISION_LINE = /^Revision:\s*([a-z0-9-]+)\s*=\s*([a-z0-9.-]+)\s*$/gim;
 const REVISION_TOKEN = /rev:\s*([a-z0-9-]+)\s*=\s*([a-z0-9.-]+)/gi;
 
 // A revision-token *attempt*: `rev:` or `rev=`. This deliberately does NOT match
@@ -43,10 +49,10 @@ export function detectCrossDocumentConflicts(
   const bySubject = new Map<string, Map<string, Set<string>>>();
 
   for (const source of sources) {
-    const text = `${source.label} ${source.excerpt ?? ""}`;
-    for (const match of text.matchAll(REVISION_TOKEN)) {
-      const subject = match[1].toLowerCase();
-      const value = match[2].toUpperCase();
+    const text = `${source.label}\n${source.excerpt ?? ""}`;
+    for (const declaration of revisionDeclarations(text)) {
+      const subject = declaration.subject.toLowerCase();
+      const value = declaration.value.toUpperCase();
       if (!bySubject.has(subject)) {
         bySubject.set(subject, new Map());
       }
@@ -85,6 +91,21 @@ export function detectCrossDocumentConflicts(
   return conflicts;
 }
 
+function revisionDeclarations(text: string): Array<{ subject: string; value: string }> {
+  const structured = [...text.matchAll(STRUCTURED_REVISION_LINE)].map((match) => ({
+    subject: match[1],
+    value: match[2]
+  }));
+  if (structured.length > 0) {
+    return structured;
+  }
+
+  return [...text.matchAll(REVISION_TOKEN)].map((match) => ({
+    subject: match[1],
+    value: match[2]
+  }));
+}
+
 export type MalformedRevisionMention = {
   sourceId: string;
   label: string;
@@ -101,7 +122,7 @@ export function findMalformedRevisionMentions(
   const mentions: MalformedRevisionMention[] = [];
 
   for (const source of sources) {
-    const text = `${source.label} ${source.excerpt ?? ""}`;
+    const text = `${source.label}\n${source.excerpt ?? ""}`;
     if (!REVISION_ATTEMPT.test(text)) {
       continue;
     }

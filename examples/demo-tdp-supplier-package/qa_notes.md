@@ -8,12 +8,14 @@ Synthetic demo data only. Not operationally valid.
 
 These notes are fake supplier-package review data for evidence review.
 
+Revision: nordwing-kit=R02
+
 ## Evidence Status Summary
 
 | Evidence ID | Status | Meaning |
 |---|---|---|
-| EV-TDP-QA-001 | verified | Supplier inspection note confirms synthetic-only labels |
-| EV-TDP-QA-002 | verified | Supplier QA note lists fictional kit revision rev:nordwing-kit=R02 |
+| EV-TDP-QA-001 | verified | FOD inspection note confirms the review worksheet was checked |
+| EV-TDP-QA-002 | verified | Supplier QA note lists the fictional kit revision |
 
 ## Warning Finding
 
@@ -21,7 +23,7 @@ Finding ID: WARN-TRACE-001
 
 Status: warning
 
-Reason: supplier index and QA note disagree about the fictional kit revision.
+Reason: worksheet BOM and QA note disagree about the fictional kit revision.
 
 Impact: documentation traceability is blocked until the package owner resolves the mismatch.
 

@@ -6,16 +6,16 @@ Synthetic demo data only. Not operationally valid.
 
 Лише синтетичні демо-дані. Не є операційно достовірними.
 
-This fictional excerpt describes a documentation package for the NORDWING-7 trainer airframe kit.
+This fictional excerpt describes the review worksheet prepared from an incoming NORDWING-7 trainer airframe kit package.
 It is an educational completeness review only, not a certification or compliance tool.
 
 ## Evidence Examples
 
 | Claim | Status | Evidence |
 |---|---|---|
-| NORDWING-7 manual excerpt exists | verified | EV-TDP-MAN-001 |
+| Center frame dimensional inspection summary | verified | EV-TDP-MAN-001 |
 | Supplier revision page present | verified | EV-TDP-MAN-002 |
-| Material declaration claim | locked | none |
+| Kit mass record claim | locked | none |
 
 ## Safety Note
 

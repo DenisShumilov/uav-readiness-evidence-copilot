@@ -16,7 +16,7 @@ uav-readiness demo
 `check` переглядає `.csv` та `.md` файли й шукає чотири підтримані input contracts
 (input contract — очікувана форма вхідного файлу):
 
-- BOM CSV: `item_id,item_name,category,quantity,record_status,evidence_id,notes`
+- BOM CSV: `item_id,item_name,category,quantity,revision,record_status,evidence_id,notes`
 - Markdown-інструкція: рядок `SYNTHETIC DEMO` і таблиця `| Claim | Status | Evidence |`
 - CSV журналу перевірок: `check_id,check_name,check_type,result,evidence_status,evidence_id,notes`
 - Markdown QA-нотаток: рядок `SYNTHETIC DEMO`, таблиця `| Evidence ID | Status | Meaning |` і поля `Finding ID` / `Status` / `Reason` / `Impact`

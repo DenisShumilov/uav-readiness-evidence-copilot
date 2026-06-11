@@ -18,10 +18,10 @@ function source(id: string, excerpt: string): EvidenceSource {
 }
 
 describe("detectCrossDocumentConflicts", () => {
-  it("derives a conflict when two documents declare different revisions for one subject", () => {
+  it("derives a conflict when two documents declare different structured revisions for one subject", () => {
     const conflicts = detectCrossDocumentConflicts([
-      source("S1", "Document index lists rev:training-manual=TM-3"),
-      source("S2", "Audit note records rev:training-manual=TM-2")
+      source("S1", "Revision: training-manual=TM-3\nDocument index row"),
+      source("S2", "Revision: training-manual=TM-2\nAudit note row")
     ]);
 
     expect(conflicts).toHaveLength(1);
@@ -32,15 +32,15 @@ describe("detectCrossDocumentConflicts", () => {
     expect(conflicts[0].lockReason).toContain("TM-2");
   });
 
-  it("derives no conflict when documents agree on the value", () => {
+  it("derives no conflict when structured revision declarations agree on the value", () => {
     const conflicts = detectCrossDocumentConflicts([
-      source("S1", "rev:training-manual=TM-3"),
-      source("S2", "rev:training-manual=tm-3")
+      source("S1", "Revision: training-manual=TM-3"),
+      source("S2", "Revision: training-manual=tm-3")
     ]);
     expect(conflicts).toHaveLength(0);
   });
 
-  it("ignores sources without revision tokens", () => {
+  it("ignores sources without revision declarations", () => {
     const conflicts = detectCrossDocumentConflicts([
       source("S1", "an ordinary note with no declared revision"),
       source("S2", "another ordinary note")

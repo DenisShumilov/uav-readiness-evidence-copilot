@@ -1,4 +1,4 @@
-item_id,item_name,category,quantity,record_status,evidence_id,notes
-DOC-INDEX-001,Training document index record,documentation,1,verified,EV-BOM-001,Document index lists training manual at rev:training-manual=TM-3
-DOC-PACKET-002,Training review packet record,documentation,1,verified,EV-BOM-002,Review packet listed for the demo
-DOC-SIGNOFF-003,Training sign-off sheet record,documentation,1,verified,EV-BOM-003,Sign-off sheet present and linked
+item_id,item_name,category,quantity,revision,record_status,evidence_id,notes
+DOC-INDEX-001,Training document index record,documentation,1,training-manual=TM-3,verified,EV-BOM-001,Document index lists the training manual revision
+DOC-PACKET-002,Training review packet record,documentation,1,,verified,EV-BOM-002,Review packet listed for the demo
+DOC-SIGNOFF-003,Training sign-off sheet record,documentation,1,,verified,EV-BOM-003,Sign-off sheet present and linked

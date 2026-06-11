@@ -1,6 +1,6 @@
-item_id,item_name,category,quantity,record_status,evidence_id,notes
-ASSET-PANEL-001,Training inspection panel record,documentation,1,verified,EV-BOM-001,Synthetic asset row matched to maintenance note
-ASSET-FILTER-002,Training filter service record,documentation,3,verified,EV-BOM-002,Service record present and linked to log
-ASSET-MOUNT-003,Training mount bracket record,frame,1,verified,EV-BOM-003,Mount record matched to inspection log
-ASSET-LIGHT-004,Training indicator light record,documentation,4,verified,EV-BOM-004,Indicator record listed for the demo package
-ASSET-SEAL-005,Training seal kit record,fastener,2,partial,EV-BOM-005,One service note exists but second sign-off pending
+item_id,item_name,category,quantity,revision,record_status,evidence_id,notes
+ASSET-PANEL-001,Training inspection panel record,documentation,1,,verified,EV-BOM-001,Synthetic asset row matched to maintenance note
+ASSET-FILTER-002,Training filter service record,documentation,3,,verified,EV-BOM-002,Service record present and linked to log
+ASSET-MOUNT-003,Training mount bracket record,frame,1,,verified,EV-BOM-003,Mount record matched to inspection log
+ASSET-LIGHT-004,Training indicator light record,documentation,4,,verified,EV-BOM-004,Indicator record listed for the demo package
+ASSET-SEAL-005,Training seal kit record,fastener,2,,partial,EV-BOM-005,One service note exists but second sign-off pending

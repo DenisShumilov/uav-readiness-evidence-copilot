@@ -49,6 +49,7 @@ export function parseQaNotesMd(markdown: string): ParsedQaNotesMd {
       meaning: SafeTextSchema.parse(cells[2])
     };
   });
+  const structuredRevisions = extractStructuredRevisionLines(markdown);
 
   const findingId = SafeIdSchema.parse(extractMarkdownField(markdown, "Finding ID"));
   const severity = FindingSeveritySchema.parse(
@@ -73,7 +74,7 @@ export function parseQaNotesMd(markdown: string): ParsedQaNotesMd {
         artifactId: QA_NOTES_ARTIFACT_ID,
         label: `QA evidence ${row.evidenceId}`,
         sourceType: "note",
-        excerpt: row.meaning,
+        excerpt: evidenceMeaning(row, structuredRevisions),
         confidence: row.status === "verified" ? "high" : "medium",
         synthetic: true
       })
@@ -126,4 +127,23 @@ export function parseQaNotesMd(markdown: string): ParsedQaNotesMd {
     evidenceLocks,
     readinessFindings
   };
+}
+
+function evidenceMeaning(
+  row: { meaning: string },
+  structuredRevisions: string[]
+): string {
+  if (
+    structuredRevisions.length === 0 ||
+    !row.meaning.toLowerCase().includes("revision")
+  ) {
+    return row.meaning;
+  }
+
+  return `${structuredRevisions.join("\n")}\n${row.meaning}`;
+}
+
+function extractStructuredRevisionLines(markdown: string): string[] {
+  return [...markdown.matchAll(/^Revision:\s*([a-z0-9-]+)\s*=\s*([a-z0-9.-]+)\s*$/gim)]
+    .map((match) => SafeTextSchema.parse(`Revision: ${match[1]}=${match[2]}`));
 }

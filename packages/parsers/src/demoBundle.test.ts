@@ -40,7 +40,7 @@ describe("parseDemoBundle", () => {
 
   it("does not read wiring or config fixtures in this batch", () => {
     const tempDir = mkdtempSync(join(tmpdir(), "demo-bundle-"));
-    writeFixture(tempDir, "BOM.csv", "item_id,item_name,category,quantity,record_status,evidence_id,notes\nCOMP-001,Training frame,frame,1,verified,EV-BOM-001,Synthetic row");
+    writeFixture(tempDir, "BOM.csv", "item_id,item_name,category,quantity,revision,record_status,evidence_id,notes\nCOMP-001,Training frame,frame,1,,verified,EV-BOM-001,Synthetic row");
     writeFixture(tempDir, "demo_manual.md", "# Demo Manual\n\nSYNTHETIC DEMO - EDUCATIONAL ONLY - NOT FOR REAL USE\n\n| Claim | Status | Evidence |\n|---|---|---|\n| Synthetic manual exists | verified | EV-MAN-001 |");
     writeFixture(tempDir, "test_log.csv", "check_id,check_name,check_type,result,evidence_status,evidence_id,notes\nCHECK-001,Manual summary present,documentation,pass,verified,EV-MAN-001,Synthetic check");
     writeFixture(tempDir, "qa_notes.md", "# QA Notes\n\nSYNTHETIC DEMO - EDUCATIONAL ONLY - NOT FOR REAL USE\n\n| Evidence ID | Status | Meaning |\n|---|---|---|\n| EV-QA-001 | verified | QA note exists |\n\nFinding ID: WARN-TRACE-001\n\nStatus: warning\n\nReason: review note exists\n\nImpact: review can continue");

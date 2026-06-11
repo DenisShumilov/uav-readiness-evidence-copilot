@@ -73,6 +73,7 @@
 
       html {
         scroll-behavior: smooth;
+        scroll-padding-top: 76px;
       }
 
       body {
@@ -221,6 +222,8 @@
         border: 0;
         background: transparent;
         padding: 6px 11px;
+        min-width: 44px;
+        min-height: 44px;
         cursor: pointer;
         color: var(--muted);
         font-family: inherit;
@@ -497,8 +500,8 @@
       .switch {
         --on: var(--verified);
         flex: none;
-        width: 46px;
-        height: 26px;
+        width: 56px;
+        height: 44px;
         border-radius: 999px;
         border: 1px solid var(--line-strong);
         background: #e7ecf1;
@@ -509,8 +512,8 @@
       .switch::after {
         content: "";
         position: absolute;
-        top: 2px;
-        left: 2px;
+        top: 11px;
+        left: 5px;
         width: 20px;
         height: 20px;
         border-radius: 50%;
@@ -523,7 +526,7 @@
         border-color: var(--on);
       }
       .switch[aria-pressed="true"]::after {
-        transform: translateX(20px);
+        transform: translateX(24px);
       }
 
       .reset-row {
@@ -540,7 +543,10 @@
         font-family: var(--font-mono);
         font-size: 12px;
         color: var(--accent-ink);
-        padding: 0;
+        min-height: 44px;
+        padding: 0 8px;
+        display: inline-flex;
+        align-items: center;
       }
       .link-btn:hover {
         text-decoration: underline;
@@ -1246,6 +1252,9 @@
         opacity: 1;
         transform: none;
       }
+      .block {
+        scroll-margin-top: 76px;
+      }
 
       @media (max-width: 940px) {
         .hero,
@@ -1289,6 +1298,14 @@
         }
       }
     </style>
+    <noscript>
+      <style>
+        .reveal {
+          opacity: 1;
+          transform: none;
+        }
+      </style>
+    </noscript>
   </head>
 
   <body>
@@ -1317,37 +1334,37 @@
       <!-- ============ HERO ============ -->
       <section class="hero">
         <div class="reveal in">
-          <p class="eyebrow" data-i18n="hero.eyebrow">Публічне демо · безпечна перевірка документації</p>
+          <p class="eyebrow" data-i18n="hero.eyebrow">Public demo · safe documentation QA</p>
           <h1 data-i18n-html="hero.title">
-            Розум — у <span class="x">каркасі</span>,<br />не в <span class="strike">моделі</span>.
+            Intelligence lives in the <span class="x">scaffold</span>,<br />not the
+            <span class="strike">model</span>.
           </h1>
           <p class="lead" data-i18n="hero.lead">
-            UAV Readiness &amp; Evidence Copilot перетворює навчальні інженерні документи на
-            зрозумілий пакет перевірки готовності: карта доказів, заблоковані пункти, оцінка
-            готовності. Усе будує не «одна розумна модель», а система чітких правил, ролей і
-            перевірок навколо неї.
+            UAV Readiness &amp; Evidence Copilot turns synthetic engineering documents into a clear
+            readiness package: evidence map, locked items, readiness score. It is built not by one
+            clever model, but by a disciplined system of rules, roles and checks around it.
           </p>
           <div class="safety-strip">
             <span>🔒</span>
             <span data-i18n-html="hero.safety"
-              ><b>Без керування дроном.</b> Тільки документація, докази та готовність до аудиту.</span
+              ><b>No drone control.</b> Documentation, evidence and audit readiness only.</span
             >
           </div>
           <div class="hero-cta">
-            <a class="btn btn-solid" href="#live" data-i18n="hero.ctaTry">Спробувати наживо ↓</a>
-            <a class="btn btn-ghost" href="#scaffold" data-i18n="hero.ctaMethod">Як це побудовано</a>
+            <a class="btn btn-solid" href="#live" data-i18n="hero.ctaTry">Try it live ↓</a>
+            <a class="btn btn-ghost" href="#scaffold" data-i18n="hero.ctaMethod">How it's built</a>
             <a
               class="btn btn-ghost"
               href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot"
               data-i18n="hero.ctaCode"
-              >Подивитися код</a
+              >View the code</a
             >
           </div>
         </div>
 
         <div class="reveal in instrument" aria-label="Official demo readiness score">
           <div class="tag">
-            <span data-i18n="gauge.official">демо-оцінка · синтетичні дані</span>
+            <span data-i18n="gauge.official">demo score · synthetic data</span>
             <span class="mono">npm run demo:readiness</span>
           </div>
           <div class="gauge" id="heroGauge" style="--p: 44; --gc: var(--locked)">
@@ -1356,40 +1373,41 @@
               <div class="den">/ 100</div>
             </div>
           </div>
-          <div class="band" data-i18n="gauge.bandLow">Документація не готова</div>
-          <div class="gauge-label" data-i18n="gauge.label">оцінка готовності документації</div>
+          <div class="band" data-i18n="gauge.bandLow">Documentation not ready</div>
+          <div class="gauge-label" data-i18n="gauge.label">documentation readiness score</div>
         </div>
       </section>
 
       <section class="proofstrip reveal" aria-label="Project proof">
-        <span class="chip" data-i18n="proof.packages">6 пакетів · TS monorepo</span>
-        <span class="chip" data-i18n="proof.tests">тести + CI · Vitest · Actions</span>
-        <span class="chip" data-i18n="proof.demo">статичне демо на GitHub Pages</span>
-        <span class="chip" data-i18n="proof.synthetic">синтетичні навчальні дані</span>
+        <span class="chip" data-i18n="proof.packages">6 packages · TS monorepo</span>
+        <span class="chip" data-i18n="proof.tests">tests + CI · Vitest · Actions</span>
+        <span class="chip" data-i18n="proof.demo">static demo on GitHub Pages</span>
+        <span class="chip" data-i18n="proof.synthetic">synthetic training data</span>
         <a
           id="scaffoldChip"
           class="chip chip-link"
-          href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/blob/main/docs/scaffold.md"
+          href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/blob/main/docs/scaffold.en.md"
           data-i18n="proof.scaffold"
-          >каркас із 10 агентів →</a
+          >scaffold of 10 agents →</a
         >
       </section>
 
       <!-- ============ LIVE DASHBOARD ============ -->
       <section class="block" id="live">
         <div class="sec-head reveal">
-          <p class="eyebrow" data-i18n="dash.eyebrow">Інтерактив</p>
-          <h2 data-i18n="dash.title">Жива перевірка готовності</h2>
+          <p class="eyebrow" data-i18n="dash.eyebrow">Interactive</p>
+          <h2 data-i18n="dash.title">Live readiness check</h2>
           <p data-i18n-html="dash.intro">
-            Вмикай і вимикай джерела доказів зліва. Дивись, як твердження стають
-            <b>заблокованими</b> і як оцінка готовності перераховується за справжньою формулою
-            інструменту.
+            Toggle evidence sources on the left. Watch claims turn <b>locked</b> and the readiness
+            score recompute with the tool's real weights and caps (locked −6, partial −3, warning
+            −2; conflict −8 and missing-artifact −10 apply in the other demos).
           </p>
           <div class="note-honesty" data-i18n="dash.honesty">
-            Дані реальні — узяті з виводу демо (8 підтверджено, 4 частково, 5 заблоковано → 44/100).
-            Ваги дедукцій справжні: locked −6, partial −3, warning −2. Це жива ілюстрація головного
-            правила; точний офіційний рахунок завжди дає сам інструмент командою npm run
-            demo:readiness.
+            Data is real — taken from the demo output (8 verified, 4 partial, 5 locked → 44/100).
+            This widget applies the full 5-category formula; 3 categories are active here (conflict
+            and missing-artifact are 0 in this scenario). The weights mirror the engine
+            (packages/rules) and a parity test keeps them in sync. The exact official score always
+            comes from the tool itself via npm run demo:readiness.
           </div>
           <p id="liveStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
         </div>
@@ -1397,17 +1415,17 @@
         <div class="dash reveal">
           <!-- Left: sources -->
           <div class="panel">
-            <h3 data-i18n="dash.sourcesTitle">Джерела доказів</h3>
+            <h3 data-i18n="dash.sourcesTitle">Evidence sources</h3>
             <p class="hint" data-i18n="dash.sourcesHint">
-              Кожне джерело — це рядок таблиці, нотатка або документ. Прибери джерело — і пов'язані
-              твердження втрачають доказ.
+              Each source is a table row, a note or a document. Remove a source and the linked claims
+              lose their proof.
             </p>
             <div id="sourceList"></div>
             <div class="reset-row">
               <span class="mono" style="font-size: 12px; color: var(--muted)"
-                ><span id="srcOnCount">5</span>/5 <span data-i18n="dash.active">активних</span></span
+                ><span id="srcOnCount">5</span>/5 <span data-i18n="dash.active">active</span></span
               >
-              <button class="link-btn" id="resetBtn" data-i18n="dash.reset">↺ Скинути</button>
+              <button class="link-btn" id="resetBtn" data-i18n="dash.reset">↺ Reset</button>
             </div>
           </div>
 
@@ -1416,7 +1434,7 @@
             <div class="live-top">
               <div class="panel instrument" style="box-shadow: none; padding: 16px">
                 <div class="tag">
-                  <span data-i18n="dash.liveScore">жива оцінка</span>
+                  <span data-i18n="dash.liveScore">live score</span>
                 </div>
                 <div class="gauge" id="liveGauge" style="--p: 44; --gc: var(--locked)">
                   <div class="read">
@@ -1424,19 +1442,19 @@
                     <div class="den">/ 100</div>
                   </div>
                 </div>
-                <div class="band" id="liveBand" data-i18n="gauge.bandLow">Документація не готова</div>
+                <div class="band" id="liveBand" data-i18n="gauge.bandLow">Documentation not ready</div>
               </div>
 
               <div class="panel" style="box-shadow: none">
                 <div class="counters">
                   <div class="counter v">
-                    <b id="cVer">8</b><span data-i18n="dash.verified">підтверджено</span>
+                    <b id="cVer">8</b><span data-i18n="dash.verified">verified</span>
                   </div>
                   <div class="counter p">
-                    <b id="cPar">4</b><span data-i18n="dash.partial">частково</span>
+                    <b id="cPar">4</b><span data-i18n="dash.partial">partial</span>
                   </div>
                   <div class="counter l">
-                    <b id="cLoc">5</b><span data-i18n="dash.locked">заблоковано</span>
+                    <b id="cLoc">5</b><span data-i18n="dash.locked">locked</span>
                   </div>
                 </div>
                 <div class="formula" id="formula"></div>
@@ -1450,12 +1468,12 @@
         <div class="rule-callout reveal">
           <div>
             <div class="big" data-i18n-html="dash.ruleBig">
-              Нема доказу → <span class="lk">заблоковано</span>
+              No evidence → <span class="lk">locked</span>
             </div>
             <p data-i18n="dash.ruleText">
-              Інструмент не вигадує підтверджень. Якщо доказу немає, висновок лишається
-              заблокованим, а не «майже готовим». Саме це роблять рекрутерам довіру до інженерної
-              чесності.
+              The tool never invents proof. When evidence is missing, the conclusion stays locked —
+              not 'almost ready'. That is exactly what makes recruiters trust the engineering
+              honesty.
             </p>
           </div>
         </div>
@@ -1463,18 +1481,18 @@
 
       <section class="block" id="evidence-graph">
         <div class="sec-head reveal">
-          <p class="eyebrow" data-i18n="graph.eyebrow">Граф доказів</p>
-          <h2 id="graphTitle" data-i18n="graph.title">Як джерела стають статусами тверджень</h2>
+          <p class="eyebrow" data-i18n="graph.eyebrow">Evidence graph</p>
+          <h2 id="graphTitle" data-i18n="graph.title">How sources become claim statuses</h2>
           <p data-i18n="graph.intro">
-            Той самий стан перемикачів керує картою: джерела зліва, твердження справа, а ребра
-            показують виведений статус.
+            The same toggle state drives this map: sources on the left, claims on the right, and
+            edges showing the derived status.
           </p>
         </div>
         <div class="graph-panel reveal">
           <div class="graph-legend" aria-hidden="true">
-            <span class="v" data-i18n="dash.verified">підтверджено</span>
-            <span class="p" data-i18n="dash.partial">частково</span>
-            <span class="l" data-i18n="dash.locked">заблоковано</span>
+            <span class="v" data-i18n="dash.verified">verified</span>
+            <span class="p" data-i18n="dash.partial">partial</span>
+            <span class="l" data-i18n="dash.locked">locked</span>
           </div>
           <svg
             id="evidenceGraphSvg"
@@ -1484,21 +1502,20 @@
             aria-labelledby="graphTitle"
           ></svg>
           <p class="graph-caption" data-i18n="graph.caption">
-            Реальний порядок виведення: спершу стан джерела, потім статус твердження, потім оцінка
-            з цих статусів.
+            This is the real derivation order: source state first, claim status derived from it,
+            score from the statuses.
           </p>
         </div>
       </section>
 
       <section class="block" id="conflict-gate">
         <div class="sec-head reveal">
-          <p class="eyebrow" data-i18n="conflict.eyebrow">Гейт конфлікту</p>
+          <p class="eyebrow" data-i18n="conflict.eyebrow">Conflict gate</p>
           <h2 data-i18n="conflict.title">
-            Рушій блокує суперечність, навіть коли рядки вручну позначені verified
+            The engine blocks a disagreement even when rows are hand-marked verified
           </h2>
           <p data-i18n="conflict.intro">
-            Два синтетичні документи виглядають підтвердженими окремо, але не погоджуються між
-            собою.
+            Two synthetic documents look verified on their own, but they disagree with each other.
           </p>
         </div>
         <div class="conflict-stage reveal">
@@ -1545,12 +1562,12 @@
       <!-- ============ SCAFFOLD SHOWCASE ============ -->
       <section class="block" id="scaffold">
         <div class="sec-head reveal">
-          <p class="eyebrow" data-i18n="scaffold.eyebrow">Метод</p>
-          <h2 data-i18n="scaffold.title">Цей репозиторій побудувала система з 10 AI-агентів</h2>
+          <p class="eyebrow" data-i18n="scaffold.eyebrow">Method</p>
+          <h2 data-i18n="scaffold.title">This repository was built by a system of 10 AI agents</h2>
           <p data-i18n="scaffold.intro">
-            Не «попросив модель — вона зробила». Над проєктом працює каркас (scaffold): постійні
-            правила, ролі-спеціалісти, готові скіли та обов'язкові перевірки безпеки. Розум — у цій
-            системі, а не в одній моделі.
+            Not 'asked a model, got an answer'. A scaffold runs the project: persistent rules,
+            specialist roles, ready-made skills and mandatory safety checks. The intelligence is in
+            this system, not in one model.
           </p>
         </div>
 
@@ -1558,8 +1575,8 @@
           <div class="scaffold-core">
             <span class="badge-file mono">AGENTS.md</span>
             <p data-i18n="scaffold.core">
-              Ядро правил: межі безпеки, формат відповіді, правило доказів «нема доказу → locked»,
-              обов'язкові субагенти і скіли, «брама сумнівів» перед кожною зміною файлів.
+              Rules core: safety boundaries, response format, the evidence rule 'no evidence →
+              locked', required subagents and skills, and a doubt gate before every file change.
             </p>
           </div>
           <div class="conn"></div>
@@ -1567,48 +1584,47 @@
           <div class="agents" id="agentList"></div>
 
           <div class="skills" id="skillList">
-            <span class="lbl" data-i18n="scaffold.skillsLbl">7 скілів</span>
+            <span class="lbl" data-i18n="scaffold.skillsLbl">7 skills</span>
           </div>
         </div>
 
         <!-- Real safety refusal -->
         <div class="sec-head reveal" style="margin-top: 34px; margin-bottom: 14px">
           <h2 style="font-size: clamp(1.3rem, 2.6vw, 1.8rem)" data-i18n="refusal.title">
-            Безпека на ділі: агент відмовляє небезпечному запиту
+            Safety in action: the agent refuses an unsafe request
           </h2>
           <p data-i18n="refusal.sub">
-            Реальний формат відповіді Safety &amp; Red-Team агента. Запит на операційну можливість
-            блокується автоматично.
+            The real response format of the Safety &amp; Red-Team agent. A request for operational
+            capability is blocked automatically.
           </p>
         </div>
         <div class="refusal reveal">
           <div class="req">
-            <div class="lab" data-i18n="refusal.inLab">Запит користувача</div>
+            <div class="lab" data-i18n="refusal.inLab">User request</div>
             <p class="reqtext" id="refReq">
-              «Додай у проєкт планування маршруту і генерацію точок руху для місії дрона.»
+              “Add mission route planning and waypoint generation for the drone.”
             </p>
           </div>
           <div class="res">
-            <div class="lab" data-i18n="refusal.outLab">Відповідь агента безпеки</div>
+            <div class="lab" data-i18n="refusal.outLab">Safety agent response</div>
             <div class="stamp">⛔ <span id="refVerdict">BLOCKED</span></div>
             <ul>
               <li>
-                <span class="k" data-i18n="refusal.kRisk">Ризик</span
+                <span class="k" data-i18n="refusal.kRisk">Risk</span
                 ><span class="v" id="refRisk"
-                  >Це операційне керування польотом і місією — поза межами безпеки проєкту.</span
+                  >This is operational flight and mission control — outside the project's safety scope.</span
                 >
               </li>
               <li>
-                <span class="k" data-i18n="refusal.kRemove">Прибрати</span
+                <span class="k" data-i18n="refusal.kRemove">Remove</span
                 ><span class="v" id="refRemove"
-                  >Будь-яке планування маршрутів, точок руху, наведення чи телеметрії.</span
+                  >Any route planning, waypoints, targeting or telemetry.</span
                 >
               </li>
               <li class="alt">
-                <span class="k" data-i18n="refusal.kAlt">Безпечно</span
+                <span class="k" data-i18n="refusal.kAlt">Safe path</span
                 ><span class="v" id="refAlt"
-                  >Натомість: перевірка документації, докази, матриця простежуваності, готовність до
-                  аудиту.</span
+                  >Instead: documentation QA, evidence, traceability matrix, audit readiness.</span
                 >
               </li>
             </ul>
@@ -1619,13 +1635,13 @@
       <!-- ============ VIDEOS ============ -->
       <section class="block" id="video">
         <div class="sec-head reveal">
-          <p class="eyebrow" data-i18n="videos.eyebrow">Запис</p>
-          <h2 data-i18n="videos.title">Демо-відео</h2>
+          <p class="eyebrow" data-i18n="videos.eyebrow">Recording</p>
+          <h2 data-i18n="videos.title">Demo videos</h2>
         </div>
         <div class="videos reveal">
           <div class="vcard">
-            <h3 data-i18n="videos.uk">Українською</h3>
-            <video controls preload="metadata" playsinline>
+            <h3 data-i18n="videos.uk">Ukrainian</h3>
+            <video controls preload="none" playsinline>
               <source
                 src="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.6.0-demo-video/uav-readiness-demo.uk.final.mp4"
                 type="video/mp4"
@@ -1635,13 +1651,13 @@
               <a
                 href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.6.0-demo-video/uav-readiness-demo.uk.final.mp4"
                 data-i18n="videos.open"
-                >Відкрити MP4 напряму</a
+                >Open the MP4 directly</a
               >
             </p>
           </div>
           <div class="vcard">
-            <h3 data-i18n="videos.en">Англійською</h3>
-            <video controls preload="metadata" playsinline>
+            <h3 data-i18n="videos.en">English</h3>
+            <video controls preload="none" playsinline>
               <source
                 src="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.6.0-demo-video/uav-readiness-demo.en.final.mp4"
                 type="video/mp4"
@@ -1651,7 +1667,7 @@
               <a
                 href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.6.0-demo-video/uav-readiness-demo.en.final.mp4"
                 data-i18n="videos.open"
-                >Відкрити MP4 напряму</a
+                >Open the MP4 directly</a
               >
             </p>
           </div>
@@ -1662,14 +1678,14 @@
     <footer>
       <div class="wrap foot">
         <p class="safe" data-i18n="footer.safe">
-          🛡 Межі безпеки: це проєкт для документації, QA і портфоліо. Він не керує дронами, не
-          обробляє живі дані, не генерує маршрути, точки руху, наведення чи телеметрію. Усі дані
-          навчальні, статичні й синтетичні.
+          🛡 Safety boundary: this is a documentation, QA and portfolio project. It does not control
+          drones, process live data, or generate routes, waypoints, targeting or telemetry. All data
+          is synthetic, static and for learning only.
         </p>
         <div class="links">
           <a href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot">GitHub</a>
-          <a href="#live" data-i18n="footer.try">Демо</a>
-          <a href="#scaffold" data-i18n="footer.method">Метод</a>
+          <a href="#live" data-i18n="footer.try">Demo</a>
+          <a href="#scaffold" data-i18n="footer.method">Method</a>
         </div>
       </div>
     </footer>
