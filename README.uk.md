@@ -106,13 +106,12 @@ UAV Readiness & Evidence Copilot читає синтетичні навчаль�
 
 Фінальні MP4-відео опубліковані через GitHub Release, а не зберігаються як важкі файли в репозиторії.
 
-*Ці MP4 записано до панелей evidence graph і conflict gate з v0.8.0; live demo показує поточний
-стан.*
+*Записано з поточного живого сайту, включно з панелями evidence graph і conflict gate.*
 
 - [Онлайн-сторінка демо](https://denisshumilov.github.io/uav-readiness-evidence-copilot/)
-- [Українське MP4-демо](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.6.0-demo-video/uav-readiness-demo.uk.final.mp4)
-- [Англійське MP4-демо](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.6.0-demo-video/uav-readiness-demo.en.final.mp4)
-- [Реліз демо-відео v6 (англійський за замовчуванням живий сайт)](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.6.0-demo-video)
+- [Українське MP4-демо](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.7.0-demo-video/uav-readiness-demo.uk.final.mp4)
+- [Англійське MP4-демо](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.7.0-demo-video/uav-readiness-demo.en.final.mp4)
+- [Реліз демо-відео v7 (гейт конфлікту + граф доказів)](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.7.0-demo-video)
 
 ## Що робить
 

@@ -1,13 +1,9 @@
-You have engineering documents. But are they actually ready?
+UAV Readiness and Evidence Copilot is a safe documentation QA demo. It does not control a drone. It checks whether the paperwork can support its own claims.
 
-This tool builds an evidence map and computes a readiness score. Right now it is forty-four out of a hundred.
+This live readiness check starts at forty-four out of a hundred. The status is derived from evidence. Turn off the BOM source, then the manual source: connected claims become locked, and the gauge falls from forty-four to twenty-six. No evidence means locked. The tool does not invent support. Reset brings the evidence back.
 
-Watch what happens when you remove a source of evidence. The linked claims become locked, and the score drops.
+The evidence graph is driven by that same toggle state. When a source is turned off, its edges and dependent claims turn locked red. Turn it back on, and the derived statuses recover.
 
-No evidence, locked. The tool invents nothing. It shows the honest status.
+Here is the conflict gate. Two synthetic documents are each hand-marked verified, but they disagree. The derived verdict stays Blocked at forty-nine out of a hundred, even though every row was marked verified.
 
-And the key point: this was built not by one model, but by a scaffold of ten agents and seven skills.
-
-And when a request crosses the safety boundary, the agent refuses automatically.
-
-The intelligence is in the scaffold, not the model. Code and live demo in the link.
+Review the live demo at denisshumilov.github.io slash uav-readiness-evidence-copilot, or run: npx github colon DenisShumilov slash uav-readiness-evidence-copilot demo.

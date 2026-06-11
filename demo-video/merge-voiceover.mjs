@@ -66,7 +66,7 @@ for (const language of languages) {
           "-c:v",
           "libx264",
           "-crf",
-          "12",
+          "21",
           "-preset",
           "slow",
           "-pix_fmt",

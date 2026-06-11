@@ -11,6 +11,7 @@ const videoRoot = join(root, "demo-video", "videos", "silent");
 mkdirSync(videoRoot, { recursive: true });
 
 const languages = ["en", "uk"];
+const siteCaptureManifest = join(videoRoot, "site-capture-manifest.json");
 
 function requireCommand(command, installHint) {
   const result = spawnSync(command, ["-version"], { encoding: "utf8" });
@@ -47,6 +48,36 @@ function buildScrollExpression(keyframes) {
 
 requireCommand("ffmpeg", "Install ffmpeg, then rerun: npm run demo:video:build");
 requireCommand("ffprobe", "Install ffmpeg/ffprobe, then rerun: npm run demo:video:build");
+
+if (existsSync(siteCaptureManifest)) {
+  const manifest = JSON.parse(readFileSync(siteCaptureManifest, "utf8"));
+  console.log("Using live site-capture silent MP4s from demo-video/record-site-demo.mjs");
+  for (const language of languages) {
+    const output = join(videoRoot, `uav-readiness-demo.${language}.silent.mp4`);
+    if (!existsSync(output)) {
+      console.error(`Missing site-capture silent video for ${language}: ${output}`);
+      process.exitCode = 1;
+      continue;
+    }
+
+    const probe = spawnSync(
+      "ffprobe",
+      ["-v", "error", "-print_format", "json", "-show_streams", "-show_format", output],
+      { encoding: "utf8" }
+    );
+
+    if (probe.status !== 0) {
+      console.error(`ffprobe failed for ${language} site-capture video.`);
+      process.exitCode = probe.status ?? 1;
+      continue;
+    }
+
+    writeFileSync(join(videoRoot, `uav-readiness-demo.${language}.silent.ffprobe.json`), probe.stdout, "utf8");
+    const target = manifest.languages?.[language]?.targetSeconds;
+    console.log(`Kept live site-capture silent video for ${language}: ${output}${target ? ` (${target}s target)` : ""}`);
+  }
+  process.exit(process.exitCode ?? 0);
+}
 
 for (const language of languages) {
   const manifestPath = join(frameRoot, language, "manifest.json");

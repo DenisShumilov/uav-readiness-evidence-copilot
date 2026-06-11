@@ -105,13 +105,12 @@ UAV Readiness & Evidence Copilot turns synthetic engineering artifacts into an e
 
 Final demo videos are published through GitHub Releases, not committed as binary files.
 
-*These MP4s were recorded before the v0.8.0 evidence-graph and conflict-gate panels; the live demo
-shows the current state.*
+*Recorded from the current live site, including the evidence-graph and conflict-gate panels.*
 
 - [Online demo page](https://denisshumilov.github.io/uav-readiness-evidence-copilot/)
-- [Ukrainian MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.6.0-demo-video/uav-readiness-demo.uk.final.mp4)
-- [English MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.6.0-demo-video/uav-readiness-demo.en.final.mp4)
-- [Demo video release v6 (English-default live site)](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.6.0-demo-video)
+- [Ukrainian MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.7.0-demo-video/uav-readiness-demo.uk.final.mp4)
+- [English MP4 demo](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/download/v0.7.0-demo-video/uav-readiness-demo.en.final.mp4)
+- [Demo video release v7 (conflict gate + evidence graph)](https://github.com/DenisShumilov/uav-readiness-evidence-copilot/releases/tag/v0.7.0-demo-video)
 
 ## What It Does
 
