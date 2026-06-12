@@ -35,5 +35,16 @@ export default tseslint.config(
     rules: {
       "@typescript-eslint/no-implied-eval": "off"
     }
+  },
+  {
+    // demo-video recorders run code inside page.evaluate(), i.e. in the browser
+    files: ["demo-video/**/*.mjs"],
+    languageOptions: {
+      globals: {
+        ...globals,
+        performance: "readonly",
+        requestAnimationFrame: "readonly"
+      }
+    }
   }
 );
