@@ -69,4 +69,43 @@ describe("parseBOMCsv", () => {
 
     expect(() => parseBOMCsv(csv)).toThrow();
   });
+
+  it("deduplicates identical intra-file evidence IDs and disambiguates conflicting duplicates with row suffixes", () => {
+    const csv = [
+      header,
+      "COMP-001,Training frame,frame,1,,verified,EV-DUP-001,First row note",
+      "COMP-002,Training frame,frame,1,,verified,EV-DUP-001,First row note",
+      "COMP-003,Training mount,frame,1,,verified,EV-DUP-001,Conflicting row note",
+      "COMP-004,Training bracket,frame,1,,verified,EV-DUP-001.bom-r3,Reserved raw ID row"
+    ].join("\n");
+
+    const parsed = parseBOMCsv(csv);
+
+    expect(parsed.bomItems[0].evidenceSourceIds).toEqual(["EV-DUP-001"]);
+    expect(parsed.bomItems[1].evidenceSourceIds).toEqual(["EV-DUP-001"]);
+    expect(parsed.bomItems[2].evidenceSourceIds).toEqual(["EV-DUP-001.bom-r3-2"]);
+    expect(parsed.bomItems[3].evidenceSourceIds).toEqual(["EV-DUP-001.bom-r3"]);
+    expect(parsed.evidenceSources.map((s) => s.id)).toEqual([
+      "EV-DUP-001",
+      "EV-DUP-001.bom-r3-2",
+      "EV-DUP-001.bom-r3"
+    ]);
+    expect(parsed.evidenceClaims[2].evidenceSourceIds).toEqual([
+      "EV-DUP-001.bom-r3-2"
+    ]);
+  });
+
+  it("bounds disambiguated IDs to <= 64 characters for base IDs <= 64 characters", () => {
+    const longBaseId = `EV-${"A".repeat(60)}`; // 63 chars
+    const csv = [
+      header,
+      `COMP-001,Training frame,frame,1,,verified,${longBaseId},Note A`,
+      `COMP-002,Training mount,frame,1,,verified,${longBaseId},Note B`
+    ].join("\n");
+
+    const parsed = parseBOMCsv(csv);
+    expect(parsed.evidenceSources).toHaveLength(2);
+    expect(parsed.evidenceSources[1].id.length).toBeLessThanOrEqual(64);
+    expect(parsed.evidenceSources[1].id).toMatch(/\.bom-r2$/);
+  });
 });

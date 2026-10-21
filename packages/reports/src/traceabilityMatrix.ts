@@ -1,6 +1,15 @@
 import type { DemoBundle } from "@uav-readiness/core";
 import type { ReadinessAssessment } from "@uav-readiness/rules";
 
+/**
+ * Methodological note: A `verified` status with `derivation: "reviewer_upper_bound"`
+ * indicates that a linked artifact-backed evidence source is present and no
+ * contradiction or failing test outcome was detected against the author-asserted
+ * status; it is not an automatic physical proof of the truth of the content.
+ */
+export const TRACEABILITY_METHODOLOGY_NOTE =
+  'Methodological note: A "verified" status with derivation "reviewer_upper_bound" indicates that a linked artifact-backed source is present and no contradiction was detected against the author-asserted status, not an automatic physical proof of content truth.';
+
 export type TraceabilityMatrixRow = {
   requirement: string;
   evidence: string;
@@ -8,6 +17,8 @@ export type TraceabilityMatrixRow = {
   status: string;
   risk: string;
 };
+
+const NEGATIVE_NUMBER_PATTERN = /^[ \t]*-(?:\d+\.?\d*|\.\d+)$/;
 
 export function generateTraceabilityMatrix(
   bundle: DemoBundle,
@@ -74,13 +85,14 @@ export function buildTraceabilityRows(
             ? claim.lockReason ?? adjustment?.reason ?? "conflicting evidence"
             : status === "partial"
               ? adjustment?.reason ?? "partial evidence"
-              : "none"
+              : "none (reviewer_upper_bound: linked source present and no contradiction detected; not an automatic physical proof of content)"
     };
   });
 }
 
-function csvCell(value: string): string {
-  const needsFormulaGuard = /^[ \t]*[=+\-@\t\r]/.test(value);
+export function csvCell(value: string): string {
+  const needsFormulaGuard =
+    /^[ \t]*[=+\-@\t\r]/.test(value) && !NEGATIVE_NUMBER_PATTERN.test(value);
   const safeValue = needsFormulaGuard ? `'${value}` : value;
   const escaped = safeValue.replace(/"/g, '""');
   return needsFormulaGuard || /[",\r\n]/.test(escaped)

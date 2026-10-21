@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-sanitize_doc.py — Клієнтський Pre-Flight Деідентифікатор технічної документації ОВТ (DefDoc AI v2.0).
+sanitize_doc.py — Клієнтський Pre-Flight Деідентифікатор технічної документації ОВТ (DefDoc AI v2.5.0).
 Нативно підтримує:
   - `.docx` (парсинг та in-place токенізація `word/document.xml`: параграфи `<w:p>` і таблиці `<w:tbl>` через `zipfile` + `xml.etree.ElementTree`);
   - `.xlsx` (парсинг та in-place токенізація `xl/sharedStrings.xml` і `xl/worksheets/sheet1.xml`);
@@ -46,10 +46,23 @@ def _validate_zip_container(zin: zipfile.ZipFile) -> None:
 
 
 class DocumentSanitizer:
+    _PII_PATTERNS = [
+        ("COORD", re.compile(r"\b([4-5]\d\.\d{3,8})\s*,\s*([2-4]\d\.\d{3,8})\b")),
+        ("EDRPOU", re.compile(r"(ЄДРПОУ\s+)(\d{8})\b")),
+        ("UNIT", re.compile(r"(в/ч\s+)([А-ЯІЇЄҐA-Z]\d{3,5})\b")),
+        ("VP", re.compile(r"(ВП\s*№\s*)(\d{3,5})\b")),
+        ("ORG", re.compile(r"\b(ТОВ|ПрАТ|ПАТ|ДП|НВП)\s+«([^»]+)»")),
+        ("ASSET", re.compile(r"«([А-ЯІЇЄҐA-Z0-9\-]{3,25})»")),
+        ("SERIAL", re.compile(r"\b(?:SN|UA)-[A-Z0-9\-]+(?:\.\.\d+)?\b")),
+        ("ADDR", re.compile(r"м\.\s*[А-ЯІЇЄҐа-яіїєґ\-]+,\s*вул\.\s*[А-ЯІЇЄҐа-яіїєґ\-]+,\s*\d+[А-Яа-я]?")),
+        ("PERSON_INIT", re.compile(r"\b([А-ЯІЇЄҐ][а-яіїєґ']+\s+[А-ЯІЇЄҐ]\.\s*[А-ЯІЇЄҐ]\.)")),
+        ("PERSON_FULL", re.compile(r"\b([А-ЯІЇЄҐ][а-яіїєґ']+\s+[А-ЯІЇЄҐ][а-яіїєґ']+\s+[А-ЯІЇЄҐ][а-яіїєґ']+вич)\b")),
+    ]
+
     def __init__(self, salt: str = "miltech-zero-trust-2026"):
         self.salt = salt
         self.token_map: Dict[str, str] = {}
-        self.counters: Dict[str, int] = {
+        self.unique_counters: Dict[str, int] = {
             "ASSET": 0,
             "ORG": 0,
             "EDRPOU": 0,
@@ -60,15 +73,26 @@ class DocumentSanitizer:
             "SERIAL": 0,
             "ADDR": 0,
         }
+        self.counters: Dict[str, int] = dict(self.unique_counters)
+        self.total_tokens_redacted: int = 0
+        self.leaked_pii_tokens_remaining: int = 0
 
     def _token(self, category: str, raw_value: str) -> str:
         norm = raw_value.strip()
         key = f"{category}:{norm}"
+        self.counters[category] += 1
         if key not in self.token_map:
-            self.counters[category] += 1
+            self.unique_counters[category] += 1
             short_hash = hashlib.sha256((self.salt + key).encode("utf-8")).hexdigest()[:4].upper()
-            self.token_map[key] = f"[{category}_{self.counters[category]:02d}_{short_hash}]"
+            self.token_map[key] = f"[{category}_{self.unique_counters[category]:02d}_{short_hash}]"
         return self.token_map[key]
+
+    @classmethod
+    def count_leaked_tokens(cls, sanitized_text: str) -> int:
+        remaining = 0
+        for _, pat in cls._PII_PATTERNS:
+            remaining += sum(1 for _ in pat.finditer(sanitized_text))
+        return remaining
 
     def sanitize_text(self, text: str) -> Tuple[str, Dict[str, int]]:
         out = text
@@ -139,6 +163,8 @@ class DocumentSanitizer:
             out,
         )
 
+        self.total_tokens_redacted = sum(self.counters.values())
+        self.leaked_pii_tokens_remaining = self.count_leaked_tokens(out)
         return out, dict(self.counters)
 
     def sanitize_docx_bytes(self, raw_docx: bytes) -> Tuple[bytes, str]:
@@ -412,23 +438,32 @@ def main() -> int:
     processed = []
     out_dir = Path(args.output_dir) if args.output_dir else None
 
+    total_leaked = 0
     for fpath in files:
-        _, _, raw_len, san_len = sanitizer.sanitize_file(fpath, output_dir=out_dir)
+        san_text, _, raw_len, san_len = sanitizer.sanitize_file(fpath, output_dir=out_dir)
+        file_leaked = DocumentSanitizer.count_leaked_tokens(san_text)
+        total_leaked += file_leaked
         processed.append(
             {
                 "file": fpath.name,
                 "format": fpath.suffix.lower().lstrip(".").upper(),
                 "raw_bytes": raw_len,
                 "sanitized_bytes": san_len,
+                "leaked_pii_tokens_remaining": file_leaked,
             }
         )
 
     elapsed_ms = (time.perf_counter() - t0) * 1000.0
+    total_tokens_redacted = sum(sanitizer.counters.values())
     summary = {
+        "version": "2.5.0",
         "files_processed": len(processed),
         "elapsed_ms": round(elapsed_ms, 3),
         "redaction_counts": sanitizer.counters,
-        "total_redactions": sum(sanitizer.counters.values()),
+        "unique_entities_counts": sanitizer.unique_counters,
+        "total_redactions": total_tokens_redacted,
+        "total_tokens_redacted": total_tokens_redacted,
+        "leaked_pii_tokens_remaining": total_leaked,
         "platform": platform.platform(),
         "python": platform.python_version(),
         "files": processed,

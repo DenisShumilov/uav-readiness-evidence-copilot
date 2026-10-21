@@ -177,6 +177,12 @@ export function generateReadinessSarif(
       makeResult("DOC-WARN-001", "warning", warning, uriForWarning(warning))
     );
 
+  const isSynthetic =
+    graph.evidenceGraph?.synthetic ??
+    (graph as { synthetic?: boolean }).synthetic ??
+    (bundle.artifacts.length > 0 &&
+      bundle.artifacts.every((artifact) => artifact.synthetic));
+
   const sarif = {
     $schema: "https://json.schemastore.org/sarif-2.1.0.json",
     version: "2.1.0",
@@ -187,7 +193,7 @@ export function generateReadinessSarif(
             name: "uav-readiness-evidence-copilot",
             informationUri:
               "https://github.com/DenisShumilov/uav-readiness-evidence-copilot",
-            version: "0.8.1",
+            version: "2.5.0",
             rules: RULES.map((rule) => ({
               id: rule.id,
               name: rule.name,
@@ -197,7 +203,7 @@ export function generateReadinessSarif(
         },
         properties: {
           readinessScore: assessment.readinessScore,
-          synthetic: true,
+          synthetic: isSynthetic,
           note: "Documentation QA only. No operational UAV capability."
         },
         results: [...claimResults, ...processResults]

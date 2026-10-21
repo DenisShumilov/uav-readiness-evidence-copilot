@@ -15,12 +15,21 @@ import {
   type ReadinessFinding
 } from "@uav-readiness/core";
 import {
+  allocateDisambiguatedEvidenceId,
+  type DisambiguationSourceFields
+} from "./disambiguate";
+import {
   extractMarkdownField,
   extractMarkdownTable,
   toSafeIdPart
 } from "./text";
 
 const QA_NOTES_ARTIFACT_ID = "artifact.qa-notes";
+
+export type QaNotesParseOptions = {
+  requireSyntheticBanner?: boolean;
+  synthetic?: boolean;
+};
 
 export type ParsedQaNotesMd = {
   artifact: Artifact;
@@ -30,10 +39,16 @@ export type ParsedQaNotesMd = {
   readinessFindings: ReadinessFinding[];
 };
 
-export function parseQaNotesMd(markdown: string): ParsedQaNotesMd {
-  if (!markdown.includes("SYNTHETIC DEMO")) {
+export function parseQaNotesMd(
+  markdown: string,
+  options?: QaNotesParseOptions
+): ParsedQaNotesMd {
+  const requireSyntheticBanner = options?.requireSyntheticBanner ?? true;
+  const hasBanner = markdown.includes("SYNTHETIC DEMO");
+  if (requireSyntheticBanner && !hasBanner) {
     throw new Error("QA notes fixture must be marked synthetic");
   }
+  const synthetic = options?.synthetic ?? hasBanner;
 
   const rows = extractMarkdownTable(
     markdown,
@@ -63,30 +78,103 @@ export function parseQaNotesMd(markdown: string): ParsedQaNotesMd {
     kind: "qa_notes",
     filename: "qa_notes.md",
     description: "Synthetic QA notes fixture for evidence review",
-    synthetic: true
+    synthetic
   });
 
   const nonLockedRows = rows.filter((row) => row.status !== "locked");
   const hasExplicitRevisionRow = nonLockedRows.some((row) =>
     row.meaning.toLowerCase().includes("revision")
   );
-  const evidenceSources = nonLockedRows.map((row, index) => {
-    const attachStructuredRevisions =
-      structuredRevisions.length > 0 &&
-      (hasExplicitRevisionRow
-        ? row.meaning.toLowerCase().includes("revision")
-        : index === nonLockedRows.length - 1);
-    return EvidenceSourceSchema.parse({
-      id: row.evidenceId,
-      artifactId: QA_NOTES_ARTIFACT_ID,
-      label: `QA evidence ${row.evidenceId}`,
-      sourceType: "note",
-      excerpt: attachStructuredRevisions
+  const lastNonLockedIndex = rows.reduce(
+    (last, row, idx) => (row.status !== "locked" ? idx : last),
+    -1
+  );
+
+  const reservedRawIds = new Set(
+    rows
+      .filter((row) => row.status !== "locked")
+      .map((row) => row.evidenceId)
+  );
+  if (nonLockedRows.length === 0 && structuredRevisions.length > 0) {
+    reservedRawIds.add("ev.qa.revision");
+  }
+
+  const usedSourcesById = new Map<string, DisambiguationSourceFields>();
+  const usedIds = new Set<string>();
+  const evidenceSources: EvidenceSource[] = [];
+  const evidenceClaims: EvidenceClaim[] = [];
+  const evidenceLocks: EvidenceLock[] = [];
+
+  rows.forEach((row, index) => {
+    let finalEvidenceId = row.evidenceId;
+    if (row.status !== "locked") {
+      const attachStructuredRevisions =
+        structuredRevisions.length > 0 &&
+        (hasExplicitRevisionRow
+          ? row.meaning.toLowerCase().includes("revision")
+          : index === lastNonLockedIndex);
+      const excerpt = attachStructuredRevisions
         ? `${structuredRevisions.join("\n")}\n${row.meaning}`
-        : row.meaning,
-      confidence: row.status === "verified" ? "high" : "medium",
-      synthetic: true
-    });
+        : row.meaning;
+      const label = `QA evidence ${row.evidenceId}`;
+      const { finalId, deduplicated } = allocateDisambiguatedEvidenceId({
+        rawId: row.evidenceId,
+        rowNumber: index + 1,
+        suffixTag: "qa-notes",
+        candidateSource: {
+          artifactId: QA_NOTES_ARTIFACT_ID,
+          label,
+          sourceType: "note",
+          excerpt
+        },
+        usedSourcesById,
+        usedIds,
+        reservedRawIds
+      });
+      finalEvidenceId = finalId;
+
+      if (!deduplicated) {
+        evidenceSources.push(
+          EvidenceSourceSchema.parse({
+            id: finalId,
+            artifactId: QA_NOTES_ARTIFACT_ID,
+            label: `QA evidence ${finalId}`,
+            sourceType: "note",
+            excerpt,
+            confidence: row.status === "verified" ? "high" : "medium",
+            synthetic
+          })
+        );
+      }
+    }
+
+    const claimId = `claim.qa.${toSafeIdPart(finalEvidenceId)}`;
+    evidenceClaims.push(
+      EvidenceClaimSchema.parse({
+        id: claimId,
+        statement:
+          row.status === "locked"
+            ? `${row.evidenceId} requires supporting evidence`
+            : row.meaning,
+        claimType: "qa_note",
+        status: row.status,
+        evidenceSourceIds: row.status === "locked" ? [] : [finalEvidenceId],
+        lockReason: row.status === "locked" ? row.meaning : undefined
+      })
+    );
+
+    if (row.status === "locked") {
+      evidenceLocks.push(
+        EvidenceLockSchema.parse({
+          id: `lock.${toSafeIdPart(finalEvidenceId)}`,
+          claimId,
+          reason: row.meaning,
+          missingEvidence: [row.meaning],
+          severity: "warning",
+          status: "locked"
+        })
+      );
+    }
   });
 
   if (evidenceSources.length === 0 && structuredRevisions.length > 0) {
@@ -98,37 +186,10 @@ export function parseQaNotesMd(markdown: string): ParsedQaNotesMd {
         sourceType: "note",
         excerpt: structuredRevisions.join("\n"),
         confidence: "high",
-        synthetic: true
+        synthetic
       })
     );
   }
-
-  const evidenceClaims = rows.map((row) =>
-    EvidenceClaimSchema.parse({
-      id: `claim.qa.${toSafeIdPart(row.evidenceId)}`,
-      statement:
-        row.status === "locked"
-          ? `${row.evidenceId} requires supporting evidence`
-          : row.meaning,
-      claimType: "qa_note",
-      status: row.status,
-      evidenceSourceIds: row.status === "locked" ? [] : [row.evidenceId],
-      lockReason: row.status === "locked" ? row.meaning : undefined
-    })
-  );
-
-  const evidenceLocks = rows
-    .filter((row) => row.status === "locked")
-    .map((row) =>
-      EvidenceLockSchema.parse({
-        id: `lock.${toSafeIdPart(row.evidenceId)}`,
-        claimId: `claim.qa.${toSafeIdPart(row.evidenceId)}`,
-        reason: row.meaning,
-        missingEvidence: [row.meaning],
-        severity: "warning",
-        status: "locked"
-      })
-    );
 
   const readinessFindings = [
     ReadinessFindingSchema.parse({

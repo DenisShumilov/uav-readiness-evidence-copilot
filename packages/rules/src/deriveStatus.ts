@@ -13,29 +13,9 @@ export type DerivableClaim = Pick<
   "id" | "status" | "claimType" | "evidenceSourceIds"
 >;
 export type DerivableSource = Pick<EvidenceSource, "id">;
-export type DerivableQaItem = Pick<QAItem, "status" | "evidenceClaimIds">;
-
-/**
- * The engine's INDEPENDENT verdict on each claim.
- *
- * The parsers ingest a reviewer-written status column (an assertion). This
- * module does NOT trust that column blindly: it re-derives a status from the
- * structure of the evidence and may only ever make the verdict MORE
- * conservative than the reviewer claimed — it never inflates a status. Three
- * signals are genuinely derived from content, not read from the label:
- *
- *   1. no / dangling evidence  -> locked    (a claim whose linked sources do not
- *                                            exist cannot be supported)
- *   2. logged test outcome     -> status    (a `test_record` claim is graded by
- *                                            its own pass / warning / blocked
- *                                            result, so a "verified" label on a
- *                                            failing check is overridden)
- *   3. cross-document conflict -> conflict   (already derived in core/crossCheck)
- *
- * For every other claim the reviewer's asserted status is accepted only as an
- * UPPER BOUND once the evidence-presence gate passes. Documentation QA only;
- * none of this touches operational data.
- */
+export type DerivableQaItem = Pick<QAItem, "status" | "evidenceClaimIds"> & {
+  id?: string;
+};
 
 // Optimism ladder. The engine may move a claim DOWN this ladder (more
 // conservative) but never UP past the reviewer's assertion. `conflict` sits
@@ -52,7 +32,8 @@ export type StatusDerivation =
   | "dangling_evidence"
   | "test_outcome"
   | "cross_document_conflict"
-  | "reviewer_upper_bound";
+  | "reviewer_upper_bound"
+  | "verbatim";
 
 export type DerivedStatus = {
   claimId: string;
@@ -99,40 +80,50 @@ function deriveOne(
   const referenced = claim.evidenceSourceIds;
   const resolvable = referenced.filter((id) => sourceIds.has(id));
   const missing = referenced.filter((id) => !sourceIds.has(id));
+  const missingSuffix =
+    missing.length > 0
+      ? ` (missing evidence source(s): ${missing.join(", ")})`
+      : "";
+
+  let qaMatch: DerivableQaItem | undefined;
+  let fromTest: EvidenceStatus | undefined;
+  if (qaItems.length > 0) {
+    for (const item of qaItems) {
+      const next = statusFromQa(item.status);
+      if (!fromTest || OPTIMISM[next] < OPTIMISM[fromTest]) {
+        fromTest = next;
+        qaMatch = item;
+      }
+    }
+  }
 
   if (asserted === "conflict") {
-    if (referenced.length === 0) {
-      return mark(claim, "locked", "no_evidence", "No evidence source is linked");
-    }
-    if (resolvable.length === 0) {
-      return mark(
-        claim,
-        "locked",
-        "dangling_evidence",
-        `Linked evidence (${referenced.join(", ")}) was not produced by any parsed artifact`
-      );
-    }
-    if (resolvable.length >= 2 && claim.id.startsWith("claim.crosscheck.")) {
-      return mark(
-        claim,
-        "conflict",
-        "cross_document_conflict",
-        "Derived from a cross-document revision disagreement"
-      );
-    }
     return mark(
       claim,
       "conflict",
-      "reviewer_upper_bound",
-      "Reviewer asserted conflict status in source record (no independent cross-document revision disagreement detected)"
+      "verbatim",
+      "Asserted conflict preserved conservatively" + missingSuffix
     );
   }
 
-  // The linked evidence must actually exist. An empty or dangling reference
-  // means the claim is unsupported, regardless of the label a reviewer typed.
+  if (fromTest === "locked" && qaMatch) {
+    return mark(
+      claim,
+      "locked",
+      "test_outcome",
+      "Locked by " +
+        qaMatch.status +
+        " test outcome (" +
+        (qaMatch.id ?? "qa") +
+        ")" +
+        missingSuffix
+    );
+  }
+
   if (referenced.length === 0) {
     return mark(claim, "locked", "no_evidence", "No evidence source is linked");
   }
+
   if (resolvable.length === 0) {
     return mark(
       claim,
@@ -141,22 +132,35 @@ function deriveOne(
       `Linked evidence (${referenced.join(", ")}) was not produced by any parsed artifact`
     );
   }
-  if (missing.length > 0) {
+
+  if (asserted === "locked") {
     return mark(
       claim,
-      moreConservative("partial", asserted),
-      "dangling_evidence",
-      `Partially unresolved evidence source(s): ${missing.join(", ")} not found (resolved: ${resolvable.join(", ")})`
+      "locked",
+      missing.length > 0 ? "dangling_evidence" : "verbatim",
+      "Asserted locked status preserved" + missingSuffix
     );
   }
 
-  // A test record is graded by its OWN logged outcome, not its status column:
-  // a "verified" label on a check that actually failed is overridden here.
-  if (claim.claimType === "test_record" && qaItems.length > 0) {
-    const fromTest = worstOf(qaItems.map((item) => statusFromQa(item.status)));
+  if (missing.length > 0) {
     return mark(
       claim,
-      moreConservative(fromTest, asserted),
+      moreConservative(
+        "partial",
+        fromTest ? moreConservative(fromTest, asserted) : asserted
+      ),
+      "dangling_evidence",
+      "Downgraded to partial because evidence source(s) are missing or lack valid artifact excerpts: " +
+        missing.join(", ") +
+        "."
+    );
+  }
+
+  if (fromTest) {
+    const combined = moreConservative(fromTest, asserted);
+    return mark(
+      claim,
+      combined,
       "test_outcome",
       `Graded from the logged test outcome (${qaItems
         .map((item) => item.status)
@@ -164,13 +168,13 @@ function deriveOne(
     );
   }
 
-  // Otherwise the reviewer's status stands, but only as an upper bound the
-  // engine will not inflate (evidence presence was already checked above).
   return mark(
     claim,
     asserted,
     "reviewer_upper_bound",
-    "Reviewer status accepted; evidence is present"
+    asserted === "verified"
+      ? "Author-asserted verified status retained as upper bound (linked source reference present; content not independently proven by engine)."
+      : "Asserted status (" + asserted + ") retained as reviewer upper bound."
   );
 }
 
@@ -185,13 +189,6 @@ function statusFromQa(status: DerivableQaItem["status"]): EvidenceStatus {
     default:
       return "locked";
   }
-}
-
-function worstOf(statuses: EvidenceStatus[]): EvidenceStatus {
-  return statuses.reduce<EvidenceStatus>(
-    (worst, next) => (OPTIMISM[next] < OPTIMISM[worst] ? next : worst),
-    "verified"
-  );
 }
 
 function moreConservative(a: EvidenceStatus, b: EvidenceStatus): EvidenceStatus {

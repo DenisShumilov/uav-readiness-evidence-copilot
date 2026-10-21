@@ -58,4 +58,65 @@ describe("BYOD input detection", () => {
       true
     );
   });
+
+  it("parses a BYOD directory without SYNTHETIC DEMO banner and marks artifacts/sources synthetic: false", () => {
+    const dir = mkdtempSync(join(tmpdir(), "byod-real-"));
+    writeFileSync(
+      join(dir, "BOM.csv"),
+      [
+        "item_id,item_name,category,quantity,revision,record_status,evidence_id,notes",
+        "COMP-001,Bench frame assembly,frame,1,,verified,EV-SHARED,Verified frame row"
+      ].join("\n"),
+      "utf8"
+    );
+    writeFileSync(
+      join(dir, "manual.md"),
+      [
+        "# Bench Manual",
+        "",
+        "| Claim | Status | Evidence |",
+        "|---|---|---|",
+        "| Bench manual exists | verified | EV-SHARED |"
+      ].join("\n"),
+      "utf8"
+    );
+    writeFileSync(
+      join(dir, "test_log.csv"),
+      [
+        "check_id,check_name,check_type,result,evidence_status,evidence_id,notes",
+        "CHECK-001,Bench check pass,documentation,pass,verified,EV-SHARED.demo-manual,Reserved raw id in test log"
+      ].join("\n"),
+      "utf8"
+    );
+    writeFileSync(
+      join(dir, "qa_notes.md"),
+      [
+        "# QA Notes",
+        "",
+        "| Evidence ID | Status | Meaning |",
+        "|---|---|---|",
+        "| EV-QA-001 | verified | QA review note complete |",
+        "",
+        "Finding ID: WARN-TRACE-001",
+        "Status: info",
+        "Reason: All notes reviewed",
+        "Impact: Ready for review"
+      ].join("\n"),
+      "utf8"
+    );
+
+    const result = parseByodDirectory(dir);
+
+    expect(result.bundle.artifacts.every((a) => a.synthetic === false)).toBe(
+      true
+    );
+    expect(
+      result.bundle.evidenceSources.every((s) => s.synthetic === false)
+    ).toBe(true);
+    // Cross-file collision on EV-SHARED avoids reserved raw ID EV-SHARED.demo-manual:
+    const sourceIds = result.bundle.evidenceSources.map((s) => s.id);
+    expect(sourceIds).toContain("EV-SHARED");
+    expect(sourceIds).toContain("EV-SHARED.demo-manual");
+    expect(sourceIds).toContain("EV-SHARED.demo-manual-2");
+  });
 });

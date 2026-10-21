@@ -1,22 +1,38 @@
 import type { DemoBundle } from "@uav-readiness/core";
 import type { BuiltEvidenceGraph } from "@uav-readiness/evidence";
 import type { ReadinessAssessment } from "@uav-readiness/rules";
+import { sanitizeMarkdownInline } from "./markdown";
+
+export const READINESS_METHODOLOGY_NOTE =
+  "Methodological note: A verified status with derivation reviewer_upper_bound indicates that a linked artifact-backed evidence source is present and no contradiction or failing test outcome was detected against the author-asserted status; it is not an automatic physical proof of the truth of the content.";
 
 export function generateReadinessReportMarkdown(
   bundle: DemoBundle,
   graph: BuiltEvidenceGraph,
   assessment: ReadinessAssessment
 ): string {
+  const isSynthetic =
+    graph.evidenceGraph?.synthetic ??
+    (graph as { synthetic?: boolean }).synthetic ??
+    (bundle.artifacts.length > 0 &&
+      bundle.artifacts.every((artifact) => artifact.synthetic));
+
+  const banner = isSynthetic
+    ? "SYNTHETIC DEMO - EDUCATIONAL ONLY - NOT FOR REAL USE"
+    : "USER-PROVIDED ARTIFACT BUNDLE (NON-SYNTHETIC) - DOCUMENTATION QA ONLY - NOT FOR REAL USE";
+
   const lines = [
     "# UAV Readiness & Evidence Copilot - Demo Report",
     "",
-    "SYNTHETIC DEMO - EDUCATIONAL ONLY - NOT FOR REAL USE",
+    banner,
     "",
     "## Readiness Score",
     "",
     `Score: **${assessment.readinessScore}/100**`,
     "",
-    assessment.summary.explanation,
+    sanitizeMarkdownInline(assessment.summary.explanation),
+    "",
+    READINESS_METHODOLOGY_NOTE,
     "",
     "## Artifact Summary",
     "",
@@ -72,10 +88,4 @@ function formatList(items: string[]): string[] {
   }
 
   return items.map((item) => `- ${item}`);
-}
-
-function sanitizeMarkdownInline(value: string): string {
-  return value
-    .replace(/[\r\n\t]+/g, " ")
-    .replace(/([#`[\]<>|])/g, "\\$1");
 }

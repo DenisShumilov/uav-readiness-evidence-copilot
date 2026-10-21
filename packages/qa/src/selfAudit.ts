@@ -320,7 +320,7 @@ export function gatherSelfAuditChecks(repoRoot = process.cwd()): SelfAuditCheck[
       : `README.md tags: ${[...readmeTagSet].join(", ") || "none"}; site tags: ${[...siteTagSet].join(", ") || "none"}`
   });
 
-  // 6. README test count must be derived from the real Vitest suite, not guessed.
+  // 7. README test count must be derived from the real Vitest suite, not guessed.
   const testCount = countVitestCases(repoRoot);
   const readmeTestCount =
     documentedCount(read("README.md"), "тестів") ??
@@ -328,15 +328,95 @@ export function gatherSelfAuditChecks(repoRoot = process.cwd()): SelfAuditCheck[
   const readmeUkTestCount =
     documentedCount(read("README.uk.md"), "тестів") ??
     documentedCount(read("README.uk.md"), "tests");
+  const readmeEnTestCount =
+    documentedCount(read("README.en.md"), "tests") ??
+    documentedCount(read("README.en.md"), "тестів");
   const testsMatch =
-    readmeTestCount === testCount && readmeUkTestCount === testCount;
+    readmeTestCount === testCount &&
+    readmeUkTestCount === testCount &&
+    readmeEnTestCount === testCount;
   checks.push({
     id: "count-tests",
     description: `README by-the-numbers strip states ${testCount} tests`,
     outcome: testsMatch ? "pass" : "fail",
     detail: testsMatch
       ? `derived Vitest test cases: ${testCount}`
-      : `derived Vitest test cases: ${testCount}; README.md states ${readmeTestCount ?? "none"}; README.uk.md states ${readmeUkTestCount ?? "none"}`
+      : `derived Vitest test cases: ${testCount}; README.md states ${readmeTestCount ?? "none"}; README.uk.md states ${readmeUkTestCount ?? "none"}; README.en.md states ${readmeEnTestCount ?? "none"}`
+  });
+
+  // 8. Root bilingual READMEs (README.md, README.uk.md, README.en.md) must exist and be non-empty.
+  const rootReadmeFiles = ["README.md", "README.uk.md", "README.en.md"];
+  const missingRootReadmes = rootReadmeFiles.filter(
+    (rel) => read(rel).trim().length < 200
+  );
+  checks.push({
+    id: "readme-bilingual-root",
+    description: "root README.md, README.uk.md, and README.en.md exist and are substantive",
+    hasEvidence: missingRootReadmes.length === 0,
+    detail:
+      missingRootReadmes.length === 0
+        ? "all 3 root README files present and substantive"
+        : `missing or stub root README: ${missingRootReadmes.join(", ")}`
+  });
+
+  // 9. No phantom engine paths (opsec_sanitizer.py, prozorro_radar.py, hil_simulator.py, #capsule=) in docs.
+  const mdFilesToScan = [
+    ...rootReadmeFiles,
+    ...docFiles.map((f) => `docs/${f}`)
+  ];
+  const phantomPattern =
+    /\b(?:opsec_sanitizer\.py|prozorro_radar\.py|hil_simulator\.py)\b|#capsule=/i;
+  const filesWithPhantoms = mdFilesToScan.filter((rel) =>
+    phantomPattern.test(read(rel))
+  );
+  checks.push({
+    id: "no-phantom-engine-paths",
+    description: "no phantom engine filenames or legacy #capsule= anchors in README*.md and docs/*.md",
+    outcome: filesWithPhantoms.length === 0 ? "pass" : "fail",
+    detail:
+      filesWithPhantoms.length === 0
+        ? "zero phantom paths or legacy #capsule= anchors found"
+        : `found phantom references in: ${filesWithPhantoms.join(", ")}`
+  });
+
+  // 10. Commercial pilot honesty: no "2–3 дні" / "2-3 days" promises and all 4 KPI formulas present.
+  const pilotSurfaces = [
+    "README.md",
+    "README.uk.md",
+    "README.en.md",
+    "docs/architecture.md",
+    "docs/architecture.en.md",
+    "docs/index.html",
+    "docs/tools/universal-ai-cockpit.html"
+  ];
+  const forbiddenPilotPattern = /2[–-]3\s*(?:дн|day)/i;
+  const surfacesWithForbiddenPilot = pilotSurfaces.filter((rel) =>
+    forbiddenPilotPattern.test(read(rel))
+  );
+  const kpiRequiredSurfaces = [
+    "README.md",
+    "README.en.md",
+    "docs/index.html",
+    "docs/tools/universal-ai-cockpit.html"
+  ];
+  const missingKpiFormulas = kpiRequiredSurfaces.filter((rel) => {
+    const txt = read(rel);
+    return (
+      !txt.includes("TP / (TP + FN)") ||
+      !txt.includes("FP / (TP + FP)") ||
+      !txt.includes("UNVERIFIED / Total") ||
+      !txt.includes("T_before")
+    );
+  });
+  const pilotHonest =
+    surfacesWithForbiddenPilot.length === 0 && missingKpiFormulas.length === 0;
+  checks.push({
+    id: "commercial-pilot-honesty",
+    description: "no 2-3 day pilot promises and all 4 hold-out KPI formulas are stated",
+    outcome: pilotHonest ? "pass" : "fail",
+    detail: pilotHonest
+      ? "zero 2-3 day promises and all 4 KPI formulas present across surfaces"
+      : `forbidden pilot text in: [${surfacesWithForbiddenPilot.join(", ")}]; missing KPI formulas in: [${missingKpiFormulas.join(", ")}]`
   });
 
   return checks;

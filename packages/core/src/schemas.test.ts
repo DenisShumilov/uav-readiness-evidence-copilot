@@ -4,7 +4,8 @@ import {
   ArtifactSchema,
   BOMItemSchema,
   EvidenceClaimSchema,
-  EvidenceGraphSchema
+  EvidenceGraphSchema,
+  EvidenceSourceSchema
 } from "./schemas";
 
 describe("Phase 2 schemas", () => {
@@ -105,5 +106,42 @@ describe("Phase 2 schemas", () => {
     expect(() => EvidenceGraphSchema.parse(graph)).toThrow(
       /unknown evidence source/i
     );
+  });
+
+  it("accepts non-synthetic boolean flags on artifacts, sources, and graphs", () => {
+    const artifact = ArtifactSchema.parse({
+      id: "artifact.byod-bom",
+      kind: "bom",
+      filename: "BOM.csv",
+      synthetic: false
+    });
+    const source = EvidenceSourceSchema.parse({
+      id: "source.byod-1",
+      artifactId: "artifact.byod-bom",
+      label: "BYOD row",
+      sourceType: "table",
+      excerpt: "Verified component row",
+      confidence: "high",
+      synthetic: false
+    });
+    const graph = EvidenceGraphSchema.parse({
+      id: "graph.byod",
+      artifactIds: ["artifact.byod-bom"],
+      evidenceSourceIds: ["source.byod-1"],
+      evidenceClaimIds: ["claim.byod-1"],
+      links: [
+        {
+          claimId: "claim.byod-1",
+          evidenceSourceId: "source.byod-1",
+          relation: "supports"
+        }
+      ],
+      generatedAt: "2026-06-05T09:00:00.000Z",
+      synthetic: false
+    });
+
+    expect(artifact.synthetic).toBe(false);
+    expect(source.synthetic).toBe(false);
+    expect(graph.synthetic).toBe(false);
   });
 });

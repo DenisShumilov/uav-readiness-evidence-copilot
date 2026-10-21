@@ -3,7 +3,7 @@
 Клієнтський режим: positional/--input або --tu/--passport/--pmv → document_intake.py.
 --test-client перевіряє клієнтський режим. Нижче описано лише legacy --self-test demo.
 
-defdoc_auditor.py — 100% локальний (Air-Gapped) аудитор пакета документів кодифікації ОВТ (v2.1 Native OpenXML + Copilot Bridge)
+defdoc_auditor.py — 100% локальний (Air-Gapped) аудитор пакета документів кодифікації ОВТ (v2.5.0 Native OpenXML + Copilot Bridge)
 за Постановою КМУ №345, ДСТУ ГОСТ 2.114 та ДСТУ В 15.210.
 
 Нативно читає, деідентифікує та звіряє справжні бінарні офісні контейнери:
@@ -56,6 +56,9 @@ class AuditFinding:
     pmv_value: str
     verdict: str
     remediation: str
+
+    def get(self, key: str, default=None):
+        return getattr(self, key, default)
 
 
 TOP_10_VP_MOU_REJECTION_REASONS = [
@@ -656,7 +659,7 @@ def export_uav_readiness_copilot_bundle(
         readiness_status = "READY"
         gating_rule = "0 conflicts with verified evidence -> 100/100 Ready"
 
-    if not findings and not (tu_san.strip() or pas_san.strip() or pmv_san.strip()):
+    if not any(f.get("severity") == "CRITICAL" for f in findings) and not findings and not (tu_san.strip() or pas_san.strip() or pmv_san.strip()):
         return {
             "schema": "uav-readiness-evidence-copilot/v1",
             "github_repo": "https://github.com/DenisShumilov/uav-readiness-evidence-copilot",
@@ -1073,7 +1076,7 @@ def generate_markdown_report(
     files_desc = ", ".join(f"`{name}` ({fmt}, {sz} B)" for name, fmt, sz in file_details)
 
     lines = [
-        "# 🛡️ ДЕМО-ЗВІТ АВТОМАТИЗОВАНОГО НОРМОКОНТРОЛЮ `DefDoc AI` (v2.2 Native OpenXML `.docx`/`.xlsx` + Двосторонній Міст Copilot)",
+        "# 🛡️ ДЕМО-ЗВІТ АВТОМАТИЗОВАНОГО НОРМОКОНТРОЛЮ `DefDoc AI` (v2.5.0 Native OpenXML `.docx`/`.xlsx` + Двосторонній Міст Copilot)",
         "",
         f"- **Дата та контур виконання**: `2026-10-18` | **100% Local Air-Gapped (`--network=none`, Pure Python 3 Stdlib `zipfile` + `xml.etree.ElementTree`)**",
         f"- **Апаратний стенд (реальний замір)**: `{hw_str}`",

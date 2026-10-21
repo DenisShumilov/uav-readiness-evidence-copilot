@@ -1,6 +1,6 @@
 {
   "name": "@uav-readiness/rules",
-  "version": "0.8.1",
+  "version": "2.5.0",
   "private": true,
   "type": "module",
   "description": "Explainable, deterministic readiness scoring rules.",
@@ -10,7 +10,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@uav-readiness/core": "0.8.1",
+    "@uav-readiness/core": "2.5.0",
     "zod": "^4.0.0"
   }
 }

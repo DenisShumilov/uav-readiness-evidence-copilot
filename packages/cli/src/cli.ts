@@ -34,7 +34,7 @@ export async function runCli(
   }
 
   if (command === "--version" || command === "-v") {
-    io.stdout.write("0.8.1\n");
+    io.stdout.write("2.5.0\n");
     return 0;
   }
 

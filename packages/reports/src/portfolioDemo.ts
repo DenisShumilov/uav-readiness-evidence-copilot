@@ -1,6 +1,7 @@
 import type { DemoBundle } from "@uav-readiness/core";
 import type { BuiltEvidenceGraph } from "@uav-readiness/evidence";
 import type { ReadinessAssessment } from "@uav-readiness/rules";
+import { sanitizeHref, sanitizeMarkdownInline } from "./markdown";
 import { buildTraceabilityRows } from "./traceabilityMatrix";
 
 export type EngineeringReviewLanguage = "en" | "uk";
@@ -519,37 +520,6 @@ function escapeHtml(value: string): string {
 
 function escapeAttribute(value: string): string {
   return escapeHtml(value).replaceAll(" ", "%20");
-}
-
-function sanitizeMarkdownInline(value: string): string {
-  return value
-    .replace(/[\r\n\t]+/g, " ")
-    .replace(/([#`[\]<>|])/g, "\\$1");
-}
-
-function hasControlChars(value: string): boolean {
-  for (let i = 0; i < value.length; i += 1) {
-    const code = value.charCodeAt(i);
-    if (code <= 0x1f || code === 0x7f) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function sanitizeHref(value: string): string {
-  const trimmed = value.trim();
-  if (
-    !trimmed ||
-    hasControlChars(trimmed) ||
-    /^[a-zA-Z][a-zA-Z0-9+.-]*:/i.test(trimmed)
-  ) {
-    return "#";
-  }
-  return trimmed
-    .split("/")
-    .map((seg) => (seg === "." || seg === ".." ? seg : encodeURIComponent(seg)))
-    .join("/");
 }
 
 function localizeDisplayText(value: string, language: EngineeringReviewLanguage): string {

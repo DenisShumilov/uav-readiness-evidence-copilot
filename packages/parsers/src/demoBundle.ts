@@ -9,6 +9,7 @@ import {
   type EvidenceSource
 } from "@uav-readiness/core";
 import { parseBOMCsv } from "./bom";
+import { buildBoundedEvidenceId, isSameEvidenceSource } from "./disambiguate";
 import { parseManualMd } from "./manual";
 import { parseQaNotesMd } from "./qaNotes";
 import { parseTestLogCsv } from "./testLog";
@@ -48,45 +49,59 @@ function readFixture(fixtureDir: string, filename: string): string {
   return readFileSync(join(fixtureDir, filename), "utf8");
 }
 
-type MergeablePart = {
+export type MergeablePart = {
   bomItems?: BOMItem[];
   evidenceSources: EvidenceSource[];
   evidenceClaims: EvidenceClaim[];
 };
 
-function mergeParsedParts(parts: MergeablePart[]): {
+export function mergeParsedParts(parts: MergeablePart[]): {
   bomItems: BOMItem[];
   evidenceSources: EvidenceSource[];
   evidenceClaims: EvidenceClaim[];
 } {
+  const reservedGlobalIds = new Set(
+    parts.flatMap((part) => part.evidenceSources.map((source) => source.id))
+  );
   const byId = new Map<string, EvidenceSource>();
   const allBomItems: BOMItem[] = [];
   const allClaims: EvidenceClaim[] = [];
 
   for (const part of parts) {
-    const renamedInPart = new Map<string, string>();
+    const resolvedInPart = new Map<string, string[]>();
+    const pushResolved = (rawId: string, finalId: string) => {
+      const queue = resolvedInPart.get(rawId);
+      if (queue) {
+        queue.push(finalId);
+      } else {
+        resolvedInPart.set(rawId, [finalId]);
+      }
+    };
 
     for (const source of part.evidenceSources) {
       if (!byId.has(source.id)) {
         byId.set(source.id, source);
+        pushResolved(source.id, source.id);
         continue;
       }
 
       const existing = byId.get(source.id)!;
-      if (
-        existing.artifactId === source.artifactId &&
-        existing.excerpt === source.excerpt &&
-        existing.label === source.label &&
-        existing.sourceType === source.sourceType
-      ) {
+      if (isSameEvidenceSource(existing, source)) {
+        pushResolved(source.id, source.id);
         continue;
       }
 
       const suffix = source.artifactId.replace(/^artifact\./, "") || "dup";
-      let candidateId = `${source.id}.${suffix}`;
+      const maxLen = source.id.length <= 64 ? 64 : 120;
+      const baseSuffix = `.${suffix}`;
+      let candidateId = buildBoundedEvidenceId(source.id, baseSuffix, maxLen);
       let counter = 2;
-      while (byId.has(candidateId)) {
-        candidateId = `${source.id}.${suffix}-${counter}`;
+      while (byId.has(candidateId) || reservedGlobalIds.has(candidateId)) {
+        candidateId = buildBoundedEvidenceId(
+          source.id,
+          `${baseSuffix}-${counter}`,
+          maxLen
+        );
         counter += 1;
       }
 
@@ -95,26 +110,44 @@ function mergeParsedParts(parts: MergeablePart[]): {
         id: candidateId
       };
       byId.set(candidateId, disambiguated);
-      renamedInPart.set(source.id, candidateId);
+      pushResolved(source.id, candidateId);
     }
+
+    const bomCursors = new Map<string, number>();
+    const resolveForBom = (rawId: string): string => {
+      const queue = resolvedInPart.get(rawId);
+      if (!queue || queue.length === 0) {
+        return rawId;
+      }
+      const idx = bomCursors.get(rawId) ?? 0;
+      bomCursors.set(rawId, idx + 1);
+      return queue[Math.min(idx, queue.length - 1)]!;
+    };
 
     if (part.bomItems) {
       for (const item of part.bomItems) {
         allBomItems.push({
           ...item,
-          evidenceSourceIds: item.evidenceSourceIds.map(
-            (id) => renamedInPart.get(id) ?? id
-          )
+          evidenceSourceIds: item.evidenceSourceIds.map(resolveForBom)
         });
       }
     }
 
+    const claimCursors = new Map<string, number>();
+    const resolveForClaim = (rawId: string): string => {
+      const queue = resolvedInPart.get(rawId);
+      if (!queue || queue.length === 0) {
+        return rawId;
+      }
+      const idx = claimCursors.get(rawId) ?? 0;
+      claimCursors.set(rawId, idx + 1);
+      return queue[Math.min(idx, queue.length - 1)]!;
+    };
+
     for (const claim of part.evidenceClaims) {
       allClaims.push({
         ...claim,
-        evidenceSourceIds: claim.evidenceSourceIds.map(
-          (id) => renamedInPart.get(id) ?? id
-        )
+        evidenceSourceIds: claim.evidenceSourceIds.map(resolveForClaim)
       });
     }
   }

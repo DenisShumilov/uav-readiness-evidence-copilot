@@ -13,9 +13,18 @@ import {
   type EvidenceSource
 } from "@uav-readiness/core";
 import { parseCsvRows } from "./csv";
+import {
+  allocateDisambiguatedEvidenceId,
+  type DisambiguationSourceFields
+} from "./disambiguate";
 
 const BOM_ARTIFACT_ID = "artifact.bom";
 const BOM_FILENAME = "BOM.csv";
+
+export type BOMParseOptions = {
+  requireSyntheticBanner?: boolean;
+  synthetic?: boolean;
+};
 
 const BOMCsvRowSchema = z
   .object({
@@ -72,7 +81,11 @@ export type ParsedBOMCsv = {
   evidenceClaims: EvidenceClaim[];
 };
 
-export function parseBOMCsv(csvText: string): ParsedBOMCsv {
+export function parseBOMCsv(
+  csvText: string,
+  options?: BOMParseOptions
+): ParsedBOMCsv {
+  const synthetic = options?.synthetic ?? true;
   const rows = parseCsvRows(csvText, expectedHeaders, "BOM").map((row, index) => {
     const parsed = BOMCsvRowSchema.safeParse(row);
     if (!parsed.success) {
@@ -87,14 +100,59 @@ export function parseBOMCsv(csvText: string): ParsedBOMCsv {
     kind: "bom",
     filename: BOM_FILENAME,
     description: "Synthetic BOM fixture for documentation QA review",
-    synthetic: true
+    synthetic
   });
 
-  const bomItems = rows.map((row) => buildBOMItem(row));
-  const evidenceSources = rows
-    .filter((row) => row.evidence_id !== "")
-    .map((row) => buildEvidenceSource(row));
-  const evidenceClaims = rows.map((row) => buildEvidenceClaim(row));
+  const reservedRawIds = new Set(
+    rows.map((row) => row.evidence_id).filter((id) => id !== "")
+  );
+  const usedSourcesById = new Map<string, DisambiguationSourceFields>();
+  const usedIds = new Set<string>();
+  const evidenceSources: EvidenceSource[] = [];
+  const bomItems: BOMItem[] = [];
+  const evidenceClaims: EvidenceClaim[] = [];
+
+  rows.forEach((row, index) => {
+    let finalEvidenceId = "";
+    if (row.evidence_id !== "") {
+      const excerpt = row.revision
+        ? `Revision: ${row.revision}\n${row.notes}`
+        : row.notes;
+      const label = `BOM row for ${row.item_name}`;
+      const { finalId, deduplicated } = allocateDisambiguatedEvidenceId({
+        rawId: row.evidence_id,
+        rowNumber: index + 1,
+        suffixTag: "bom",
+        candidateSource: {
+          artifactId: BOM_ARTIFACT_ID,
+          label,
+          sourceType: "table",
+          excerpt
+        },
+        usedSourcesById,
+        usedIds,
+        reservedRawIds
+      });
+      finalEvidenceId = finalId;
+
+      if (!deduplicated) {
+        evidenceSources.push(
+          EvidenceSourceSchema.parse({
+            id: finalId,
+            artifactId: BOM_ARTIFACT_ID,
+            label,
+            sourceType: "table",
+            excerpt,
+            confidence: row.record_status === "verified" ? "high" : "medium",
+            synthetic
+          })
+        );
+      }
+    }
+
+    bomItems.push(buildBOMItem(row, finalEvidenceId));
+    evidenceClaims.push(buildEvidenceClaim(row, finalEvidenceId));
+  });
 
   return {
     artifact,
@@ -104,8 +162,8 @@ export function parseBOMCsv(csvText: string): ParsedBOMCsv {
   };
 }
 
-function buildBOMItem(row: BOMCsvRow): BOMItem {
-  const evidenceSourceIds = row.evidence_id ? [row.evidence_id] : [];
+function buildBOMItem(row: BOMCsvRow, finalEvidenceId: string): BOMItem {
+  const evidenceSourceIds = finalEvidenceId ? [finalEvidenceId] : [];
   const status = evidenceSourceIds.length === 0 ? "locked" : row.record_status;
 
   return BOMItemSchema.parse({
@@ -120,24 +178,11 @@ function buildBOMItem(row: BOMCsvRow): BOMItem {
   });
 }
 
-function buildEvidenceSource(row: BOMCsvRow): EvidenceSource {
-  const excerpt = row.revision
-    ? `Revision: ${row.revision}\n${row.notes}`
-    : row.notes;
-
-  return EvidenceSourceSchema.parse({
-    id: row.evidence_id,
-    artifactId: BOM_ARTIFACT_ID,
-    label: `BOM row for ${row.item_name}`,
-    sourceType: "table",
-    excerpt,
-    confidence: row.record_status === "verified" ? "high" : "medium",
-    synthetic: true
-  });
-}
-
-function buildEvidenceClaim(row: BOMCsvRow): EvidenceClaim {
-  const evidenceSourceIds = row.evidence_id ? [row.evidence_id] : [];
+function buildEvidenceClaim(
+  row: BOMCsvRow,
+  finalEvidenceId: string
+): EvidenceClaim {
+  const evidenceSourceIds = finalEvidenceId ? [finalEvidenceId] : [];
   const status = evidenceSourceIds.length === 0 ? "locked" : row.record_status;
 
   return EvidenceClaimSchema.parse({

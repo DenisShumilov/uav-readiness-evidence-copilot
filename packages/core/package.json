@@ -1,6 +1,6 @@
 {
   "name": "@uav-readiness/core",
-  "version": "0.8.1",
+  "version": "2.5.0",
   "private": true,
   "type": "module",
   "description": "Shared TypeScript/Zod schemas and cross-document checks.",

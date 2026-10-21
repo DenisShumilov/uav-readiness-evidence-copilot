@@ -38,9 +38,9 @@
 
 Небезпечні ключові слова, такі як `mission` (місія), `payload` (корисне навантаження), `targeting` (наведення на ціль), `route` (маршрут), `waypoint` (точка маршруту) та `telemetry` (телеметрія), заблоковані у вхідних артефактах користувача/демонстрації.
 
-Активний вхідний артефакт (active input artifact) означає файл, який поточний MVP (minimum viable product — мінімально життєздатний продукт) читає як дані проєкту, наприклад `BOM.csv`, `demo_manual.md`, `test_log.csv` або `qa_notes.md`.
+Активний вхідний артефакт (active input artifact) у контурі TypeScript Core (`packages/*`) означає один із 4 контрактних файлів пакета доказів (`BOM.csv`, `demo_manual.md`, `test_log.csv`, `qa_notes.md`), а у багатоформатних контурах Browser Local UI (`docs/*.js`) та Python CLI (`engines/*`) — також документи `.docx`, `.xlsx`, `.pdf`, контейнери `.p7s` та записані журнали `.bin`, `.ulg`, `.tlog`, `.ubx`, `.nmea`.
 
-Майбутні фікстури (future fixtures), такі як `future-fixtures/wiring_notes.yaml` та `future-fixtures/config_dump.txt`, зберігаються для подальшої роботи парсера (parser) виключно над документацією і не читаються поточним MVP.
+Майбутні фікстури (future fixtures), такі як `future-fixtures/wiring_notes.yaml` та `future-fixtures/config_dump.txt`, зберігаються для подальшої роботи парсера TypeScript-ядра виключно над документацією.
 
 Документація з безпеки може згадувати небезпечні ключові слова лише як заборонені елементи.
 

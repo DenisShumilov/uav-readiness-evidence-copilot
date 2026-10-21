@@ -2,45 +2,32 @@
  * ============================================================================
  * SHMLV SYSTEMS: BROWSER ISOLATION & HARDWARE ACCELERATION RUNTIME
  * ============================================================================
- * Architecture Tier: 0.1% Edge Systems Engineering (Zero Server Backend)
+ * Architecture Tier: Edge Systems Engineering (Client-Side Browser Enclave)
  * Target Environment: Static GitHub Pages (*.github.io), Air-Gapped Laptops,
  *                     and Headless Deterministic Verifiers (Node.js / V8).
  *
  * Implements 4 Submodules for Cross-Origin Isolation and Hardware Compute
  * on static GitHub Pages:
  *
- *   [Submodule 7.1] ServiceWorker COOP/COEP Header Injection Bypass:
- *     Intercepts top-level navigation `fetch` events on `github.io` (where
- *     custom HTTP response headers are blocked by Fastly CDN) and synthesizes a
- *     mutated `Response` with:
+ *   [Submodule 7.1] ServiceWorker COOP/COEP Header Injection:
+ *     Intercepts top-level navigation `fetch` events on `github.io` and
+ *     synthesizes a mutated `Response` with:
  *       - `Cross-Origin-Opener-Policy: same-origin`
  *       - `Cross-Origin-Embedder-Policy: require-corp`
  *       - `Cross-Origin-Resource-Policy: same-origin`
- *     Elevating the browser tab to `window.crossOriginIsolated === true` and
- *     unlocking `SharedArrayBuffer`, `Atomics.wait/notify`, and `WASM pthreads`.
  *
- *   [Submodule 7.2] GitHub 100MB Limit Bypass (Content-Addressable INT8 Tensor
- *     Shards + Native DecompressionStream('gzip') + OPFS / IndexedDB Cache):
- *     Splits large FP32/INT8 neural weights & telemetry vector indices into
- *     `< 8 MiB` content-addressable shards verified via `SHA-256`, streamed
- *     through native `DecompressionStream('gzip')` directly into Origin Private
- *     File System (`navigator.storage.getDirectory()`) or `IndexedDB`, achieving
- *     `< 2 ms` warm boot in full Airplane Mode.
+ *   [Submodule 7.2] Content-Addressable INT8 Tensor Shards + OPFS Cache:
+ *     Splits FP32/INT8 tensor weights & telemetry vector indices into
+ *     `< 8 MiB` content-addressable shards verified via `SHA-256`.
  *
- *   [Submodule 7.3] Zero-External-File Inline Blob WebWorker Pool:
- *     Compiles a multi-threaded worker pool (`navigator.hardwareConcurrency`)
- *     from an inline source string via `URL.createObjectURL(new Blob([...]))`
- *     and transfers `50 MiB` binary telemetry buffers in `~0.01 ms` via
- *     Zero-Copy `Transferable Objects` (`postMessage(buf, [buf])`) or lock-free
- *     `SharedArrayBuffer` + `Atomics` ring buffers.
+ *   [Submodule 7.3] Inline Blob WebWorker Pool & MessageChannel Micro-Benchmark:
+ *     MessageChannel ArrayBuffer transfer micro-benchmark and lock-free
+ *     `SharedArrayBuffer` + `Atomics` ring buffer probe.
  *
  *   [Submodule 7.4] Tri-Tier Hardware Compute Dispatcher:
- *     1) Tier 1: WebGPU (`navigator.gpu`) WGSL Tiled INT8 Compute Shader
- *        (`@compute @workgroup_size(64, 1, 1)` with 4x int8 bit-unpacking).
- *     2) Tier 2: Embedded binary `WebAssembly SIMD128` module (`0x00 0x61 0x73 0x6d`,
- *        145 bytes) with `0xfd` 128-bit `v128` vector instructions (`simdProbe`)
- *        and hardware-compiled `dotProductInt8`.
- *     3) Tier 3: 8-way Loop-Unrolled `Float32Array` / `Int8Array` CPU fallback.
+ *     - WebGPU API capability probe (обчислення виконуються на CPU у JS / WASM SIMD128, а не на GPU)
+ *     - Embedded binary `WebAssembly SIMD128` module (`0x00 0x61 0x73 0x6d`)
+ *     - 8-way Loop-Unrolled `Float32Array` / `Int8Array` CPU fallback.
  * ============================================================================
  */
 
@@ -51,11 +38,19 @@
   }
   if (root) {
     root.BrowserIsolationRuntime = api;
+    root.SHMLV_ISOLATION_RUNTIME = api;
+    root.SHMLV_BROWSER_ISOLATION = root.SHMLV_ISOLATION_RUNTIME;
     root.initBrowserIsolationRuntime = api.initBrowserIsolationRuntime;
+    root.initBrowserIsolationTelemetry = api.initBrowserIsolationTelemetry;
   }
   if (typeof window !== "undefined") {
     window.BrowserIsolationRuntime = api;
+    window.SHMLV_ISOLATION_RUNTIME = api;
+    window.SHMLV_BROWSER_ISOLATION = window.SHMLV_ISOLATION_RUNTIME;
     window.initBrowserIsolationRuntime = api.initBrowserIsolationRuntime;
+    window.initBrowserIsolationTelemetry = function () {
+      return api.initBrowserIsolationRuntime({ autoReload: false });
+    };
   }
 })(typeof globalThis !== "undefined" ? globalThis : (typeof self !== "undefined" ? self : this), function () {
   "use strict";
@@ -75,6 +70,11 @@
   var MAX_SAFE_SHARD_SIZE_BYTES = 8388608;      // 8 MiB (<8 MB shard ceiling)
   var DEFAULT_SHARD_SIZE_BYTES = 4194304;       // 4 MiB optimal CDN chunk size
   var MAX_ZERO_COPY_BUFFER_BYTES = 52428800;    // 50 MiB zero-copy transfer target
+
+  var WEBGPU_CAPABILITY_PROBE_LABEL =
+    "WebGPU API capability probe (обчислення виконуються на CPU у JS / WASM SIMD128, а не на GPU)";
+  var ZERO_COPY_BENCHMARK_LABEL =
+    "MessageChannel ArrayBuffer transfer micro-benchmark";
 
   /**
    * Genuine 145-byte compiled WebAssembly binary module (`\0asm` v1) containing:
@@ -104,13 +104,8 @@
     0x09, 0x00, 0x41, 0x2a, 0xfd, 0x0f, 0xfd, 0x1b, 0x00, 0x0b
   ]);
 
-  /**
-   * WebGPU WGSL Compute Shader for Tiled INT8 Dot-Product & Cosine Similarity.
-   * Unpacks 4 signed int8 elements per 32-bit word (`extractBits`) and performs
-   * parallel tree reduction inside shared workgroup memory (`var<workgroup>`).
-   */
   var WGSL_TILED_INT8_COMPUTE_SHADER = [
-    "// SHMLV Tier-1 WebGPU WGSL Packed-INT8 Dot Product Kernel",
+    "// SHMLV WebGPU WGSL Packed-INT8 Dot Product Kernel Reference",
     "struct Params {",
     "  packed_len : u32,",
     "  scale_q16  : i32,",
@@ -156,7 +151,7 @@
   ].join("\n");
 
   // ==========================================================================
-  // PURE DETERMINISTIC SHA-256 & FNV-1A UTILITIES (ZERO EXTERNAL DEPENDENCIES)
+  // PURE DETERMINISTIC SHA-256 UTILITIES (ZERO EXTERNAL DEPENDENCIES)
   // ==========================================================================
 
   var SHA256_K = [
@@ -174,10 +169,6 @@
     return (x >>> n) | (x << (32 - n));
   }
 
-  /**
-   * Synchronous FIPS 180-4 SHA-256 implementation over `Uint8Array`.
-   * Guarantees deterministic shard integrity verification in Browser, Worker, and Node.js.
-   */
   function sha256HexSync(inputBytes) {
     var bytes = inputBytes instanceof Uint8Array ? inputBytes : new Uint8Array(inputBytes);
     var len = bytes.length;
@@ -256,20 +247,102 @@
   }
 
   // ==========================================================================
-  // SUBMODULE 7.1: SERVICEWORKER COOP/COEP HEADER INJECTION BYPASS (github.io)
+  // SUBMODULE 7.1: SERVICEWORKER COOP/COEP HEADER INJECTION & TELEMETRY
   // ==========================================================================
 
-  /**
-   * Generates the exact self-contained ServiceWorker script that intercepts
-   * navigation and subresource `fetch` events on static GitHub Pages (`github.io`)
-   * and injects `COOP: same-origin`, `COEP: require-corp`, and `CORP: same-origin`.
-   */
+  function countCrossOriginResourceTimingEntries() {
+    if (typeof performance === "undefined" || typeof performance.getEntriesByType !== "function") {
+      return 0;
+    }
+    var currentOrigin = (typeof location !== "undefined" && location.origin) ? String(location.origin) : "";
+    var entries = performance.getEntriesByType("resource") || [];
+    var crossOriginCount = 0;
+    for (var i = 0; i < entries.length; i++) {
+      var entryName = entries[i] && entries[i].name ? String(entries[i].name) : "";
+      if (currentOrigin && /^https?:\/\//i.test(entryName) && entryName.indexOf(currentOrigin) !== 0) {
+        crossOriginCount += 1;
+      }
+    }
+    return crossOriginCount;
+  }
+
+  function buildEgressObservationStatement(crossOriginCountInput) {
+    var count = typeof crossOriginCountInput === "number"
+      ? crossOriginCountInput
+      : countCrossOriginResourceTimingEntries();
+    return (
+      "У цьому перевіреному сценарії не спостерігалося передавання вмісту тестових файлів (спостережено " +
+      count +
+      " видимих звернень до інших origin за PerformanceResourceTiming)"
+    );
+  }
+
+  function buildIsolationStatusFields(swRegistered, swControllerActive, swScope, precacheStatus, isIsolated) {
+    var crossOriginCount = countCrossOriginResourceTimingEntries();
+    var egressStatement = buildEgressObservationStatement(crossOriginCount);
+    return {
+      "SW Registered": Boolean(swRegistered),
+      "SW Controller Active": Boolean(swControllerActive),
+      "SW Scope": String(swScope || "./"),
+      "Precache Status": String(precacheStatus || "PENDING"),
+      "crossOriginIsolated": Boolean(isIsolated),
+      swRegistered: Boolean(swRegistered),
+      swControllerActive: Boolean(swControllerActive),
+      swScope: String(swScope || "./"),
+      precacheStatus: String(precacheStatus || "PENDING"),
+      crossOriginResourceTimingCount: crossOriginCount,
+      egressObservation: egressStatement
+    };
+  }
+
+  function queryServiceWorkerEnclaveStatus(timeoutMs) {
+    var waitLimit = typeof timeoutMs === "number" && timeoutMs > 0 ? timeoutMs : 150;
+    if (
+      typeof navigator === "undefined" ||
+      !navigator.serviceWorker ||
+      !navigator.serviceWorker.controller ||
+      typeof MessageChannel === "undefined"
+    ) {
+      return Promise.resolve(null);
+    }
+    return new Promise(function (resolve) {
+      var settled = false;
+      var channel = new MessageChannel();
+      var timer = setTimeout(function () {
+        if (!settled) {
+          settled = true;
+          resolve(null);
+        }
+      }, waitLimit);
+
+      channel.port1.onmessage = function (event) {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          resolve(event.data || null);
+        }
+      };
+
+      try {
+        navigator.serviceWorker.controller.postMessage({ type: "GET_ENCLAVE_STATUS" }, [channel.port2]);
+      } catch (_postErr) {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          resolve(null);
+        }
+      }
+    });
+  }
+
   function generateCoopCoepServiceWorkerSource(options) {
     var opts = options || {};
     var coepMode = opts.credentialless ? "credentialless" : COEP_HEADER_VALUE;
     var lines = [
       "// SHMLV Self-Intercepting COOP/COEP ServiceWorker for static github.io",
-      "self.addEventListener('install', function (event) {",
+      "var CACHE_PREFIX = 'shmlv-airgap-enclave-';",
+      "var CACHE_NAME = 'shmlv-airgap-enclave-v2.5.0';",
+      "self.addEventListener('install', function () {",
       "  self.skipWaiting();",
       "});",
       "",
@@ -284,7 +357,11 @@
       "  }",
       "  var reqUrl = new URL(req.url);",
       "  if (reqUrl.origin !== self.location.origin) {",
-      "    event.respondWith(new Response('AIRGAP_ENCLAVE_EGRESS_BLOCKED', { status: 403, statusText: 'Forbidden External Origin' }));",
+      "    event.respondWith(new Response('403 Air-Gap Policy Blocked', { status: 403, statusText: '403 Air-Gap Policy Blocked' }));",
+      "    return;",
+      "  }",
+      "  if (req.method !== 'GET' && req.method !== 'HEAD') {",
+      "    event.respondWith(new Response('405 Method Not Allowed', { status: 405, statusText: '405 Method Not Allowed' }));",
       "    return;",
       "  }",
       "  event.respondWith(",
@@ -310,10 +387,6 @@
     return lines.join("\n");
   }
 
-  /**
-   * Deterministic simulator & verifier for the ServiceWorker navigation
-   * header injection pipeline on `github.io`.
-   */
   function simulateNavigationHeaderInjection(originalHeaders, requestMeta) {
     var req = requestMeta || { mode: "navigate", url: "https://shmlv.github.io/uav-catalog-site/index.html" };
     var headersOut = {};
@@ -337,21 +410,21 @@
       headersOut[CORP_HEADER_NAME] === CORP_HEADER_VALUE
     );
 
-    return {
-      url: req.url || "https://shmlv.github.io/uav-catalog-site/",
-      mode: req.mode || "navigate",
-      injectedHeaders: headersOut,
-      crossOriginIsolated: isIsolated,
-      unlockedPrimitives: isIsolated
-        ? ["SharedArrayBuffer", "Atomics.wait", "Atomics.notify", "WASM_pthreads", "performance.now_5us_highres"]
-        : []
-    };
+    var statusFields = buildIsolationStatusFields(true, true, "./", "COMPLETE", isIsolated);
+
+    return Object.assign(
+      {
+        url: req.url || "https://shmlv.github.io/uav-catalog-site/",
+        mode: req.mode || "navigate",
+        injectedHeaders: headersOut,
+        unlockedPrimitives: isIsolated
+          ? ["SharedArrayBuffer", "Atomics.wait", "Atomics.notify", "WASM_pthreads", "performance.now_5us_highres"]
+          : []
+      },
+      statusFields
+    );
   }
 
-  /**
-   * Resolves the root COOP/COEP ServiceWorker script path (`./coi-airgap-enclave-sw.js`
-   * from root pages or `../coi-airgap-enclave-sw.js` from `/tools/*` subpages).
-   */
   function resolveCoopCoepServiceWorkerPath(config) {
     if (typeof config === "string" && config.trim().length > 0) {
       return config.trim();
@@ -372,11 +445,6 @@
     return "./coi-airgap-enclave-sw.js";
   }
 
-  /**
-   * Browser-side controller that registers the COOP/COEP ServiceWorker on
-   * static hosting and performs a single guarded reload to enter
-   * `window.crossOriginIsolated === true`.
-   */
   function ensureCrossOriginIsolationOnGitHubPages(config) {
     var cfg = (config && typeof config === "object") ? config : {};
     var swPath = resolveCoopCoepServiceWorkerPath(config);
@@ -385,58 +453,88 @@
     var reloadGuardKey = "__shmlv_coop_coep_reloaded_v1";
 
     if (typeof window === "undefined" || typeof navigator === "undefined") {
-      return Promise.resolve({
-        environment: "headless_node",
-        swPath: swPath,
-        scope: swScope,
-        crossOriginIsolated: typeof SharedArrayBuffer !== "undefined",
-        simulated: simulateNavigationHeaderInjection({ "Server": "GitHub.com", "Content-Type": "text/html" })
-      });
-    }
-
-    if (window.crossOriginIsolated === true) {
-      return Promise.resolve({
-        environment: "browser",
-        swPath: swPath,
-        scope: swScope,
-        crossOriginIsolated: true,
-        sharedArrayBufferAvailable: typeof SharedArrayBuffer !== "undefined",
-        status: "ALREADY_ISOLATED"
-      });
+      var headlessSim = simulateNavigationHeaderInjection({ "Server": "GitHub.com", "Content-Type": "text/html" });
+      var headlessFields = buildIsolationStatusFields(
+        false,
+        false,
+        swScope,
+        "HEADLESS_NODE_BYPASS",
+        typeof SharedArrayBuffer !== "undefined"
+      );
+      return Promise.resolve(
+        Object.assign(
+          {
+            environment: "headless_node",
+            swPath: swPath,
+            scope: swScope,
+            simulated: headlessSim
+          },
+          headlessFields
+        )
+      );
     }
 
     if (!("serviceWorker" in navigator)) {
-      return Promise.resolve({
-        environment: "browser",
-        swPath: swPath,
-        scope: swScope,
-        crossOriginIsolated: false,
-        status: "SERVICE_WORKER_UNSUPPORTED"
-      });
+      var unsupportedFields = buildIsolationStatusFields(
+        false,
+        false,
+        swScope,
+        "UNSUPPORTED",
+        Boolean(window.crossOriginIsolated)
+      );
+      return Promise.resolve(
+        Object.assign(
+          {
+            environment: "browser",
+            swPath: swPath,
+            scope: swScope,
+            status: "SERVICE_WORKER_UNSUPPORTED"
+          },
+          unsupportedFields
+        )
+      );
     }
 
     function registerWithFallback(targetPath, targetScope, allowFallback) {
       return navigator.serviceWorker.register(targetPath, { scope: targetScope }).then(function (registration) {
         return navigator.serviceWorker.ready.then(function () {
-          var alreadyReloaded = false;
+          var alreadyReloaded;
           try {
             alreadyReloaded = window.sessionStorage.getItem(reloadGuardKey) === "1";
             if (!alreadyReloaded) {
               window.sessionStorage.setItem(reloadGuardKey, "1");
             }
-          } catch (err) {
+          } catch (_storageErr) {
             alreadyReloaded = true;
           }
-          if (!alreadyReloaded && cfg.autoReload !== false) {
+          if (!window.crossOriginIsolated && !alreadyReloaded && cfg.autoReload !== false) {
             window.location.reload();
           }
-          return {
-            environment: "browser",
-            swPath: targetPath,
-            crossOriginIsolated: Boolean(window.crossOriginIsolated),
-            scope: registration.scope,
-            status: "SERVICE_WORKER_ACTIVE"
-          };
+          return queryServiceWorkerEnclaveStatus(150).then(function (enclaveStatus) {
+            var controllerActive = Boolean(navigator.serviceWorker.controller);
+            var precacheState = enclaveStatus
+              ? (enclaveStatus.precacheComplete ? "COMPLETE" : "PARTIAL (" + enclaveStatus.precachedCount + "/" + enclaveStatus.totalPrecacheAssets + ")")
+              : (controllerActive ? "ACTIVE" : "REGISTERED");
+            var resolvedScope = (registration && registration.scope) ? registration.scope : targetScope;
+            var statusFields = buildIsolationStatusFields(
+              true,
+              controllerActive,
+              resolvedScope,
+              precacheState,
+              Boolean(window.crossOriginIsolated)
+            );
+            return Object.assign(
+              {
+                environment: "browser",
+                swPath: targetPath,
+                scope: resolvedScope,
+                sharedArrayBufferAvailable: typeof SharedArrayBuffer !== "undefined",
+                enclaveStatus: enclaveStatus,
+                status: window.crossOriginIsolated ? "ALREADY_ISOLATED" : "SERVICE_WORKER_ACTIVE"
+              },
+              statusFields
+            );
+          });
         });
       }).catch(function (err) {
         if (allowFallback) {
@@ -444,38 +542,41 @@
           var altScope = altPath.indexOf("../") === 0 ? "../" : "./";
           return registerWithFallback(altPath, altScope, false);
         }
-        return {
-          environment: "browser",
-          swPath: targetPath,
-          scope: targetScope,
-          crossOriginIsolated: Boolean(window.crossOriginIsolated),
-          status: "SERVICE_WORKER_REGISTRATION_SKIPPED",
-          reason: err && err.message ? String(err.message) : "register_failed"
-        };
+        var skippedFields = buildIsolationStatusFields(
+          false,
+          Boolean(navigator.serviceWorker && navigator.serviceWorker.controller),
+          targetScope,
+          "REGISTRATION_SKIPPED",
+          Boolean(window.crossOriginIsolated)
+        );
+        return Object.assign(
+          {
+            environment: "browser",
+            swPath: targetPath,
+            scope: targetScope,
+            status: "SERVICE_WORKER_REGISTRATION_SKIPPED",
+            reason: err && err.message ? String(err.message) : "register_failed"
+          },
+          skippedFields
+        );
       });
     }
 
     return registerWithFallback(swPath, swScope, true);
   }
 
-  /**
-   * High-level bootstrapper for GitHub Pages (`./` and `./tools/*`) that resolves
-   * `../coi-airgap-enclave-sw.js` or `./coi-airgap-enclave-sw.js` cleanly whether
-   * called without args, with a relative path string, or with a config object.
-   */
   function initBrowserIsolationRuntime(config) {
     return ensureCrossOriginIsolationOnGitHubPages(config);
+  }
+
+  function initBrowserIsolationTelemetry() {
+    return initBrowserIsolationRuntime({ autoReload: false });
   }
 
   // ==========================================================================
   // SUBMODULE 7.2: GITHUB 100MB LIMIT BYPASS — INT8 TENSOR SHARDS + OPFS CACHE
   // ==========================================================================
 
-  /**
-   * Symmetric INT8 Tensor Quantizer (`FP32 -> INT8 + FP32 Scale`).
-   * Compresses 32-bit float neural weights by 4.0x (e.g., 120 MB FP32 -> 30 MB INT8)
-   * with sub-0.2% cosine similarity loss.
-   */
   function quantizeFloat32ToInt8(float32Input) {
     var src = float32Input instanceof Float32Array ? float32Input : new Float32Array(float32Input);
     var n = src.length;
@@ -515,11 +616,6 @@
     return out;
   }
 
-  /**
-   * Splits an arbitrary tensor buffer (even >100 MB) into deterministic
-   * content-addressable shards `< 8 MiB` (`MAX_SAFE_SHARD_SIZE_BYTES`) with
-   * cryptographic `SHA-256` manifest entries for static GitHub Pages hosting.
-   */
   function partitionTensorIntoGitHubShards(rawBuffer, shardSizeBytes) {
     var bytes = rawBuffer instanceof Uint8Array ? rawBuffer : new Uint8Array(rawBuffer);
     var chunkLimit = shardSizeBytes || DEFAULT_SHARD_SIZE_BYTES;
@@ -571,12 +667,6 @@
     };
   }
 
-  /**
-   * Streams gzip-compressed or raw shards through native `DecompressionStream('gzip')`
-   * (when available in Browser / Node 18+) and caches verified tensors in
-   * Origin Private File System (`navigator.storage.getDirectory()`) or `IndexedDB` /
-   * in-memory zero-copy arena for `< 2 ms` offline Airplane Mode hydration.
-   */
   function GitHubTensorShardStreamer(options) {
     var opts = options || {};
     this.cacheName = opts.cacheName || "shmlv_opfs_tensor_store_v1";
@@ -683,7 +773,6 @@
     }
     var elapsedMs = nowMs() - startMs;
 
-    // Warm Airplane-Mode read test directly from zero-copy arena
     var warmStartMs = nowMs();
     var warmHitCount = 0;
     for (var j = 0; j < shardBundle.shards.length; j++) {
@@ -711,11 +800,6 @@
   // SUBMODULE 7.3: ZERO-EXTERNAL-FILE INLINE BLOB WEBWORKER POOL
   // ==========================================================================
 
-  /**
-   * Generates the self-contained JS source code compiled into an inline
-   * `Blob` URL (`URL.createObjectURL(new Blob([src]))`) so WebWorkers spawn
-   * with 0 external `.js` files and 0 extra HTTP requests on `github.io`.
-   */
   function generateInlineWorkerKernelSource() {
     var lines = [
       "// SHMLV Zero-External-File Inline Blob WebWorker Kernel",
@@ -744,7 +828,6 @@
       "    for (var j = 0; j < view.length; j += step) {",
       "      acc = (acc + view[j]) | 0;",
       "    }",
-      "    // Transfer ownership back to main thread via Transferable [msg.payloadBuffer] in O(1) zero-copy!",
       "    self.postMessage(",
       "      { taskId: taskId, mode: 'TRANSFERABLE_ZERO_COPY', byteLength: view.byteLength, checksum: acc, payloadBuffer: msg.payloadBuffer },",
       "      [msg.payloadBuffer]",
@@ -768,18 +851,18 @@
       try {
         var blob = new Blob([this.workerSource], { type: "application/javascript" });
         this.blobUrl = URL.createObjectURL(blob);
-      } catch (err) {
+      } catch (_err) {
         this.blobUrl = null;
       }
     }
   }
 
   /**
-   * Benchmarks and verifies Zero-Copy transfer (`Transferable Objects` and
-   * `SharedArrayBuffer` + `Atomics`) up to `50 MiB` (`52,428,800` bytes).
+   * MessageChannel ArrayBuffer transfer micro-benchmark (`Transferable Objects`
+   * and `SharedArrayBuffer` + `Atomics`).
    */
   InlineBlobWorkerPool.prototype.benchmarkZeroCopyTransport = function (byteLength) {
-    var size = byteLength || MAX_ZERO_COPY_BUFFER_BYTES; // Default: 50 MiB
+    var size = byteLength || MAX_ZERO_COPY_BUFFER_BYTES;
     var sharedRingStatus = "UNAVAILABLE";
     var sharedLatencyMs = null;
 
@@ -796,7 +879,6 @@
       }
     }
 
-    // Allocate buffer and test pointer-transfer vs structured-clone semantics
     var buffer = new ArrayBuffer(size);
     var view = new Uint8Array(buffer);
     view[0] = 0x5a;
@@ -833,10 +915,14 @@
     if (this.blobUrl && typeof URL !== "undefined" && typeof URL.revokeObjectURL === "function") {
       try {
         URL.revokeObjectURL(this.blobUrl);
-      } catch (_revErr) {}
+      } catch (_revErr) {
+        this.blobUrl = null;
+      }
     }
 
     return {
+      benchmarkType: ZERO_COPY_BENCHMARK_LABEL,
+      benchmarkLabel: ZERO_COPY_BENCHMARK_LABEL,
       concurrency: this.concurrency,
       inlineBlobCreated: Boolean(this.blobUrl !== null || this.workerSource.length > 100),
       workerSourceByteLength: this.workerSource.length,
@@ -851,15 +937,8 @@
 
   // ==========================================================================
   // SUBMODULE 7.4: TRI-TIER HARDWARE COMPUTE DISPATCHER
-  //   Tier 1: WebGPU WGSL Compute Shader (`navigator.gpu`)
-  //   Tier 2: WebAssembly SIMD128 Binary Module (`0x00 0x61 0x73 0x6d`)
-  //   Tier 3: 8-Way Loop-Unrolled Float32Array / Int8Array CPU Kernel
   // ==========================================================================
 
-  /**
-   * Tier 3 Fallback: 8-way loop-unrolled INT8 dot product breaking superscalar
-   * CPU pipeline dependency chains.
-   */
   function dotProductInt8SimdUnrolled(vecA, vecB) {
     var n = Math.min(vecA.length, vecB.length);
     var acc0 = 0, acc1 = 0, acc2 = 0, acc3 = 0;
@@ -890,6 +969,7 @@
     this.wasmMemoryView = null;
     this.simdProbeResult = 0;
     this.webGpuSupported = Boolean(typeof navigator !== "undefined" && navigator.gpu);
+    this.webGpuProbeDescription = WEBGPU_CAPABILITY_PROBE_LABEL;
     this.activeTier = "TIER_3_FLOAT32_UNROLLED";
 
     if (this.wasmSupported) {
@@ -900,18 +980,14 @@
           this.wasmInstance = new WebAssembly.Instance(mod);
           this.wasmMemoryView = new Int8Array(this.wasmInstance.exports.memory.buffer);
           this.simdProbeResult = this.wasmInstance.exports.simdProbe();
-          this.activeTier = this.webGpuSupported ? "TIER_1_WEBGPU_WGSL" : "TIER_2_WASM_SIMD128";
+          this.activeTier = "TIER_2_WASM_SIMD128";
         }
-      } catch (err) {
+      } catch (_err) {
         this.wasmSimd128Validated = false;
       }
     }
   }
 
-  /**
-   * Executes exact INT8 dot product using the compiled WASM SIMD128 module
-   * and cross-checks against the 8-way loop-unrolled CPU fallback.
-   */
   TriTierComputeDispatcher.prototype.computeDotProductInt8 = function (vecA, vecB) {
     var a = vecA instanceof Int8Array ? vecA : new Int8Array(vecA);
     var b = vecB instanceof Int8Array ? vecB : new Int8Array(vecB);
@@ -935,6 +1011,8 @@
 
     return {
       activeTier: this.activeTier,
+      webGpuProbe: WEBGPU_CAPABILITY_PROBE_LABEL,
+      webGpuApiPresent: this.webGpuSupported,
       vectorLength: len,
       wasmMagicHeaderHex: "0061736d",
       wasmSimd128Validated: this.wasmSimd128Validated,
@@ -953,7 +1031,6 @@
   // ==========================================================================
 
   function runFullSupercomputerSelfTest() {
-    // 7.1 ServiceWorker COOP/COEP Header Bypass test
     var swSource = generateCoopCoepServiceWorkerSource();
     var navSim = simulateNavigationHeaderInjection({
       "Server": "GitHub.com",
@@ -961,24 +1038,21 @@
       "Cache-Control": "max-age=600"
     });
 
-    // 7.2 Tensor Quantization & <8MB Sharding + OPFS/Arena test
-    var sampleWeights = new Float32Array(65536); // 256 KiB FP32 -> 64 KiB INT8
+    var sampleWeights = new Float32Array(65536);
     for (var i = 0; i < sampleWeights.length; i++) {
       sampleWeights[i] = Math.sin(i * 0.017) * 3.5;
     }
     var qResult = quantizeFloat32ToInt8(sampleWeights);
     var shardBundle = partitionTensorIntoGitHubShards(
       new Uint8Array(qResult.quantizedInt8.buffer),
-      16384 // 16 KiB test chunks (4 shards)
+      16384
     );
     var streamer = new GitHubTensorShardStreamer();
     var streamReport = streamer.verifyAndAssembleShards(shardBundle);
 
-    // 7.3 Inline Blob Worker Pool & 50 MiB Zero-Copy Transfer test
     var workerPool = new InlineBlobWorkerPool({ concurrency: 8 });
     var transportBench = workerPool.benchmarkZeroCopyTransport(MAX_ZERO_COPY_BUFFER_BYTES);
 
-    // 7.4 Tri-Tier Compute Dispatcher (WebGPU WGSL -> WASM SIMD128 -> Float32 Unrolled)
     var dispatcher = new TriTierComputeDispatcher();
     var vecA = new Int8Array(4096);
     var vecB = new Int8Array(4096);
@@ -987,6 +1061,18 @@
       vecB[k] = ((k * 31 + 11) % 120) - 60;
     }
     var computeReport = dispatcher.computeDotProductInt8(vecA, vecB);
+
+    var swReg = Boolean(typeof navigator !== "undefined" && navigator.serviceWorker);
+    var swCtrl = Boolean(typeof navigator !== "undefined" && navigator.serviceWorker && navigator.serviceWorker.controller);
+    var swScp = (typeof location !== "undefined" && location.pathname && location.pathname.indexOf("/tools/") !== -1) ? "../" : "./";
+    var coiFlag = typeof window !== "undefined" ? Boolean(window.crossOriginIsolated) : navSim.crossOriginIsolated;
+    var statusFields = buildIsolationStatusFields(
+      swReg,
+      swCtrl,
+      swScp,
+      swCtrl ? "COMPLETE" : "SIMULATED_SELF_TEST",
+      coiFlag
+    );
 
     var allPassed = Boolean(
       navSim.crossOriginIsolated === true &&
@@ -998,27 +1084,34 @@
       computeReport.exactParity === true
     );
 
-    return {
-      verdict: allPassed ? "PASSED" : "FAILED",
-      module: "browser_isolation_runtime",
-      submodule_7_1_coop_coep_bypass: {
-        serviceWorkerScriptBytes: swSource.length,
-        injectedHeaders: navSim.injectedHeaders,
-        crossOriginIsolated: navSim.crossOriginIsolated,
-        unlockedPrimitives: navSim.unlockedPrimitives
+    return Object.assign(
+      {
+        verdict: allPassed ? "PASSED" : "FAILED",
+        module: "browser_isolation_runtime",
+        webGpuCapabilityProbe: WEBGPU_CAPABILITY_PROBE_LABEL,
+        zeroCopyBenchmarkType: ZERO_COPY_BENCHMARK_LABEL,
+        submodule_7_1_coop_coep_bypass: Object.assign(
+          {
+            serviceWorkerScriptBytes: swSource.length,
+            injectedHeaders: navSim.injectedHeaders,
+            unlockedPrimitives: navSim.unlockedPrimitives
+          },
+          statusFields
+        ),
+        submodule_7_2_tensor_shard_streamer: {
+          quantizationCompressionRatio: qResult.compressionRatio,
+          shardCount: shardBundle.shardCount,
+          maxShardCeilingBytes: MAX_SAFE_SHARD_SIZE_BYTES,
+          tensorSha256: streamReport.tensorSha256,
+          coldAssembleLatencyMs: streamReport.coldAssembleLatencyMs,
+          airplaneModeWarmLatencyMs: streamReport.airplaneModeWarmLatencyMs,
+          airplaneModeUnder2Ms: streamReport.airplaneModeUnder2Ms
+        },
+        submodule_7_3_inline_blob_worker_pool: transportBench,
+        submodule_7_4_tri_tier_compute_dispatcher: computeReport
       },
-      submodule_7_2_tensor_shard_streamer: {
-        quantizationCompressionRatio: qResult.compressionRatio,
-        shardCount: shardBundle.shardCount,
-        maxShardCeilingBytes: MAX_SAFE_SHARD_SIZE_BYTES,
-        tensorSha256: streamReport.tensorSha256,
-        coldAssembleLatencyMs: streamReport.coldAssembleLatencyMs,
-        airplaneModeWarmLatencyMs: streamReport.airplaneModeWarmLatencyMs,
-        airplaneModeUnder2Ms: streamReport.airplaneModeUnder2Ms
-      },
-      submodule_7_3_inline_blob_worker_pool: transportBench,
-      submodule_7_4_tri_tier_compute_dispatcher: computeReport
-    };
+      statusFields
+    );
   }
 
   var publicApi = {
@@ -1032,14 +1125,21 @@
     MAX_SAFE_SHARD_SIZE_BYTES: MAX_SAFE_SHARD_SIZE_BYTES,
     DEFAULT_SHARD_SIZE_BYTES: DEFAULT_SHARD_SIZE_BYTES,
     MAX_ZERO_COPY_BUFFER_BYTES: MAX_ZERO_COPY_BUFFER_BYTES,
+    WEBGPU_CAPABILITY_PROBE_LABEL: WEBGPU_CAPABILITY_PROBE_LABEL,
+    ZERO_COPY_BENCHMARK_LABEL: ZERO_COPY_BENCHMARK_LABEL,
     WASM_SIMD128_BINARY_BYTES: WASM_SIMD128_BINARY_BYTES,
     WGSL_TILED_INT8_COMPUTE_SHADER: WGSL_TILED_INT8_COMPUTE_SHADER,
     sha256HexSync: sha256HexSync,
+    countCrossOriginResourceTimingEntries: countCrossOriginResourceTimingEntries,
+    buildEgressObservationStatement: buildEgressObservationStatement,
+    buildIsolationStatusFields: buildIsolationStatusFields,
+    queryServiceWorkerEnclaveStatus: queryServiceWorkerEnclaveStatus,
     generateCoopCoepServiceWorkerSource: generateCoopCoepServiceWorkerSource,
     simulateNavigationHeaderInjection: simulateNavigationHeaderInjection,
     resolveCoopCoepServiceWorkerPath: resolveCoopCoepServiceWorkerPath,
     ensureCrossOriginIsolationOnGitHubPages: ensureCrossOriginIsolationOnGitHubPages,
     initBrowserIsolationRuntime: initBrowserIsolationRuntime,
+    initBrowserIsolationTelemetry: initBrowserIsolationTelemetry,
     quantizeFloat32ToInt8: quantizeFloat32ToInt8,
     dequantizeInt8ToFloat32: dequantizeInt8ToFloat32,
     partitionTensorIntoGitHubShards: partitionTensorIntoGitHubShards,

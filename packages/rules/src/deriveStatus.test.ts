@@ -64,6 +64,7 @@ describe("deriveEvidenceStatuses (engine derives status from evidence, not the l
     expect(derived.derivedStatus).toBe("locked");
     expect(derived.derivation).toBe("test_outcome");
     expect(derived.changed).toBe(true);
+    expect(derived.reason).toContain("Locked by fail test outcome");
   });
 
   it("downgrades 'verified' to 'partial' when the test result is not a pass (not_tested)", () => {
@@ -97,7 +98,7 @@ describe("deriveEvidenceStatuses (engine derives status from evidence, not the l
     expect(derived.changed).toBe(false);
   });
 
-  it("preserves an engine-derived conflict", () => {
+  it("preserves an asserted or cross-check conflict conservatively even with missing sources", () => {
     const c = claim({
       id: "claim.crosscheck.training-manual",
       status: "conflict",
@@ -108,17 +109,56 @@ describe("deriveEvidenceStatuses (engine derives status from evidence, not the l
     const [derived] = deriveEvidenceStatuses([c], [source("ev-1"), source("ev-2")], []);
 
     expect(derived.derivedStatus).toBe("conflict");
-    expect(derived.derivation).toBe("cross_document_conflict");
+    expect(derived.derivation).toBe("verbatim");
+    expect(derived.reason).toContain("Asserted conflict preserved conservatively");
 
-    const manualConflict = claim({
+    const conflictWithMissing = claim({
       id: "claim.doc-1",
       status: "conflict",
       claimType: "component_record",
-      evidenceSourceIds: ["ev-1"]
+      evidenceSourceIds: ["ev-1", "ev-missing"]
     });
-    const [derivedManual] = deriveEvidenceStatuses([manualConflict], [source("ev-1")], []);
-    expect(derivedManual.derivedStatus).toBe("conflict");
-    expect(derivedManual.derivation).toBe("reviewer_upper_bound");
+    const [derivedMissing] = deriveEvidenceStatuses([conflictWithMissing], [source("ev-1")], []);
+    expect(derivedMissing.derivedStatus).toBe("conflict");
+    expect(derivedMissing.derivation).toBe("verbatim");
+    expect(derivedMissing.reason).toContain("missing evidence source(s): ev-missing");
+  });
+
+  it("prioritizes failing test outcome (locked) over partial missing evidence", () => {
+    const c = claim({
+      id: "claim.t-compound",
+      status: "verified",
+      evidenceSourceIds: ["ev-1", "ev-missing"]
+    });
+    const [derived] = deriveEvidenceStatuses(
+      [c],
+      [source("ev-1")],
+      [qa("claim.t-compound", "fail")]
+    );
+
+    expect(derived.derivedStatus).toBe("locked");
+    expect(derived.derivation).toBe("test_outcome");
+    expect(derived.reason).toContain("Locked by fail test outcome");
+    expect(derived.reason).toContain("missing evidence source(s): ev-missing");
+  });
+
+  it("preserves asserted locked status when partial sources are missing", () => {
+    const c = claim({
+      id: "claim.locked-with-source",
+      status: "locked",
+      evidenceSourceIds: ["ev-1", "ev-missing"],
+      lockReason: "Explicit reviewer lock"
+    });
+    const [derived] = deriveEvidenceStatuses(
+      [c],
+      [source("ev-1")],
+      [qa("claim.locked-with-source", "not_tested")]
+    );
+
+    expect(derived.derivedStatus).toBe("locked");
+    expect(derived.derivation).toBe("dangling_evidence");
+    expect(derived.reason).toContain("Asserted locked status preserved");
+    expect(derived.reason).toContain("missing evidence source(s): ev-missing");
   });
 });
 

@@ -49,4 +49,50 @@ describe("buildEvidenceGraphFromBundle", () => {
 
     expect(built.evidenceSources).toHaveLength(bundle.evidenceSources.length);
   });
+
+  it("applies the status priority matrix and dynamic synthetic flag", () => {
+    const bundle = parseDemoBundle();
+    const nonSyntheticBundle = {
+      ...bundle,
+      artifacts: bundle.artifacts.map((a) => ({ ...a, synthetic: false })),
+      evidenceSources: bundle.evidenceSources.map((s) => ({
+        ...s,
+        synthetic: false
+      })),
+      evidenceClaims: [
+        ...bundle.evidenceClaims,
+        {
+          id: "claim.test.compound-fail",
+          statement: "Compound check with missing source and failing test",
+          claimType: "test_record" as const,
+          status: "verified" as const,
+          evidenceSourceIds: ["EV-BOM-001", "EV-MISSING-999"]
+        }
+      ],
+      qaItems: [
+        ...bundle.qaItems,
+        {
+          id: "qa.compound-fail",
+          question: "Compound check fails",
+          status: "fail" as const,
+          evidenceClaimIds: ["claim.test.compound-fail"],
+          ownerRole: "QA reviewer"
+        }
+      ]
+    };
+
+    const built = buildEvidenceGraphFromBundle(
+      nonSyntheticBundle,
+      "2026-06-06T00:00:00.000Z"
+    );
+
+    expect(built.evidenceGraph.synthetic).toBe(false);
+    const compoundClaim = built.evidenceClaims.find(
+      (c) => c.id === "claim.test.compound-fail"
+    );
+    expect(compoundClaim?.status).toBe("locked");
+    expect(compoundClaim?.lockReason).toContain(
+      "Locked by fail test outcome (qa.compound-fail)"
+    );
+  });
 });

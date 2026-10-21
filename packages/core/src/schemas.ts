@@ -84,7 +84,7 @@ export const ArtifactSchema = z
     ]),
     filename: SafeTextSchema.max(240),
     description: SafeTextSchema.optional(),
-    synthetic: z.literal(true),
+    synthetic: z.boolean(),
     sha256: z
       .string()
       .regex(/^[a-f0-9]{64}$/i, "Expected a SHA-256 file hash")
@@ -137,9 +137,9 @@ export const EvidenceSourceSchema = z
       "checklist",
       "generated"
     ]),
-    excerpt: SafeTextSchema.optional(),
+    excerpt: SafeTextSchema,
     confidence: z.enum(["low", "medium", "high"]),
-    synthetic: z.literal(true)
+    synthetic: z.boolean()
   })
   .strict();
 
@@ -181,7 +181,7 @@ export const EvidenceClaimSchema = z
     }
   });
 
-export const EvidenceGraphSchema = z
+export const EvidenceGraphNodeSchema = z
   .object({
     id: SafeIdSchema,
     artifactIds: z.array(SafeIdSchema),
@@ -197,7 +197,7 @@ export const EvidenceGraphSchema = z
         .strict()
     ),
     generatedAt: z.string().datetime({ offset: true }),
-    synthetic: z.literal(true)
+    synthetic: z.boolean()
   })
   .strict()
   .superRefine((value, ctx) => {
@@ -233,6 +233,57 @@ export const EvidenceLockSchema = z
     status: z.literal("locked")
   })
   .strict();
+
+export const BuiltEvidenceGraphSchema = z
+  .object({
+    evidenceGraph: EvidenceGraphNodeSchema,
+    evidenceSources: z.array(EvidenceSourceSchema),
+    evidenceClaims: z.array(EvidenceClaimSchema),
+    evidenceLocks: z.array(EvidenceLockSchema),
+    summary: z
+      .object({
+        totalClaims: z.number().int().min(0),
+        totalSources: z.number().int().min(0),
+        totalLocks: z.number().int().min(0),
+        verifiedCount: z.number().int().min(0),
+        partialCount: z.number().int().min(0),
+        lockedCount: z.number().int().min(0),
+        conflictCount: z.number().int().min(0)
+      })
+      .strict()
+  })
+  .strict();
+
+export const EvidenceGraphSchema = z.custom<
+  z.infer<typeof EvidenceGraphNodeSchema>
+>().transform((val, ctx) => {
+  if (typeof val === "object" && val !== null && "evidenceGraph" in val) {
+    const parsed = BuiltEvidenceGraphSchema.safeParse(val);
+    if (!parsed.success) {
+      for (const issue of parsed.error.issues) {
+        ctx.addIssue({
+          code: "custom",
+          path: issue.path,
+          message: issue.message
+        });
+      }
+      return z.NEVER;
+    }
+    return parsed.data as unknown as z.infer<typeof EvidenceGraphNodeSchema>;
+  }
+  const parsed = EvidenceGraphNodeSchema.safeParse(val);
+  if (!parsed.success) {
+    for (const issue of parsed.error.issues) {
+      ctx.addIssue({
+        code: "custom",
+        path: issue.path,
+        message: issue.message
+      });
+    }
+    return z.NEVER;
+  }
+  return parsed.data;
+});
 
 export const ReadinessFindingSchema = z
   .object({
@@ -381,12 +432,65 @@ function addUniqueIdIssues(
   });
 }
 
+export const ReadinessDeductionSchema = z
+  .object({
+    reason: z.string(),
+    count: z.number().int().min(0),
+    pointsEach: z.number().int().min(0),
+    total: z.number().int().min(0)
+  })
+  .strict();
+
+export const LockedCriticalItemSchema = z
+  .object({
+    id: z.string().min(1),
+    reason: z.string().min(1)
+  })
+  .strict();
+
+export const EngineAdjustmentSchema = z
+  .object({
+    claimId: z.string().min(1),
+    assertedStatus: EvidenceStatusSchema,
+    derivedStatus: EvidenceStatusSchema,
+    reason: z.string().min(1)
+  })
+  .strict();
+
+export const ReadinessAssessmentSchema = z
+  .object({
+    readinessScore: z.number().int().min(0).max(100),
+    formula: z
+      .object({
+        base: z.literal(100),
+        deductions: z.array(ReadinessDeductionSchema)
+      })
+      .strict(),
+    findings: z.array(ReadinessFindingSchema),
+    warnings: z.array(z.string()),
+    lockedCriticalItems: z.array(LockedCriticalItemSchema),
+    engineAdjustments: z.array(EngineAdjustmentSchema),
+    summary: z
+      .object({
+        verifiedCount: z.number().int().min(0),
+        partialCount: z.number().int().min(0),
+        lockedCount: z.number().int().min(0),
+        conflictCount: z.number().int().min(0),
+        engineAdjustedCount: z.number().int().min(0),
+        missingArtifacts: z.array(z.string()),
+        explanation: z.string().min(1)
+      })
+      .strict()
+  })
+  .strict();
+
 export type Artifact = z.infer<typeof ArtifactSchema>;
 export type BOMItem = z.infer<typeof BOMItemSchema>;
 export type EvidenceSource = z.infer<typeof EvidenceSourceSchema>;
 export type EvidenceClaim = z.infer<typeof EvidenceClaimSchema>;
-export type EvidenceGraph = z.infer<typeof EvidenceGraphSchema>;
+export type EvidenceGraph = z.infer<typeof EvidenceGraphNodeSchema>;
 export type EvidenceLock = z.infer<typeof EvidenceLockSchema>;
 export type ReadinessFinding = z.infer<typeof ReadinessFindingSchema>;
 export type QAItem = z.infer<typeof QAItemSchema>;
 export type DemoBundle = z.infer<typeof DemoBundleSchema>;
+export type ReadinessAssessment = z.infer<typeof ReadinessAssessmentSchema>;

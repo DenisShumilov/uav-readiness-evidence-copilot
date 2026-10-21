@@ -10,7 +10,7 @@ on:
 
 jobs:
   verify:
-    name: Verify TypeScript & CLI
+    name: Verify TypeScript, CLI & Browser E2E
     runs-on: ubuntu-latest
 
     steps:
@@ -26,22 +26,37 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
       - name: Lint
         run: npm run lint
-
-      - name: Demo readiness
-        run: npm run demo:readiness
-
-      - name: Self-audit (docs vs engine — fails on drift)
-        run: npm run demo:selfaudit
 
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Test
+      - name: Build
+        run: npm run build
+
+      - name: Test (Unit, Integration & Chromium E2E)
         run: npm test
 
-      - name: Audit
+      - name: Self-audit (docs vs engine — fails on drift)
+        run: npm run qa:self-audit
+
+      - name: Demo readiness
+        run: npm run demo:readiness
+
+      - name: Demo conflict
+        run: npm run demo:conflict
+
+      - name: Demo lock
+        run: npm run demo:lock
+
+      - name: Demo pack
+        run: npm run demo:pack
+
+      - name: Security audit
         run: npm audit --audit-level=moderate
 
   python-verify:
@@ -64,13 +79,16 @@ jobs:
       - name: DefDoc AI self-test
         run: python3 engines/defdoc_ai/defdoc_auditor.py --self-test
 
-      - name: DefDoc AI client regression suite (21 tests)
+      - name: DefDoc AI client regression suite (22 tests)
         run: python3 engines/defdoc_ai/defdoc_auditor.py --test-client
 
       - name: DefDoc AI adversarial benchmark (17 scenarios)
         run: python3 engines/defdoc_ai/defdoc_auditor.py --benchmark
 
-      - name: Telemetry EW regression suite (21 tests)
+      - name: DefDoc AI OPSEC sanitizer JSON stats
+        run: python3 engines/defdoc_ai/sanitize_doc.py --json-stats
+
+      - name: Telemetry EW regression suite (22 tests)
         run: python3 engines/telemetry_ew/telemetry_analyzer.py --self-test
 
   dogfood:

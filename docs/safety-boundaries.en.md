@@ -38,9 +38,9 @@ This project must never help with:
 
 Unsafe keywords such as `mission`, `payload`, `targeting`, `route`, `waypoint`, and `telemetry` are blocked in user/demo input artifacts.
 
-Active input artifact means a file the current MVP reads as project data, such as `BOM.csv`, `demo_manual.md`, `test_log.csv`, or `qa_notes.md`.
+Active input artifact in the TypeScript Core contour (`packages/*`) means one of the 4 contract evidence files (`BOM.csv`, `demo_manual.md`, `test_log.csv`, or `qa_notes.md`), while in the multi-format Browser Local UI (`docs/*.js`) and Python CLI (`engines/*`) contours it also encompasses `.docx`, `.xlsx`, `.pdf` documents, `.p7s` signature containers, and recorded `.bin`, `.ulg`, `.tlog`, `.ubx`, `.nmea` logs.
 
-Future fixtures such as `future-fixtures/wiring_notes.yaml` and `future-fixtures/config_dump.txt` are kept for later documentation-only parser work and are not read by the current MVP.
+Future fixtures such as `future-fixtures/wiring_notes.yaml` and `future-fixtures/config_dump.txt` are kept for later documentation-only TypeScript parser expansion.
 
 Safety documentation may mention unsafe keywords only as prohibited items.
 

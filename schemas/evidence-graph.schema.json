@@ -2,58 +2,194 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://denisshumilov.github.io/uav-readiness-evidence-copilot/schemas/evidence-graph.schema.json",
   "title": "Evidence graph",
-  "description": "Output of buildEvidenceGraphFromBundle(). All data is synthetic.",
+  "description": "Output of buildEvidenceGraphFromBundle(). Documentation QA evidence graph.",
   "type": "object",
-  "required": ["evidenceGraph", "evidenceSources", "evidenceClaims", "evidenceLocks", "summary"],
-  "additionalProperties": true,
+  "required": [
+    "evidenceGraph",
+    "evidenceSources",
+    "evidenceClaims",
+    "evidenceLocks",
+    "summary"
+  ],
+  "additionalProperties": false,
   "properties": {
     "evidenceGraph": {
       "type": "object",
-      "required": ["id", "links", "synthetic"],
+      "required": [
+        "id",
+        "artifactIds",
+        "evidenceSourceIds",
+        "evidenceClaimIds",
+        "links",
+        "generatedAt",
+        "synthetic"
+      ],
+      "additionalProperties": false,
       "properties": {
-        "id": { "type": "string" },
-        "artifactIds": { "type": "array", "items": { "type": "string" } },
-        "evidenceSourceIds": { "type": "array", "items": { "type": "string" } },
-        "evidenceClaimIds": { "type": "array", "items": { "type": "string" } },
+        "id": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "artifactIds": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+        },
+        "evidenceSourceIds": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+        },
+        "evidenceClaimIds": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+        },
         "links": {
           "type": "array",
           "items": {
             "type": "object",
             "required": ["claimId", "evidenceSourceId", "relation"],
+            "additionalProperties": false,
             "properties": {
-              "claimId": { "type": "string" },
-              "evidenceSourceId": { "type": "string" },
+              "claimId": { "type": "string", "minLength": 1, "maxLength": 120 },
+              "evidenceSourceId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
               "relation": {
+                "type": "string",
                 "enum": ["supports", "partially_supports", "conflicts"]
               }
             }
           }
         },
-        "generatedAt": { "type": "string" },
-        "synthetic": { "const": true }
+        "generatedAt": { "type": "string", "format": "date-time" },
+        "synthetic": { "type": "boolean" }
       }
     },
-    "evidenceSources": { "type": "array" },
+    "evidenceSources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "artifactId",
+          "label",
+          "sourceType",
+          "excerpt",
+          "confidence",
+          "synthetic"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "artifactId": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "label": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "sourceType": {
+            "type": "string",
+            "enum": [
+              "document",
+              "table",
+              "note",
+              "log",
+              "checklist",
+              "generated"
+            ]
+          },
+          "excerpt": { "type": "string", "minLength": 1, "maxLength": 2000 },
+          "confidence": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          },
+          "synthetic": { "type": "boolean" }
+        }
+      }
+    },
     "evidenceClaims": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "statement", "status"],
+        "required": [
+          "id",
+          "statement",
+          "claimType",
+          "status",
+          "evidenceSourceIds"
+        ],
+        "additionalProperties": false,
         "properties": {
-          "id": { "type": "string" },
-          "statement": { "type": "string" },
-          "claimType": { "type": "string" },
-          "status": { "enum": ["verified", "partial", "locked", "conflict"] },
-          "evidenceSourceIds": { "type": "array", "items": { "type": "string" } },
-          "lockReason": { "type": "string" }
+          "id": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "statement": { "type": "string", "minLength": 1, "maxLength": 2000 },
+          "claimType": {
+            "type": "string",
+            "enum": [
+              "artifact_presence",
+              "component_record",
+              "wiring_documentation",
+              "config_documentation",
+              "test_record",
+              "qa_note",
+              "training_record",
+              "maintenance_record",
+              "safety_boundary"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["verified", "partial", "locked", "conflict"]
+          },
+          "evidenceSourceIds": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+          },
+          "lockReason": { "type": "string", "minLength": 1, "maxLength": 2000 }
         }
       }
     },
-    "evidenceLocks": { "type": "array" },
+    "evidenceLocks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "claimId",
+          "reason",
+          "missingEvidence",
+          "severity",
+          "status"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "claimId": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 2000 },
+          "missingEvidence": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 160 }
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["info", "warning", "critical"]
+          },
+          "status": {
+            "type": "string",
+            "const": "locked"
+          }
+        }
+      }
+    },
     "summary": {
       "type": "object",
+      "required": [
+        "totalClaims",
+        "totalSources",
+        "totalLocks",
+        "verifiedCount",
+        "partialCount",
+        "lockedCount",
+        "conflictCount"
+      ],
+      "additionalProperties": false,
       "properties": {
         "totalClaims": { "type": "integer", "minimum": 0 },
+        "totalSources": { "type": "integer", "minimum": 0 },
+        "totalLocks": { "type": "integer", "minimum": 0 },
         "verifiedCount": { "type": "integer", "minimum": 0 },
         "partialCount": { "type": "integer", "minimum": 0 },
         "lockedCount": { "type": "integer", "minimum": 0 },

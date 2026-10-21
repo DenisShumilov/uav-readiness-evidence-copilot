@@ -40,16 +40,21 @@ export function buildEvidenceGraphFromBundle(
 ): BuiltEvidenceGraph {
   const artifactIds = new Set(bundle.artifacts.map((artifact) => artifact.id));
   const rawSources = uniqueById(bundle.evidenceSources);
-  const evidenceSources =
-    artifactIds.size > 0
-      ? rawSources.filter((source) => artifactIds.has(source.artifactId))
-      : rawSources;
+  const evidenceSources = rawSources.filter(
+    (source) =>
+      artifactIds.has(source.artifactId) &&
+      Boolean(source.label && source.label.trim().length > 0) &&
+      Boolean(source.excerpt && source.excerpt.trim().length > 0)
+  );
   const evidenceClaims = deriveGraphClaims(
     uniqueById(bundle.evidenceClaims),
     evidenceSources,
     bundle.qaItems
   );
   const evidenceLocks = uniqueById(bundle.evidenceLocks);
+  const synthetic =
+    bundle.artifacts.length > 0 &&
+    bundle.artifacts.every((artifact) => artifact.synthetic);
 
   const evidenceGraph = EvidenceGraphSchema.parse({
     id: "graph.demo-bundle",
@@ -58,7 +63,7 @@ export function buildEvidenceGraphFromBundle(
     evidenceClaimIds: evidenceClaims.map((claim) => claim.id),
     links: buildLinks(evidenceClaims, evidenceSources),
     generatedAt,
-    synthetic: true
+    synthetic
   });
 
   return {
@@ -69,6 +74,8 @@ export function buildEvidenceGraphFromBundle(
     summary: summarizeClaims(evidenceClaims, evidenceSources, evidenceLocks)
   };
 }
+
+export const buildEvidenceGraph = buildEvidenceGraphFromBundle;
 
 function deriveGraphClaims(
   claims: EvidenceClaim[],
@@ -90,9 +97,47 @@ function deriveGraphClaims(
   }
 
   return claims.map((claim) => {
+    const asserted = claim.status;
     const referenced = claim.evidenceSourceIds;
     const resolvable = referenced.filter((id) => sourceIds.has(id));
     const missing = referenced.filter((id) => !sourceIds.has(id));
+    const missingSuffix =
+      missing.length > 0
+        ? ` (missing evidence source(s): ${missing.join(", ")})`
+        : "";
+
+    const linkedQa = qaByClaim.get(claim.id) ?? [];
+    let qaMatch: QAItem | undefined;
+    let fromTest: EvidenceStatus | undefined;
+    if (linkedQa.length > 0) {
+      for (const item of linkedQa) {
+        const next = statusFromQa(item.status);
+        if (!fromTest || OPTIMISM[next] < OPTIMISM[fromTest]) {
+          fromTest = next;
+          qaMatch = item;
+        }
+      }
+    }
+
+    if (asserted === "conflict") {
+      return {
+        ...claim,
+        status: "conflict",
+        lockReason:
+          claim.lockReason ??
+          `Asserted conflict preserved conservatively${missingSuffix}`
+      };
+    }
+
+    if (fromTest === "locked" && qaMatch) {
+      return {
+        ...claim,
+        status: "locked",
+        lockReason:
+          claim.lockReason ??
+          `Locked by ${qaMatch.status} test outcome (${qaMatch.id})${missingSuffix}`
+      };
+    }
 
     if (referenced.length === 0) {
       return {
@@ -112,28 +157,34 @@ function deriveGraphClaims(
       };
     }
 
-    if (claim.status === "conflict") {
-      return claim;
-    }
-
-    if (missing.length > 0) {
-      const status = moreConservative("partial", claim.status);
+    if (asserted === "locked") {
       return {
         ...claim,
-        status
+        status: "locked",
+        lockReason:
+          claim.lockReason ??
+          `Asserted locked status preserved${missingSuffix}`
       };
     }
 
-    const linkedQa = qaByClaim.get(claim.id) ?? [];
-    if (claim.claimType === "test_record" && linkedQa.length > 0) {
-      const fromTest = linkedQa.reduce<EvidenceStatus>(
-        (worst, item) => {
-          const next = statusFromQa(item.status);
-          return OPTIMISM[next] < OPTIMISM[worst] ? next : worst;
-        },
-        "verified"
+    if (missing.length > 0) {
+      const status = moreConservative(
+        "partial",
+        fromTest ? moreConservative(fromTest, asserted) : asserted
       );
-      const status = moreConservative(fromTest, claim.status);
+      return {
+        ...claim,
+        status,
+        lockReason:
+          status === "locked"
+            ? claim.lockReason ??
+              `Downgraded to partial because evidence source(s) are missing or lack valid artifact excerpts: ${missing.join(", ")}.`
+            : claim.lockReason
+      };
+    }
+
+    if (fromTest) {
+      const status = moreConservative(fromTest, asserted);
       return {
         ...claim,
         status,

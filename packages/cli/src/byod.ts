@@ -19,6 +19,7 @@ import {
   type ReadinessFinding
 } from "@uav-readiness/core";
 import {
+  mergeParsedParts,
   parseBOMCsv,
   parseManualMd,
   parseQaNotesMd,
@@ -82,9 +83,9 @@ const expectedCsvHeaders = {
 
 export const expectedInputContracts = [
   "BOM CSV headers: item_id,item_name,category,quantity,revision,record_status,evidence_id,notes",
-  "Manual Markdown: SYNTHETIC DEMO line and a | Claim | Status | Evidence | table",
+  "Manual Markdown: a | Claim | Status | Evidence | table",
   "Test-log CSV headers: check_id,check_name,check_type,result,evidence_status,evidence_id,notes",
-  "QA-notes Markdown: SYNTHETIC DEMO line, a | Evidence ID | Status | Meaning | table, and Finding ID/Status/Reason/Impact fields"
+  "QA-notes Markdown: a | Evidence ID | Status | Meaning | table, and Finding ID/Status/Reason/Impact fields"
 ] as const;
 
 const maxCandidateBytes = 1_000_000;
@@ -122,12 +123,24 @@ export function parseByodDirectory(inputDir: string): ByodParseResult {
     throw new Error(`Input directory does not exist: ${inputDir}`);
   }
 
+  const candidateFiles = listCandidateFiles(root);
+  const bundleHasSyntheticBanner = candidateFiles.some((filePath) => {
+    try {
+      if (statSync(filePath).size > maxCandidateBytes) {
+        return false;
+      }
+      return readFileSync(filePath, "utf8").includes("SYNTHETIC DEMO");
+    } catch {
+      return false;
+    }
+  });
+
   const summary: IngestSummaryItem[] = [];
   const parsedKinds = new Set<SupportedInputKind>();
   const parseFailures = new Set<SupportedInputKind>();
   const parsedParts: ParsedKind[] = [];
 
-  for (const filePath of listCandidateFiles(root)) {
+  for (const filePath of candidateFiles) {
     const rel = slash(relative(root, filePath));
     const size = statSync(filePath).size;
     if (size > maxCandidateBytes) {
@@ -161,7 +174,12 @@ export function parseByodDirectory(inputDir: string): ByodParseResult {
     }
 
     try {
-      parsedParts.push(parseOne(kind, content, rel));
+      parsedParts.push(
+        parseOne(kind, content, rel, {
+          requireSyntheticBanner: false,
+          synthetic: bundleHasSyntheticBanner
+        })
+      );
       parsedKinds.add(kind);
       summary.push({
         file: rel,
@@ -218,10 +236,11 @@ export function parseByodDirectory(inputDir: string): ByodParseResult {
 function parseOne(
   kind: SupportedInputKind,
   content: string,
-  filename: string
+  filename: string,
+  options: { requireSyntheticBanner: boolean; synthetic: boolean }
 ): ParsedKind {
   if (kind === "bom") {
-    const parsed = parseBOMCsv(content);
+    const parsed = parseBOMCsv(content, options);
     return {
       artifacts: [withFilename(parsed.artifact, filename)],
       bomItems: parsed.bomItems,
@@ -234,7 +253,7 @@ function parseOne(
   }
 
   if (kind === "manual") {
-    const parsed = parseManualMd(content);
+    const parsed = parseManualMd(content, options);
     return {
       artifacts: [withFilename(parsed.artifact, filename)],
       bomItems: [],
@@ -247,7 +266,7 @@ function parseOne(
   }
 
   if (kind === "test_log") {
-    const parsed = parseTestLogCsv(content);
+    const parsed = parseTestLogCsv(content, options);
     return {
       artifacts: [withFilename(parsed.artifact, filename)],
       bomItems: [],
@@ -259,7 +278,7 @@ function parseOne(
     };
   }
 
-  const parsed = parseQaNotesMd(content);
+  const parsed = parseQaNotesMd(content, options);
   return {
     artifacts: [withFilename(parsed.artifact, filename)],
     bomItems: [],
@@ -357,76 +376,6 @@ function hasHeaders(
 ): boolean {
   const headers = line.split(",").map((header) => header.trim().toLowerCase());
   return expected.every((header) => headers.includes(header));
-}
-
-function mergeParsedParts(parts: ParsedKind[]): {
-  bomItems: DemoBundle["bomItems"];
-  evidenceSources: EvidenceSource[];
-  evidenceClaims: EvidenceClaim[];
-} {
-  const byId = new Map<string, EvidenceSource>();
-  const allBomItems: DemoBundle["bomItems"] = [];
-  const allClaims: EvidenceClaim[] = [];
-
-  for (const part of parts) {
-    const renamedInPart = new Map<string, string>();
-
-    for (const source of part.evidenceSources) {
-      if (!byId.has(source.id)) {
-        byId.set(source.id, source);
-        continue;
-      }
-
-      const existing = byId.get(source.id)!;
-      if (
-        existing.artifactId === source.artifactId &&
-        existing.excerpt === source.excerpt &&
-        existing.label === source.label &&
-        existing.sourceType === source.sourceType
-      ) {
-        continue;
-      }
-
-      const suffix = source.artifactId.replace(/^artifact\./, "") || "dup";
-      let candidateId = `${source.id}.${suffix}`;
-      let counter = 2;
-      while (byId.has(candidateId)) {
-        candidateId = `${source.id}.${suffix}-${counter}`;
-        counter += 1;
-      }
-
-      const disambiguated: EvidenceSource = {
-        ...source,
-        id: candidateId
-      };
-      byId.set(candidateId, disambiguated);
-      renamedInPart.set(source.id, candidateId);
-    }
-
-    for (const item of part.bomItems) {
-      allBomItems.push({
-        ...item,
-        evidenceSourceIds: item.evidenceSourceIds.map(
-          (id) => renamedInPart.get(id) ?? id
-        )
-      });
-    }
-
-    for (const claim of part.evidenceClaims) {
-      allClaims.push({
-        ...claim,
-        evidenceSourceIds: claim.evidenceSourceIds.map(
-          (id) => renamedInPart.get(id) ?? id
-        )
-      });
-    }
-  }
-
-  return {
-    bomItems: allBomItems,
-    evidenceSources: [...byId.values()],
-    evidenceClaims: allClaims
-  };
 }
 
 export function labelForKind(kind: SupportedInputKind): string {

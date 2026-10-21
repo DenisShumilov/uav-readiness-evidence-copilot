@@ -7,9 +7,18 @@ import {
   type EvidenceClaim,
   type EvidenceSource
 } from "@uav-readiness/core";
+import {
+  allocateDisambiguatedEvidenceId,
+  type DisambiguationSourceFields
+} from "./disambiguate";
 import { extractMarkdownTable, toSafeIdPart } from "./text";
 
 const MANUAL_ARTIFACT_ID = "artifact.demo-manual";
+
+export type ManualParseOptions = {
+  requireSyntheticBanner?: boolean;
+  synthetic?: boolean;
+};
 
 export type ParsedManualMd = {
   artifact: Artifact;
@@ -17,10 +26,16 @@ export type ParsedManualMd = {
   evidenceClaims: EvidenceClaim[];
 };
 
-export function parseManualMd(markdown: string): ParsedManualMd {
-  if (!markdown.includes("SYNTHETIC DEMO")) {
+export function parseManualMd(
+  markdown: string,
+  options?: ManualParseOptions
+): ParsedManualMd {
+  const requireSyntheticBanner = options?.requireSyntheticBanner ?? true;
+  const hasBanner = markdown.includes("SYNTHETIC DEMO");
+  if (requireSyntheticBanner && !hasBanner) {
     throw new Error("Manual fixture must be marked synthetic");
   }
+  const synthetic = options?.synthetic ?? hasBanner;
 
   const rows = extractMarkdownTable(
     markdown,
@@ -46,25 +61,56 @@ export function parseManualMd(markdown: string): ParsedManualMd {
     kind: "manual",
     filename: "demo_manual.md",
     description: "Synthetic manual fixture for documentation QA review",
-    synthetic: true
+    synthetic
   });
 
-  return {
-    artifact,
-    evidenceSources: rows
-      .filter((row) => row.evidenceId)
-      .map((row) =>
-        EvidenceSourceSchema.parse({
-          id: row.evidenceId,
+  const reservedRawIds = new Set(
+    rows
+      .map((row) => row.evidenceId)
+      .filter((id): id is string => Boolean(id))
+  );
+  const usedSourcesById = new Map<string, DisambiguationSourceFields>();
+  const usedIds = new Set<string>();
+  const evidenceSources: EvidenceSource[] = [];
+  const evidenceClaims: EvidenceClaim[] = [];
+
+  rows.forEach((row, index) => {
+    let finalEvidenceId: string | undefined;
+    if (row.evidenceId) {
+      const label = `Manual evidence for ${row.claim}`;
+      const excerpt = row.claim;
+      const { finalId, deduplicated } = allocateDisambiguatedEvidenceId({
+        rawId: row.evidenceId,
+        rowNumber: index + 1,
+        suffixTag: "manual",
+        candidateSource: {
           artifactId: MANUAL_ARTIFACT_ID,
-          label: `Manual evidence for ${row.claim}`,
+          label,
           sourceType: "document",
-          excerpt: row.claim,
-          confidence: row.status === "verified" ? "high" : "medium",
-          synthetic: true
-        })
-      ),
-    evidenceClaims: rows.map((row) =>
+          excerpt
+        },
+        usedSourcesById,
+        usedIds,
+        reservedRawIds
+      });
+      finalEvidenceId = finalId;
+
+      if (!deduplicated) {
+        evidenceSources.push(
+          EvidenceSourceSchema.parse({
+            id: finalId,
+            artifactId: MANUAL_ARTIFACT_ID,
+            label,
+            sourceType: "document",
+            excerpt,
+            confidence: row.status === "verified" ? "high" : "medium",
+            synthetic
+          })
+        );
+      }
+    }
+
+    evidenceClaims.push(
       EvidenceClaimSchema.parse({
         id: `claim.manual.${toSafeIdPart(row.claim)}`,
         statement:
@@ -73,13 +119,19 @@ export function parseManualMd(markdown: string): ParsedManualMd {
             : row.claim,
         claimType: getManualClaimType(row.claim),
         status: row.status,
-        evidenceSourceIds: row.evidenceId ? [row.evidenceId] : [],
+        evidenceSourceIds: finalEvidenceId ? [finalEvidenceId] : [],
         lockReason:
           row.status === "locked"
             ? "Manual evidence row has no supporting evidence id"
             : undefined
       })
-    )
+    );
+  });
+
+  return {
+    artifact,
+    evidenceSources,
+    evidenceClaims
   };
 }
 

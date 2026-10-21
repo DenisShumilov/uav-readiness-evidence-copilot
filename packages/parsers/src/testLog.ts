@@ -15,9 +15,18 @@ import {
   type ReadinessFinding
 } from "@uav-readiness/core";
 import { parseCsvRows } from "./csv";
+import {
+  allocateDisambiguatedEvidenceId,
+  type DisambiguationSourceFields
+} from "./disambiguate";
 import { toSafeIdPart } from "./text";
 
 const TEST_LOG_ARTIFACT_ID = "artifact.test-log";
+
+export type TestLogParseOptions = {
+  requireSyntheticBanner?: boolean;
+  synthetic?: boolean;
+};
 
 const TestLogRowSchema = z
   .object({
@@ -56,7 +65,11 @@ export type ParsedTestLogCsv = {
   readinessFindings: ReadinessFinding[];
 };
 
-export function parseTestLogCsv(csvText: string): ParsedTestLogCsv {
+export function parseTestLogCsv(
+  csvText: string,
+  options?: TestLogParseOptions
+): ParsedTestLogCsv {
+  const synthetic = options?.synthetic ?? true;
   const rows = parseCsvRows(csvText, expectedHeaders, "Test log").map(
     (row, index) => {
       const parsed = TestLogRowSchema.safeParse(row);
@@ -73,34 +86,70 @@ export function parseTestLogCsv(csvText: string): ParsedTestLogCsv {
     kind: "test_log",
     filename: "test_log.csv",
     description: "Synthetic QA test log fixture",
-    synthetic: true
+    synthetic
+  });
+
+  const reservedRawIds = new Set(
+    rows.map((row) => row.evidence_id).filter((id) => id !== "")
+  );
+  const usedSourcesById = new Map<string, DisambiguationSourceFields>();
+  const usedIds = new Set<string>();
+  const evidenceSources: EvidenceSource[] = [];
+  const evidenceClaims: EvidenceClaim[] = [];
+
+  rows.forEach((row, index) => {
+    let finalEvidenceId = "";
+    if (row.evidence_id !== "") {
+      const label = `Test log evidence for ${row.check_name}`;
+      const excerpt = row.notes;
+      const { finalId, deduplicated } = allocateDisambiguatedEvidenceId({
+        rawId: row.evidence_id,
+        rowNumber: index + 1,
+        suffixTag: "test-log",
+        candidateSource: {
+          artifactId: TEST_LOG_ARTIFACT_ID,
+          label,
+          sourceType: "log",
+          excerpt
+        },
+        usedSourcesById,
+        usedIds,
+        reservedRawIds
+      });
+      finalEvidenceId = finalId;
+
+      if (!deduplicated) {
+        evidenceSources.push(
+          EvidenceSourceSchema.parse({
+            id: finalId,
+            artifactId: TEST_LOG_ARTIFACT_ID,
+            label,
+            sourceType: "log",
+            excerpt,
+            confidence: row.evidence_status === "verified" ? "high" : "medium",
+            synthetic
+          })
+        );
+      }
+    }
+
+    evidenceClaims.push(buildEvidenceClaim(row, finalEvidenceId));
   });
 
   return {
     artifact,
-    evidenceSources: rows
-      .filter((row) => row.evidence_id !== "")
-      .map(buildEvidenceSource),
-    evidenceClaims: rows.map(buildEvidenceClaim),
+    evidenceSources,
+    evidenceClaims,
     qaItems: rows.map(buildQAItem),
     readinessFindings: rows.map(buildReadinessFinding)
   };
 }
 
-function buildEvidenceSource(row: TestLogRow): EvidenceSource {
-  return EvidenceSourceSchema.parse({
-    id: row.evidence_id,
-    artifactId: TEST_LOG_ARTIFACT_ID,
-    label: `Test log evidence for ${row.check_name}`,
-    sourceType: "log",
-    excerpt: row.notes,
-    confidence: row.evidence_status === "verified" ? "high" : "medium",
-    synthetic: true
-  });
-}
-
-function buildEvidenceClaim(row: TestLogRow): EvidenceClaim {
-  const evidenceSourceIds = row.evidence_id ? [row.evidence_id] : [];
+function buildEvidenceClaim(
+  row: TestLogRow,
+  finalEvidenceId: string
+): EvidenceClaim {
+  const evidenceSourceIds = finalEvidenceId ? [finalEvidenceId] : [];
   const status = evidenceSourceIds.length === 0 ? "locked" : row.evidence_status;
 
   return EvidenceClaimSchema.parse({

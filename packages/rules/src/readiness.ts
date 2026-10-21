@@ -121,17 +121,20 @@ export type ReadinessScoreResult = {
   deductions: ReadinessDeduction[];
 };
 
+const NO_EVIDENCE_WARNING =
+  "No verifiable evidence claims or valid artifact-backed sources found in bundle; readiness cannot be established (score forced to 0).";
+
 export function evaluateReadiness(bundle: DemoBundle): ReadinessAssessment {
   const claimsById = new Map(
     bundle.evidenceClaims.map((claim) => [claim.id, claim])
   );
-  const artifactIds = new Set(bundle.artifacts.map((artifact) => artifact.id));
-  const validSources =
-    bundle.artifacts.length > 0
-      ? bundle.evidenceSources.filter((source) =>
-          artifactIds.has(source.artifactId)
-        )
-      : bundle.evidenceSources;
+  const artifactIds = new Set(bundle.artifacts.map((a) => a.id));
+  const validSources = bundle.evidenceSources.filter(
+    (s) =>
+      artifactIds.has(s.artifactId) &&
+      Boolean(s.label && s.label.trim().length > 0) &&
+      Boolean(s.excerpt && s.excerpt.trim().length > 0)
+  );
 
   // The engine independently re-derives every status from the evidence rather
   // than trusting the reviewer's status column (see deriveStatus.ts).
@@ -142,11 +145,20 @@ export function evaluateReadiness(bundle: DemoBundle): ReadinessAssessment {
   );
 
   const counts = countStatuses(derived);
+  const verifiedCount = counts.verifiedCount;
+  const partialCount = counts.partialCount;
+  const hasNoEvidence =
+    bundle.evidenceClaims.length === 0 ||
+    bundle.evidenceSources.length === 0 ||
+    validSources.length === 0 ||
+    (verifiedCount === 0 && partialCount === 0);
+
   const missingArtifacts = findMissingArtifacts(bundle);
   const lockedCriticalItems = buildLockedCriticalItems(
     derived,
     claimsById,
-    bundle
+    bundle,
+    hasNoEvidence
   );
   const engineAdjustments = derived
     .filter((entry) => entry.changed)
@@ -161,10 +173,11 @@ export function evaluateReadiness(bundle: DemoBundle): ReadinessAssessment {
     engineAdjustments,
     bundle.readinessFindings,
     bundle.evidenceSources,
-    bundle.evidenceClaims
+    bundle.evidenceClaims,
+    hasNoEvidence
   );
 
-  const { deductions, score: rawComputedScore } = scoreFromCounts({
+  const { deductions, score: rawScore } = scoreFromCounts({
     partialCount: counts.partialCount,
     lockedCriticalCount: lockedCriticalItems.length,
     warningCount: warnings.length,
@@ -172,18 +185,11 @@ export function evaluateReadiness(bundle: DemoBundle): ReadinessAssessment {
     conflictCount: counts.conflictCount
   });
 
-  const hasNoSupportedEvidence =
-    bundle.evidenceClaims.length === 0 ||
-    (counts.verifiedCount === 0 && counts.partialCount === 0);
-  const score =
-    bundle.evidenceClaims.length === 0
-      ? 0
-      : hasNoSupportedEvidence
-        ? Math.min(rawComputedScore, CONFLICT_CEILING)
-        : rawComputedScore;
+  const ceiling = counts.conflictCount > 0 ? CONFLICT_CEILING : 100;
+  const readinessScore = hasNoEvidence ? 0 : Math.min(rawScore, ceiling);
 
   const assessment: ReadinessAssessment = {
-    readinessScore: score,
+    readinessScore,
     formula: {
       base: 100,
       deductions
@@ -199,8 +205,7 @@ export function evaluateReadiness(bundle: DemoBundle): ReadinessAssessment {
       conflictCount: counts.conflictCount,
       engineAdjustedCount: engineAdjustments.length,
       missingArtifacts,
-      explanation:
-        "Score is documentation readiness only: 100 minus capped deductions for locked, conflicting, partial, warning, and missing-artifact evidence. Statuses are derived by the engine from the evidence (locked when a source is missing, graded from test outcomes, conflict from cross-document disagreement), not read from the reviewer's status column. Derived partial claims intentionally count in the partial bucket and also create a warning, so weak evidence compounds without changing the formula weights. A conflict on a critical claim caps the verdict in the Blocked band."
+      explanation: buildExplanation(hasNoEvidence)
     }
   };
 
@@ -254,7 +259,8 @@ function buildWarnings(
   engineAdjustments: EngineAdjustment[],
   findings: ReadinessFinding[],
   sources: EvidenceSource[],
-  claims: EvidenceClaim[]
+  claims: EvidenceClaim[],
+  hasNoEvidence: boolean
 ): string[] {
   const warningFindings = findings
     .filter(
@@ -277,26 +283,29 @@ function buildWarnings(
     (mention) =>
       `${mention.sourceId}: malformed revision declaration in ${mention.label}`
   );
-  const emptyWarnings =
-    claims.length === 0
-      ? [
-          "bundle.no-evidence: bundle contains no evidence claims or sources; readiness is locked"
-        ]
-      : [];
 
-  return [
+  const combined = [
     ...warningFindings,
     ...partialWarnings,
     ...adjustmentWarnings,
-    ...malformedWarnings,
-    ...emptyWarnings
+    ...malformedWarnings
   ];
+
+  if (
+    (hasNoEvidence || claims.length === 0) &&
+    !combined.includes(NO_EVIDENCE_WARNING)
+  ) {
+    combined.push(NO_EVIDENCE_WARNING);
+  }
+
+  return combined;
 }
 
 function buildLockedCriticalItems(
   derived: DerivedStatus[],
   claimsById: Map<string, EvidenceClaim>,
-  bundle: DemoBundle
+  bundle: DemoBundle,
+  hasNoEvidence: boolean
 ): LockedCriticalItem[] {
   const items: LockedCriticalItem[] = derived
     .filter((entry) => entry.derivedStatus === "locked")
@@ -323,14 +332,28 @@ function buildLockedCriticalItems(
     }
   }
 
-  if (bundle.evidenceClaims.length === 0) {
+  if (
+    hasNoEvidence &&
+    (items.length === 0 || bundle.evidenceClaims.length === 0) &&
+    !seenIds.has("bundle.no-evidence")
+  ) {
     items.push({
       id: "bundle.no-evidence",
-      reason: "No evidence claims or sources in bundle; no evidence -> locked"
+      reason:
+        "Bundle contains zero verifiable claims or artifact-backed sources; readiness score is 0 (UNVERIFIED / NOT EVALUATED)."
     });
   }
 
   return items;
+}
+
+function buildExplanation(hasNoEvidence: boolean): string {
+  const base =
+    "Score is documentation readiness only: 100 minus capped deductions for locked, conflicting, partial, warning, and missing-artifact evidence. Statuses are derived by the engine from the evidence (locked when a source is missing, graded from test outcomes, conflict from cross-document disagreement), not read from the reviewer's status column. Derived partial claims intentionally count in the partial bucket and also create a warning, so weak evidence compounds without changing the formula weights. A conflict on a critical claim caps the verdict in the Blocked band.";
+  if (!hasNoEvidence) {
+    return base;
+  }
+  return `${base} Readiness score is 0 because the bundle contains no verified or partially verified artifact-backed evidence claims (UNVERIFIED / insufficient data, not a proven physical failure of the vehicle).`;
 }
 
 function buildDeductions(

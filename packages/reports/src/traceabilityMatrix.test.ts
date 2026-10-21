@@ -4,6 +4,7 @@ import { parseDemoBundle } from "@uav-readiness/parsers";
 import { evaluateReadiness } from "@uav-readiness/rules";
 import {
   buildTraceabilityRows,
+  csvCell,
   generateTraceabilityMatrix
 } from "./traceabilityMatrix";
 
@@ -40,5 +41,16 @@ describe("generateTraceabilityMatrix", () => {
     expect(conflictRows[0].risk).toContain("Conflicting training manual revision");
     expect(conflictRows[0].risk).toContain("TM-3");
     expect(conflictRows[0].risk).toContain("TM-2");
+  });
+
+  it("guards CSV formula prefixes with an apostrophe while leaving negative numbers intact", () => {
+    expect(csvCell("=SUM(A1:A2)")).toBe("\"'=SUM(A1:A2)\"");
+    expect(csvCell("+cmd")).toBe("\"'+cmd\"");
+    expect(csvCell("-cmd")).toBe("\"'-cmd\"");
+    expect(csvCell("@evil")).toBe("\"'@evil\"");
+    expect(csvCell("-42")).toBe("-42");
+    expect(csvCell("-3.14")).toBe("-3.14");
+    expect(csvCell("-.5")).toBe("-.5");
+    expect(csvCell(" -10")).toBe(" -10");
   });
 });

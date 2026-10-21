@@ -1,6 +1,6 @@
 {
   "name": "uav-readiness",
-  "version": "0.8.1",
+  "version": "2.5.0",
   "private": false,
   "description": "Локальна перевірка інженерної документації, простежуваності доказів та повноти пакету документів.",
   "license": "MIT",
@@ -54,11 +54,15 @@
     "packages/*"
   ],
   "scripts": {
+    "build": "tsc --noEmit",
     "demo:readiness": "tsx scripts/demoReadiness.ts",
     "demo:maintenance": "tsx scripts/demoMaintenance.ts",
+    "demo:lock": "tsx scripts/demoMaintenance.ts",
     "demo:conflict": "tsx scripts/demoConflict.ts",
     "demo:tdp": "tsx scripts/demoTdp.ts",
+    "demo:pack": "tsx scripts/demoTdp.ts",
     "demo:selfaudit": "tsx scripts/demoSelfAudit.ts",
+    "qa:self-audit": "tsx scripts/demoSelfAudit.ts",
     "lint": "eslint .",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"

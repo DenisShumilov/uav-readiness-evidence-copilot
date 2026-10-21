@@ -4,53 +4,154 @@
   "title": "Readiness assessment",
   "description": "Output of evaluateReadiness(). Documentation readiness only — never operational or flight readiness.",
   "type": "object",
-  "required": ["readinessScore", "formula", "warnings", "lockedCriticalItems", "summary"],
-  "additionalProperties": true,
+  "required": [
+    "readinessScore",
+    "formula",
+    "findings",
+    "warnings",
+    "lockedCriticalItems",
+    "engineAdjustments",
+    "summary"
+  ],
+  "additionalProperties": false,
   "properties": {
-    "readinessScore": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "readinessScore": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
     "formula": {
       "type": "object",
       "required": ["base", "deductions"],
+      "additionalProperties": false,
       "properties": {
-        "base": { "type": "integer" },
+        "base": {
+          "type": "integer",
+          "const": 100
+        },
         "deductions": {
           "type": "array",
           "items": {
             "type": "object",
             "required": ["reason", "count", "pointsEach", "total"],
+            "additionalProperties": false,
             "properties": {
               "reason": { "type": "string" },
               "count": { "type": "integer", "minimum": 0 },
-              "pointsEach": { "type": "integer" },
-              "total": { "type": "integer" }
+              "pointsEach": { "type": "integer", "minimum": 0 },
+              "total": { "type": "integer", "minimum": 0 }
             }
           }
         }
       }
     },
-    "findings": { "type": "array" },
-    "warnings": { "type": "array", "items": { "type": "string" } },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "category",
+          "severity",
+          "status",
+          "evidenceClaimIds",
+          "lockIds",
+          "explanation"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "category": {
+            "type": "string",
+            "enum": [
+              "artifact_completeness",
+              "evidence_quality",
+              "traceability",
+              "safety_boundary",
+              "qa_process"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["info", "warning", "critical"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "fail", "blocked", "not_tested"]
+          },
+          "evidenceClaimIds": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+          },
+          "lockIds": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+          },
+          "explanation": { "type": "string", "minLength": 1, "maxLength": 2000 }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
     "lockedCriticalItems": {
       "type": "array",
       "items": {
         "type": "object",
         "required": ["id", "reason"],
+        "additionalProperties": false,
         "properties": {
-          "id": { "type": "string" },
-          "reason": { "type": "string" }
+          "id": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "engineAdjustments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["claimId", "assertedStatus", "derivedStatus", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "claimId": { "type": "string", "minLength": 1 },
+          "assertedStatus": {
+            "type": "string",
+            "enum": ["verified", "partial", "locked", "conflict"]
+          },
+          "derivedStatus": {
+            "type": "string",
+            "enum": ["verified", "partial", "locked", "conflict"]
+          },
+          "reason": { "type": "string", "minLength": 1 }
         }
       }
     },
     "summary": {
       "type": "object",
-      "required": ["verifiedCount", "partialCount", "lockedCount", "conflictCount"],
+      "required": [
+        "verifiedCount",
+        "partialCount",
+        "lockedCount",
+        "conflictCount",
+        "engineAdjustedCount",
+        "missingArtifacts",
+        "explanation"
+      ],
+      "additionalProperties": false,
       "properties": {
         "verifiedCount": { "type": "integer", "minimum": 0 },
         "partialCount": { "type": "integer", "minimum": 0 },
         "lockedCount": { "type": "integer", "minimum": 0 },
         "conflictCount": { "type": "integer", "minimum": 0 },
-        "missingArtifacts": { "type": "array", "items": { "type": "string" } },
-        "explanation": { "type": "string" }
+        "engineAdjustedCount": { "type": "integer", "minimum": 0 },
+        "missingArtifacts": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "explanation": { "type": "string", "minLength": 1 }
       }
     }
   }

@@ -112,7 +112,9 @@
     if (typeof TextDecoder !== "undefined") {
       try {
         return new TextDecoder("windows-1251", { fatal: false }).decode(bytes);
-      } catch (_e) {}
+      } catch (_e) {
+        // Fallback to pure-JS CP1251 table when windows-1251 label is unsupported
+      }
     }
     var out = "";
     for (var i = 0; i < bytes.length; i++) {
@@ -252,17 +254,61 @@
     FIXED_DIST_TABLE = buildHuffmanTable(distLens);
   }
 
-  function inflateRawSync(compBytes) {
+  var DEFAULT_MAX_INFLATE_BYTES = 16 * 1024 * 1024;
+  var DEFAULT_MAX_ZIP_TOTAL_BYTES = 32 * 1024 * 1024;
+  var DEFAULT_MAX_ZIP_ENTRIES = 512;
+  var DEFAULT_MAX_ZIP_DEPTH = 2;
+
+  async function readStreamWithLimit(readable, maxBytes) {
+    var limit = (typeof maxBytes === "number" && maxBytes > 0) ? maxBytes : DEFAULT_MAX_INFLATE_BYTES;
+    var reader = readable.getReader();
+    var chunks = [];
+    var total = 0;
+    while (true) {
+      var step = await reader.read();
+      if (step.done) break;
+      var chunk = step.value instanceof Uint8Array ? step.value : new Uint8Array(step.value || 0);
+      total += chunk.byteLength;
+      if (total > limit) {
+        try {
+          await reader.cancel("DECOMPRESSION_LIMIT_EXCEEDED");
+        } catch (_cancelErr) {
+          // Reader cancellation best-effort on size limit breach
+        }
+        var limitErr = new Error("Перевищено ліміт декомпресії потоку (" + total + " > " + limit + " байтів) — захист від Decompression Bomb.");
+        limitErr.code = "DECOMPRESSION_LIMIT_EXCEEDED";
+        throw limitErr;
+      }
+      chunks.push(chunk);
+    }
+    var out = new Uint8Array(total);
+    var offset = 0;
+    for (var i = 0; i < chunks.length; i++) {
+      out.set(chunks[i], offset);
+      offset += chunks[i].byteLength;
+    }
+    return out;
+  }
+
+  function inflateRawSync(compBytes, maxOutBytes) {
     ensureFixedTables();
+    var limit = (typeof maxOutBytes === "number" && maxOutBytes > 0) ? maxOutBytes : DEFAULT_MAX_INFLATE_BYTES;
     var pos = 0;
     var bitBuf = 0;
     var bitCnt = 0;
-    var out = new Uint8Array(Math.max(compBytes.length * 4, 4096));
+    var initCap = Math.min(limit, Math.max(compBytes.length * 4, 4096));
+    var out = new Uint8Array(initCap);
     var outPos = 0;
 
     function ensureCap(extra) {
+      if (outPos + extra > limit) {
+        var bombErr = new Error("Перевищено ліміт розміру розпакованого блоку (" + (outPos + extra) + " > " + limit + " байтів) — заблоковано потенційну ZIP/Deflate-бомбу.");
+        bombErr.code = "DECOMPRESSION_LIMIT_EXCEEDED";
+        throw bombErr;
+      }
       if (outPos + extra <= out.length) return;
-      var next = new Uint8Array(Math.max(out.length * 2, outPos + extra + 4096));
+      var nextCap = Math.min(limit, Math.max(out.length * 2, outPos + extra + 4096));
+      var next = new Uint8Array(nextCap);
       next.set(out.subarray(0, outPos));
       out = next;
     }
@@ -375,21 +421,36 @@
     return out.subarray(0, outPos);
   }
 
-  async function decompressDeflateRawAsync(compBytes) {
+  async function decompressDeflateRawAsync(compBytes, maxOutBytes) {
+    var limit = (typeof maxOutBytes === "number" && maxOutBytes > 0) ? maxOutBytes : DEFAULT_MAX_INFLATE_BYTES;
     if (typeof DecompressionStream !== "undefined") {
       try {
         var ds = new DecompressionStream("deflate-raw");
         var writer = ds.writable.getWriter();
         writer.write(compBytes);
         writer.close();
-        var resp = new Response(ds.readable);
-        var ab = await resp.arrayBuffer();
-        return new Uint8Array(ab);
-      } catch (_err) {
-        return inflateRawSync(compBytes);
+        return await readStreamWithLimit(ds.readable, limit);
+      } catch (err) {
+        if (err && (err.code === "DECOMPRESSION_LIMIT_EXCEEDED" || String(err.message || "").indexOf("ліміт") >= 0)) {
+          throw err;
+        }
+        return inflateRawSync(compBytes, limit);
       }
     }
-    return inflateRawSync(compBytes);
+    return inflateRawSync(compBytes, limit);
+  }
+
+  function isUnsafeZipEntryPath(entryName) {
+    var s = String(entryName || "");
+    if (!s) return true;
+    if (s.charAt(0) === "/" || s.charAt(0) === "\\") return true;
+    if (s.indexOf("\\") >= 0) return true;
+    if (/^[A-Za-z]:/.test(s)) return true;
+    var parts = s.split("/");
+    for (var i = 0; i < parts.length; i++) {
+      if (parts[i] === "..") return true;
+    }
+    return false;
   }
 
   // --- Magic-Byte Signature Detector ---
@@ -481,7 +542,11 @@
   }
 
   // --- Unpack ZIP / OOXML Container (.zip, .docx, .xlsx) ---
-  function unpackZipEntriesSync(bytes) {
+  function unpackZipEntriesSync(bytes, opts) {
+    var maxEntries = (opts && opts.maxEntries) || DEFAULT_MAX_ZIP_ENTRIES;
+    var maxEntryBytes = (opts && opts.maxEntryBytes) || DEFAULT_MAX_INFLATE_BYTES;
+    var maxTotalBytes = (opts && opts.maxTotalBytes) || DEFAULT_MAX_ZIP_TOTAL_BYTES;
+    var totalUncompressed = 0;
     var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     var entries = [];
     // Locate End of Central Directory (EOCD 0x06054b50) for reliable sizes even when data descriptor bit 3 is set
@@ -494,6 +559,11 @@
     }
     if (eocdPos >= 0) {
       var totalEntries = dv.getUint16(eocdPos + 10, true);
+      if (totalEntries > maxEntries) {
+        var entriesErr = new Error("Перевищено ліміт кількості записів у ZIP-архіві (" + totalEntries + " > " + maxEntries + ") — захист від ZIP-бомби.");
+        entriesErr.code = "ZIP_ENTRIES_LIMIT_EXCEEDED";
+        throw entriesErr;
+      }
       var cdOffset = dv.getUint32(eocdPos + 16, true);
       var ptr = cdOffset;
       for (var idx = 0; idx < totalEntries && ptr + 46 <= bytes.length; idx++) {
@@ -508,12 +578,35 @@
         var entryName = decodeUtf8(bytes.subarray(ptr + 46, ptr + 46 + nameLen));
         ptr += 46 + nameLen + extraLen + commentLen;
 
+        if (isUnsafeZipEntryPath(entryName)) {
+          var slipErr = new Error("Заблоковано небезпечний шлях у ZIP-архіві (Zip-Slip): " + entryName);
+          slipErr.code = "ZIP_SLIP_DETECTED";
+          throw slipErr;
+        }
+        if (uncompSize !== 0xffffffff && uncompSize > maxEntryBytes) {
+          var entryBombErr = new Error("Заявлений розмір файлу в ZIP перевищує безпечний ліміт (" + uncompSize + " > " + maxEntryBytes + " Б): " + entryName);
+          entryBombErr.code = "DECOMPRESSION_LIMIT_EXCEEDED";
+          throw entryBombErr;
+        }
+
         if (localHdrOff + 30 <= bytes.length && dv.getUint32(localHdrOff, true) === 0x04034b50) {
           var lNameLen = dv.getUint16(localHdrOff + 26, true);
           var lExtraLen = dv.getUint16(localHdrOff + 28, true);
           var dataStart = localHdrOff + 30 + lNameLen + lExtraLen;
           var compSlice = bytes.subarray(dataStart, dataStart + compSize);
-          var rawData = method === 0 ? compSlice : (method === 8 ? inflateRawSync(compSlice) : new Uint8Array(0));
+          var remainingBudget = Math.min(maxEntryBytes, maxTotalBytes - totalUncompressed);
+          if (remainingBudget <= 0 && compSize > 0) {
+            var budgetErr = new Error("Перевищено сумарний ліміт розпакування ZIP-архіву (> " + maxTotalBytes + " Б) — захист від ZIP-бомби.");
+            budgetErr.code = "DECOMPRESSION_LIMIT_EXCEEDED";
+            throw budgetErr;
+          }
+          var rawData = method === 0 ? compSlice : (method === 8 ? inflateRawSync(compSlice, remainingBudget) : new Uint8Array(0));
+          if (method === 0 && rawData.length > remainingBudget) {
+            var storedBombErr = new Error("Перевищено сумарний ліміт розпакування ZIP-архіву (> " + maxTotalBytes + " Б).");
+            storedBombErr.code = "DECOMPRESSION_LIMIT_EXCEEDED";
+            throw storedBombErr;
+          }
+          totalUncompressed += rawData.length;
           entries.push({
             name: entryName,
             method: method,
@@ -530,16 +623,43 @@
     var lpos = 0;
     while (lpos + 30 <= bytes.length) {
       if (dv.getUint32(lpos, true) !== 0x04034b50) break;
+      if (entries.length >= maxEntries) {
+        var seqEntriesErr = new Error("Перевищено ліміт кількості записів у ZIP-архіві (> " + maxEntries + ") — захист від ZIP-бомби.");
+        seqEntriesErr.code = "ZIP_ENTRIES_LIMIT_EXCEEDED";
+        throw seqEntriesErr;
+      }
       var m = dv.getUint16(lpos + 8, true);
       var cSize = dv.getUint32(lpos + 18, true);
       var uSize = dv.getUint32(lpos + 22, true);
       var nLen = dv.getUint16(lpos + 26, true);
       var xLen = dv.getUint16(lpos + 28, true);
       var fn = decodeUtf8(bytes.subarray(lpos + 30, lpos + 30 + nLen));
+      if (isUnsafeZipEntryPath(fn)) {
+        var seqSlipErr = new Error("Заблоковано небезпечний шлях у ZIP-архіві (Zip-Slip): " + fn);
+        seqSlipErr.code = "ZIP_SLIP_DETECTED";
+        throw seqSlipErr;
+      }
+      if (uSize !== 0xffffffff && uSize > maxEntryBytes) {
+        var seqSizeErr = new Error("Заявлений розмір файлу в ZIP перевищує безпечний ліміт (" + uSize + " > " + maxEntryBytes + " Б): " + fn);
+        seqSizeErr.code = "DECOMPRESSION_LIMIT_EXCEEDED";
+        throw seqSizeErr;
+      }
       var dOff = lpos + 30 + nLen + xLen;
       if (cSize === 0 && m === 8) break;
       var cBytes = bytes.subarray(dOff, dOff + cSize);
-      var outBytes = m === 0 ? cBytes : (m === 8 ? inflateRawSync(cBytes) : new Uint8Array(0));
+      var remBudget = Math.min(maxEntryBytes, maxTotalBytes - totalUncompressed);
+      if (remBudget <= 0 && cSize > 0) {
+        var seqBudgetErr = new Error("Перевищено сумарний ліміт розпакування ZIP-архіву (> " + maxTotalBytes + " Б) — захист від ZIP-бомби.");
+        seqBudgetErr.code = "DECOMPRESSION_LIMIT_EXCEEDED";
+        throw seqBudgetErr;
+      }
+      var outBytes = m === 0 ? cBytes : (m === 8 ? inflateRawSync(cBytes, remBudget) : new Uint8Array(0));
+      if (m === 0 && outBytes.length > remBudget) {
+        var seqStoredErr = new Error("Перевищено сумарний ліміт розпакування ZIP-архіву (> " + maxTotalBytes + " Б).");
+        seqStoredErr.code = "DECOMPRESSION_LIMIT_EXCEEDED";
+        throw seqStoredErr;
+      }
+      totalUncompressed += outBytes.length;
       entries.push({ name: fn, method: m, compSize: cSize, uncompSize: outBytes.length || uSize, data: outBytes });
       lpos = dOff + cSize;
     }
@@ -714,17 +834,23 @@
     }
 
     var rows = [];
-    var rowRe = /<row[\s>][\s\S]*?<\/row>/g;
+    var structuredRows = [];
+    var rowRe = /<row\b([^>]*)>([\s\S]*?)<\/row>/g;
     var rm;
     while ((rm = rowRe.exec(sheetXml)) !== null) {
+      var rowAttrs = rm[1] || "";
+      var rowBody = rm[2] || "";
+      var rowNumMatch = rowAttrs.match(/\br="(\d+)"/i);
+      var xmlRowNum = rowNumMatch ? parseInt(rowNumMatch[1], 10) : (rows.length + 1);
       var cRe = /<c\b([^>]*)>([\s\S]*?)<\/c>/g;
       var cm;
-      var rowVals = [];
-      while ((cm = cRe.exec(rm[0])) !== null) {
+      var rowCells = [];
+      while ((cm = cRe.exec(rowBody)) !== null) {
         var attrs = cm[1];
         var inner = cm[2];
+        var fullRefMatch = attrs.match(/\br="([A-Z]+\d+)"/i);
         var refMatch = attrs.match(/\br="([A-Z]+)\d+"/i);
-        var colIdx = rowVals.length;
+        var colIdx = rowCells.length;
         if (refMatch) {
           var colLetters = refMatch[1].toUpperCase();
           var parsedCol = 0;
@@ -733,8 +859,8 @@
           }
           colIdx = Math.max(0, parsedCol - 1);
         }
-        while (rowVals.length < colIdx) {
-          rowVals.push("");
+        while (rowCells.length < colIdx) {
+          rowCells.push({ val: "", ref: "" });
         }
         var tAttr = (attrs.match(/\bt="([^"]+)"/) || ["", ""])[1];
         var vMatch = inner.match(/<v[^>]*>([\s\S]*?)<\/v>/);
@@ -744,22 +870,26 @@
           var sIdx = parseInt(val, 10);
           val = sharedStrings[sIdx] !== undefined ? sharedStrings[sIdx] : val;
         }
-        rowVals[colIdx] = val;
+        var cellRef = fullRefMatch ? fullRefMatch[1].toUpperCase() : (String.fromCharCode(65 + Math.min(25, colIdx)) + xmlRowNum);
+        rowCells[colIdx] = { val: val, ref: cellRef };
       }
       // Strip leading empty columns if sheet starts at Column B (like 07_Prozorro...xlsx B3:D34)
-      while (rowVals.length > 0 && rowVals[0] === "") {
-        rowVals.shift();
+      while (rowCells.length > 0 && (!rowCells[0] || rowCells[0].val === "")) {
+        rowCells.shift();
       }
-      if (rowVals.some(function (x) { return x !== "" && x !== undefined; })) {
-        rows.push(rowVals);
+      if (rowCells.some(function (x) { return x && x.val !== "" && x.val !== undefined; })) {
+        rows.push(rowCells.map(function (x) { return x ? x.val : ""; }));
+        structuredRows.push({ xmlRowNum: xmlRowNum, cells: rowCells });
       }
     }
 
     var protocolItems = [];
     var sectionGuess = "Загальні ТТХ";
-    for (var r = 0; r < rows.length; r++) {
-      var row = rows[r];
-      if (row[0] === "Параметр" || row[0] === "Рахунок") continue;
+    for (var r = 0; r < structuredRows.length; r++) {
+      var sRow = structuredRows[r];
+      var cells = sRow.cells;
+      var row = cells.map(function (x) { return x ? x.val : ""; });
+      if (row[0] === "Параметр" || row[0] === "Рахунок" || row[0] === "Найменування" || row[0] === "№") continue;
       if (row.length >= 3 && row[0] && row[2]) {
         if (row[0] === "Ємність") sectionGuess = "АКБ";
         if (row[0] === "Сумісність") sectionGuess = "Пульт керування";
@@ -768,21 +898,31 @@
           pName = "Робоча температура (Пульт керування)";
         }
         protocolItems.push({
-          rowIndex: r + 1,
+          rowIndex: sRow.xmlRowNum || (r + 1),
           paramName: pName,
           normValue: row[1],
           factValue: row[2],
           rawValue: row[2],
+          paramRef: (cells[0] && cells[0].ref) || ("A" + (sRow.xmlRowNum || (r + 1))),
+          normRef: (cells[1] && cells[1].ref) || ("B" + (sRow.xmlRowNum || (r + 1))),
+          factRef: (cells[2] && cells[2].ref) || ("C" + (sRow.xmlRowNum || (r + 1))),
+          cellRef: (cells[2] && cells[2].ref) || ("C" + (sRow.xmlRowNum || (r + 1))),
+          hasExplicitNorm: Boolean(row[1] !== "" && row[1] !== undefined),
           sourceFile: filename,
           sourceRole: "PMV_XLSX"
         });
       } else if (row.length >= 2 && row[0] && row[1]) {
         protocolItems.push({
-          rowIndex: r + 1,
+          rowIndex: sRow.xmlRowNum || (r + 1),
           paramName: row[0],
-          normValue: row[1],
+          normValue: null,
           factValue: row[1],
           rawValue: row[1],
+          paramRef: (cells[0] && cells[0].ref) || ("A" + (sRow.xmlRowNum || (r + 1))),
+          normRef: null,
+          factRef: (cells[1] && cells[1].ref) || ("B" + (sRow.xmlRowNum || (r + 1))),
+          cellRef: (cells[1] && cells[1].ref) || ("B" + (sRow.xmlRowNum || (r + 1))),
+          hasExplicitNorm: false,
           sourceFile: filename,
           sourceRole: "PMV_XLSX"
         });
@@ -793,6 +933,7 @@
       sharedStringCount: sharedStrings.length,
       rowCount: rows.length,
       rows: rows,
+      structuredRows: structuredRows,
       protocolItems: protocolItems
     };
   }
@@ -830,7 +971,7 @@
       var sBytes = new Uint8Array(sBody.length);
       for (var bi = 0; bi < sBody.length; bi++) sBytes[bi] = sBody.charCodeAt(bi) & 0xff;
 
-      var contentStr = "";
+      var contentStr;
       // Check zlib header (0x78 0x9C, 0x78 0x01, 0x78 0xDA)
       if (sBytes.length > 6 && sBytes[0] === 0x78 && (sBytes[1] === 0x9c || sBytes[1] === 0x01 || sBytes[1] === 0xda)) {
         flateStreamCount++;
@@ -1001,86 +1142,590 @@
     };
   }
 
-  function parseP7sSignature(bytes, filename) {
-    var derBytes = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes || 0);
+  function decodeOidBytes(oidBytes) {
+    if (!oidBytes || oidBytes.length === 0) return "";
+    var first = oidBytes[0];
+    var parts = [Math.floor(first / 40), first % 40];
+    var val = 0;
+    for (var i = 1; i < oidBytes.length; i++) {
+      var b = oidBytes[i];
+      val = val * 128 + (b & 0x7f);
+      if ((b & 0x80) === 0) {
+        parts.push(val);
+        val = 0;
+      }
+    }
+    return parts.join(".");
+  }
+
+  function decodeAsn1StringNode(tag, slice) {
+    if (!slice || slice.length === 0) return "";
+    if (tag === 0x1e) {
+      // BMPString (big-endian UTF-16)
+      var bmp = "";
+      for (var i = 0; i + 1 < slice.length; i += 2) {
+        bmp += String.fromCharCode((slice[i] << 8) | slice[i + 1]);
+      }
+      return bmp.trim();
+    }
+    if (tag === 0x17 || tag === 0x18) {
+      // UTCTime / GeneralizedTime
+      var rawT = decodeUtf8(slice).trim();
+      if (tag === 0x17 && /^\d{12}Z$/.test(rawT)) {
+        var yy = parseInt(rawT.slice(0, 2), 10);
+        var yyyy = yy >= 50 ? (1900 + yy) : (2000 + yy);
+        return yyyy + "-" + rawT.slice(2, 4) + "-" + rawT.slice(4, 6) + " " + rawT.slice(6, 8) + ":" + rawT.slice(8, 10) + ":" + rawT.slice(10, 12) + " UTC";
+      }
+      if (tag === 0x18 && /^\d{14}(?:\.\d+)?Z$/.test(rawT)) {
+        return rawT.slice(0, 4) + "-" + rawT.slice(4, 6) + "-" + rawT.slice(6, 8) + " " + rawT.slice(8, 10) + ":" + rawT.slice(10, 12) + ":" + rawT.slice(12, 14) + " UTC";
+      }
+      return rawT;
+    }
+    return decodeUtf8(slice).trim();
+  }
+
+  function parseCmsSignedDataDer(rawBytes) {
+    var inputBytes = rawBytes instanceof Uint8Array ? rawBytes : new Uint8Array(rawBytes || 0);
     var encodingFormat = "ASN.1 DER";
-    // Detect Base64-encoded CMS/PKCS#7 (.p7s starting with "MII" = 0x4D 0x49 0x49)
-    if (derBytes.length >= 16 && derBytes[0] === 0x4d && derBytes[1] === 0x49 && derBytes[2] === 0x49) {
-      var b64Text = "";
+    var derBytes = inputBytes;
+
+    // Detect Base64 / PEM CMS container
+    if (derBytes.length >= 16 && (
+      (derBytes[0] === 0x4d && derBytes[1] === 0x49 && derBytes[2] === 0x49) ||
+      (derBytes[0] === 0x2d && derBytes[1] === 0x2d && derBytes[2] === 0x2d)
+    )) {
       for (var bi = 0; bi < derBytes.length; bi++) {
-        var ch = derBytes[bi];
-        if ((ch >= 65 && ch <= 90) || (ch >= 97 && ch <= 122) || (ch >= 48 && ch <= 57) || ch === 43 || ch === 47 || ch === 61) {
-          b64Text += String.fromCharCode(ch);
+        var bVal = derBytes[bi];
+        if (bVal > 0x7e || (bVal < 0x20 && bVal !== 0x09 && bVal !== 0x0a && bVal !== 0x0d)) {
+          return {
+            valid: false,
+            validPkcs7: false,
+            reasonCode: "trailing_bytes",
+            structuralStatus: "FAIL",
+            cryptoStatus: "UNVERIFIED",
+            cryptoDisclaimer: "UNVERIFIED_CRYPTO: криптографічний підпис ДСТУ 4145 / ECDSA / RSA та ланцюжок сертифікатів КНЕДП у браузері не перевірялися",
+            error: "Виявлено недруковані або сторонні бінарні байти у Base64/PEM контейнері КЕП",
+            encodingFormat: encodingFormat,
+            sizeBytes: inputBytes.length,
+            derSizeBytes: 0,
+            oids: [],
+            certificates: [],
+            signerInfos: [],
+            tspEndpoints: [],
+            hasDstuOid: false,
+            signerCn: "",
+            signerOrg: "",
+            issuerCn: "",
+            issuerOrg: "",
+            edrpou: "",
+            drfo: "",
+            signingTime: ""
+          };
         }
       }
-      var B64_MAP = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-      var cleanLen = b64Text.replace(/=+$/, "").length;
-      var outLen = Math.floor((cleanLen * 3) / 4);
-      var decoded = new Uint8Array(outLen);
-      var outIdx = 0;
-      for (var p = 0; p < cleanLen; ) {
-        var c0 = B64_MAP.indexOf(b64Text.charAt(p++));
-        var c1 = p < cleanLen ? B64_MAP.indexOf(b64Text.charAt(p++)) : 0;
-        var c2 = p < cleanLen ? B64_MAP.indexOf(b64Text.charAt(p++)) : 0;
-        var c3 = p < cleanLen ? B64_MAP.indexOf(b64Text.charAt(p++)) : 0;
-        var trip = (c0 << 18) | (c1 << 12) | (c2 << 6) | c3;
-        if (outIdx < outLen) decoded[outIdx++] = (trip >>> 16) & 0xff;
-        if (outIdx < outLen) decoded[outIdx++] = (trip >>> 8) & 0xff;
-        if (outIdx < outLen) decoded[outIdx++] = trip & 0xff;
-      }
-      if (decoded.length > 32 && decoded[0] === 0x30) {
-        derBytes = decoded;
-        encodingFormat = "Base64 → ASN.1 DER (" + decoded.length.toLocaleString("uk-UA") + " Б)";
-      }
-    }
-
-    var ascii = "";
-    var hasDstuOid = false;
-    for (var i = 0; i < derBytes.length; i++) {
-      var b = derBytes[i];
-      if (b >= 32 && b <= 126) ascii += String.fromCharCode(b);
-      else ascii += " ";
-      // Check OID 1.2.804.2.1.1.1 (0x2A 0x86 0x24 0x02 0x01 0x01 0x01)
-      if (!hasDstuOid && i + 4 < derBytes.length &&
-          b === 0x2a && derBytes[i + 1] === 0x86 && derBytes[i + 2] === 0x24 &&
-          derBytes[i + 3] === 0x02 && derBytes[i + 4] === 0x01) {
-        hasDstuOid = true;
+      var rawAscii = decodeUtf8(derBytes)
+        .replace(/-----BEGIN[^-]+-----/g, "")
+        .replace(/-----END[^-]+-----/g, "");
+      var b64Clean = rawAscii.replace(/[^A-Za-z0-9+/=]/g, "");
+      if (b64Clean.length >= 16) {
+        var B64_MAP = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        var cleanLen = b64Clean.replace(/=+$/, "").length;
+        var outLen = Math.floor((cleanLen * 3) / 4);
+        var decoded = new Uint8Array(outLen);
+        var outIdx = 0;
+        for (var p = 0; p < cleanLen; ) {
+          var c0 = B64_MAP.indexOf(b64Clean.charAt(p++));
+          var c1 = p < cleanLen ? B64_MAP.indexOf(b64Clean.charAt(p++)) : 0;
+          var c2 = p < cleanLen ? B64_MAP.indexOf(b64Clean.charAt(p++)) : 0;
+          var c3 = p < cleanLen ? B64_MAP.indexOf(b64Clean.charAt(p++)) : 0;
+          var trip = (c0 << 18) | (c1 << 12) | (c2 << 6) | c3;
+          if (outIdx < outLen) decoded[outIdx++] = (trip >>> 16) & 0xff;
+          if (outIdx < outLen) decoded[outIdx++] = (trip >>> 8) & 0xff;
+          if (outIdx < outLen) decoded[outIdx++] = trip & 0xff;
+        }
+        if (decoded.length > 16 && decoded[0] === 0x30) {
+          derBytes = decoded;
+          encodingFormat = "Base64 → ASN.1 DER (" + decoded.length.toLocaleString("uk-UA") + " Б)";
+        }
       }
     }
 
-    var utf8 = decodeUtf8(derBytes);
-    var urlMatches = ascii.match(/https?:\/\/[A-Za-z0-9._\/-]+/g) || [];
-    var uniqueUrls = [];
-    for (var u = 0; u < urlMatches.length; u++) {
-      if (uniqueUrls.indexOf(urlMatches[u]) === -1) uniqueUrls.push(urlMatches[u]);
+    if (!derBytes || derBytes.length < 2 || derBytes[0] !== 0x30) {
+      return {
+        valid: false,
+        validPkcs7: false,
+        reasonCode: "corrupted_der",
+        structuralStatus: "FAIL",
+        cryptoStatus: "UNVERIFIED",
+        cryptoDisclaimer: "UNVERIFIED_CRYPTO: криптографічний підпис ДСТУ 4145 / ECDSA / RSA та ланцюжок сертифікатів КНЕДП у браузері не перевірялися",
+        error: "Файл не є коректною ASN.1 DER структурою SEQUENCE (0x30)",
+        encodingFormat: encodingFormat,
+        sizeBytes: inputBytes.length,
+        derSizeBytes: derBytes ? derBytes.length : 0,
+        oids: [],
+        certificates: [],
+        signerInfos: [],
+        tspEndpoints: [],
+        hasDstuOid: false,
+        signerCn: "",
+        signerOrg: "",
+        issuerCn: "",
+        issuerOrg: "",
+        edrpou: "",
+        drfo: "",
+        signingTime: ""
+      };
     }
-    var ntrMatches = ascii.match(/NTRUA-(\d{8})/g) || [];
-    var edrpouList = [];
-    for (var n = 0; n < ntrMatches.length; n++) {
-      var code = ntrMatches[n].replace("NTRUA-", "");
-      if (edrpouList.indexOf(code) === -1) edrpouList.push(code);
+
+    var parseError = null;
+    var parseReasonCode = null;
+    function readAsn1Nodes(buf, startOff, endOff, depth) {
+      var nodes = [];
+      var pos = startOff;
+      if (depth > 28) return nodes;
+      while (pos < endOff) {
+        var tagStart = pos;
+        var tag = buf[pos++];
+        if (pos >= endOff) {
+          parseError = "ASN1_TRUNCATED_TAG";
+          parseReasonCode = "corrupted_der";
+          break;
+        }
+        if ((tag & 0x1f) === 0x1f) {
+          while (pos < endOff && (buf[pos++] & 0x80) !== 0) {
+            // high-tag-number form
+          }
+          if (pos >= endOff) {
+            parseError = "ASN1_TRUNCATED_HIGH_TAG";
+            parseReasonCode = "corrupted_der";
+            break;
+          }
+        }
+        var lenByte = buf[pos++];
+        var valLen = 0;
+        if (lenByte === 0x80) {
+          parseError = "ASN1_UNSUPPORTED_INDEFINITE_BER";
+          parseReasonCode = "unsupported_ber";
+          break;
+        } else if ((lenByte & 0x80) !== 0) {
+          var numLenBytes = lenByte & 0x7f;
+          if (numLenBytes === 0 || numLenBytes > 4 || pos + numLenBytes > endOff) {
+            parseError = "ASN1_INVALID_LENGTH_HEADER";
+            parseReasonCode = "corrupted_der";
+            break;
+          }
+          for (var lb = 0; lb < numLenBytes; lb++) {
+            valLen = (valLen * 256) + buf[pos++];
+          }
+        } else {
+          valLen = lenByte;
+        }
+
+        var valStart = pos;
+        var valEnd = valStart + valLen;
+        var isConstructed = (tag & 0x20) !== 0;
+
+        if (valEnd > endOff) {
+          parseError = "ASN1_TRUNCATED_VALUE";
+          parseReasonCode = "corrupted_der";
+          break;
+        }
+        var children = [];
+        if (isConstructed) {
+          children = readAsn1Nodes(buf, valStart, valEnd, depth + 1);
+          if (parseError) break;
+        }
+        nodes.push({
+          tag: tag,
+          isConstructed: isConstructed,
+          headerStart: tagStart,
+          valStart: valStart,
+          valEnd: valEnd,
+          totalEnd: valEnd,
+          bytes: buf.subarray(valStart, valEnd),
+          children: children
+        });
+        pos = valEnd;
+      }
+      return nodes;
     }
-    var nonCaEdrpou = edrpouList.filter(function (c) { return c !== "36865753"; });
-    var edrpouFallback = utf8.match(/\b(\d{8})\b/);
-    var edrpouFinal = nonCaEdrpou.length > 0
-      ? nonCaEdrpou[0]
-      : (edrpouList.length > 0 ? edrpouList[0] : (edrpouFallback ? edrpouFallback[1] : "05509487"));
-    var tinMatch = ascii.match(/TINUA-(\d{10})/);
-    var signerMatch = utf8.match(/ГОЙДЕНКО\s+ОЛЕГ\s+ВАДИМОВИЧ/i) || utf8.match(/[А-ЯІЇЄҐ]{3,20}\s+[А-ЯІЇЄҐ]{3,20}\s+[А-ЯІЇЄҐ]{4,22}/);
+
+    var topNodes = readAsn1Nodes(derBytes, 0, derBytes.length, 0);
+    if (parseError || topNodes.length === 0 || topNodes[0].tag !== 0x30) {
+      return {
+        valid: false,
+        validPkcs7: false,
+        reasonCode: parseReasonCode || "corrupted_der",
+        structuralStatus: "FAIL",
+        cryptoStatus: "UNVERIFIED",
+        cryptoDisclaimer: "UNVERIFIED_CRYPTO: криптографічний підпис ДСТУ 4145 / ECDSA / RSA та ланцюжок сертифікатів КНЕДП у браузері не перевірялися",
+        error: parseError || "Зовнішній вузол не є валідним ASN.1 SEQUENCE",
+        encodingFormat: encodingFormat,
+        sizeBytes: inputBytes.length,
+        derSizeBytes: derBytes.length,
+        oids: [],
+        certificates: [],
+        signerInfos: [],
+        tspEndpoints: [],
+        hasDstuOid: false,
+        signerCn: "",
+        signerOrg: "",
+        issuerCn: "",
+        issuerOrg: "",
+        edrpou: "",
+        drfo: "",
+        signingTime: ""
+      };
+    }
+
+    var rootSeq = topNodes[0];
+    if (topNodes.length > 1 || rootSeq.totalEnd !== derBytes.length) {
+      return {
+        valid: false,
+        validPkcs7: false,
+        reasonCode: "trailing_bytes",
+        structuralStatus: "FAIL",
+        cryptoStatus: "UNVERIFIED",
+        cryptoDisclaimer: "UNVERIFIED_CRYPTO: криптографічний підпис ДСТУ 4145 / ECDSA / RSA та ланцюжок сертифікатів КНЕДП у браузері не перевірялися",
+        error: "Виявлено зайві байти після кореневого SEQUENCE (trailing_bytes)",
+        encodingFormat: encodingFormat,
+        sizeBytes: inputBytes.length,
+        derSizeBytes: derBytes.length,
+        oids: [],
+        certificates: [],
+        signerInfos: [],
+        tspEndpoints: [],
+        hasDstuOid: false,
+        signerCn: "",
+        signerOrg: "",
+        issuerCn: "",
+        issuerOrg: "",
+        edrpou: "",
+        drfo: "",
+        signingTime: ""
+      };
+    }
+    var allOids = [];
+    var allUrls = [];
+    var signingTimes = [];
+
+    function collectOidsAndUrls(node) {
+      if (!node) return;
+      if (node.tag === 0x06) {
+        var oidStr = decodeOidBytes(node.bytes);
+        if (oidStr && allOids.indexOf(oidStr) === -1) allOids.push(oidStr);
+      } else if (node.tag === 0x16 || node.tag === 0x86 || node.tag === 0x0c || node.tag === 0x13) {
+        var txt = decodeUtf8(node.bytes);
+        var um = txt.match(/https?:\/\/[A-Za-z0-9._/-]+/g);
+        if (um) {
+          for (var u = 0; u < um.length; u++) {
+            if (allUrls.indexOf(um[u]) === -1) allUrls.push(um[u]);
+          }
+        }
+      } else if (node.tag === 0x04 && node.bytes && node.bytes.length >= 4 && (node.bytes[0] === 0x30 || node.bytes[0] === 0x04)) {
+        var innerNodes = readAsn1Nodes(node.bytes, 0, node.bytes.length, 4);
+        for (var k = 0; k < innerNodes.length; k++) collectOidsAndUrls(innerNodes[k]);
+      }
+      if (node.children) {
+        for (var i = 0; i < node.children.length; i++) {
+          collectOidsAndUrls(node.children[i]);
+        }
+      }
+    }
+    collectOidsAndUrls(rootSeq);
+
+    // Verify ContentInfo -> OID 1.2.840.113549.1.7.2 (signedData)
+    var contentTypeOid = (rootSeq.children && rootSeq.children[0] && rootSeq.children[0].tag === 0x06)
+      ? decodeOidBytes(rootSeq.children[0].bytes)
+      : "";
+    var isSignedDataContent = contentTypeOid === "1.2.840.113549.1.7.2";
+    var signedDataSeq = null;
+    if (isSignedDataContent && rootSeq.children.length >= 2) {
+      var explicit0 = rootSeq.children[1];
+      if (explicit0 && explicit0.children && explicit0.children[0] && explicit0.children[0].tag === 0x30) {
+        signedDataSeq = explicit0.children[0];
+      }
+    }
+
+    function parseX500Name(nameNode) {
+      var attrs = {};
+      if (!nameNode || !nameNode.children) return attrs;
+      for (var i = 0; i < nameNode.children.length; i++) {
+        var rdnSet = nameNode.children[i];
+        if (!rdnSet || !rdnSet.children) continue;
+        for (var j = 0; j < rdnSet.children.length; j++) {
+          var avaSeq = rdnSet.children[j];
+          if (avaSeq && avaSeq.tag === 0x30 && avaSeq.children && avaSeq.children.length >= 2 && avaSeq.children[0].tag === 0x06) {
+            var oid = decodeOidBytes(avaSeq.children[0].bytes);
+            var valNode = avaSeq.children[1];
+            var valStr = decodeAsn1StringNode(valNode.tag, valNode.bytes);
+            if (!attrs[oid]) attrs[oid] = valStr;
+            else attrs[oid] += ", " + valStr;
+          }
+        }
+      }
+      return {
+        raw: attrs,
+        cn: attrs["2.5.4.3"] || "",
+        sn: attrs["2.5.4.4"] || "",
+        givenName: attrs["2.5.4.42"] || "",
+        org: attrs["2.5.4.10"] || "",
+        ou: attrs["2.5.4.11"] || "",
+        title: attrs["2.5.4.12"] || "",
+        locality: attrs["2.5.4.7"] || "",
+        serialNumber: attrs["2.5.4.5"] || "",
+        orgId: attrs["2.5.4.97"] || ""
+      };
+    }
+
+    function parseX509Certificate(certSeq) {
+      if (!certSeq || certSeq.tag !== 0x30 || !certSeq.children || certSeq.children.length < 1) return null;
+      var tbs = certSeq.children[0];
+      if (!tbs || tbs.tag !== 0x30 || !tbs.children || tbs.children.length < 5) return null;
+      var idx = 0;
+      if (tbs.children[0].tag === 0xa0) idx = 1; // Explicit v3 [0]
+      var serialNode = tbs.children[idx];
+      var issuerNode = tbs.children[idx + 2];
+      var validityNode = tbs.children[idx + 3];
+      var subjectNode = tbs.children[idx + 4];
+      if (!issuerNode || !subjectNode || issuerNode.tag !== 0x30 || subjectNode.tag !== 0x30) return null;
+
+      var serialHex = "";
+      if (serialNode && serialNode.bytes) {
+        for (var s = 0; s < serialNode.bytes.length; s++) {
+          serialHex += ("0" + serialNode.bytes[s].toString(16).toUpperCase()).slice(-2);
+        }
+      }
+      var issuer = parseX500Name(issuerNode);
+      var subject = parseX500Name(subjectNode);
+      var notBefore = "";
+      var notAfter = "";
+      if (validityNode && validityNode.children && validityNode.children.length >= 2) {
+        notBefore = decodeAsn1StringNode(validityNode.children[0].tag, validityNode.children[0].bytes);
+        notAfter = decodeAsn1StringNode(validityNode.children[1].tag, validityNode.children[1].bytes);
+      }
+
+      // Extract EDRPOU & DRFO/TIN from Subject RDN attributes (2.5.4.97, 2.5.4.5, 2.5.4.11, 2.5.4.10)
+      var edrpou = "";
+      var drfo = "";
+      var rdnPool = [subject.orgId, subject.serialNumber, subject.ou, subject.org].join(" ");
+      var ntrMatch = rdnPool.match(/NTRUA-(\d{8})/i) || rdnPool.match(/EDRPOU[:=\s-]*(\d{8})/i);
+      if (ntrMatch) {
+        edrpou = ntrMatch[1];
+      } else if (/^\d{8}$/.test(subject.serialNumber.trim())) {
+        edrpou = subject.serialNumber.trim();
+      }
+      var tinMatch = rdnPool.match(/TINUA-(\d{10})/i) || rdnPool.match(/DRFO[:=\s-]*(\d{10})/i);
+      if (tinMatch) {
+        drfo = tinMatch[1];
+      } else if (/^\d{10}$/.test(subject.serialNumber.trim())) {
+        drfo = subject.serialNumber.trim();
+      }
+
+      // Also inspect SubjectDirectoryAttributes (2.5.29.9) or QCStatements (1.3.6.1.5.5.7.1.3) in extensions [3]
+      for (var cIdx = idx + 5; cIdx < tbs.children.length; cIdx++) {
+        var extWrapper = tbs.children[cIdx];
+        if (extWrapper && extWrapper.tag === 0xa3 && extWrapper.children && extWrapper.children[0]) {
+          var extSeq = extWrapper.children[0];
+          if (extSeq && extSeq.children) {
+            for (var ei = 0; ei < extSeq.children.length; ei++) {
+              var extItem = extSeq.children[ei];
+              if (extItem && extItem.children && extItem.children.length >= 2 && extItem.children[0].tag === 0x06) {
+                var extValNode = extItem.children[extItem.children.length - 1];
+                if (extValNode && extValNode.bytes) {
+                  var extText = decodeUtf8(extValNode.bytes);
+                  if (!edrpou) {
+                    var extNtr = extText.match(/NTRUA-(\d{8})/i);
+                    if (extNtr) edrpou = extNtr[1];
+                  }
+                  if (!drfo) {
+                    var extTin = extText.match(/TINUA-(\d{10})/i);
+                    if (extTin) drfo = extTin[1];
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      return {
+        serialHex: serialHex,
+        issuer: issuer,
+        subject: subject,
+        notBefore: notBefore,
+        notAfter: notAfter,
+        edrpou: edrpou,
+        drfo: drfo
+      };
+    }
+
+    var certificates = [];
+    var signerInfos = [];
+
+    function extractCertsAndSignersFromSignedData(sdSeq) {
+      if (!sdSeq || !sdSeq.children) return;
+      for (var i = 0; i < sdSeq.children.length; i++) {
+        var child = sdSeq.children[i];
+        if (child.tag === 0xa0 && child.children) {
+          // certificates [0] IMPLICIT CertificateSet
+          for (var ci = 0; ci < child.children.length; ci++) {
+            var parsedCert = parseX509Certificate(child.children[ci]);
+            if (parsedCert) certificates.push(parsedCert);
+          }
+        } else if (child.tag === 0x31 && i >= 3 && child.children) {
+          // signerInfos SET OF SignerInfo
+          for (var si = 0; si < child.children.length; si++) {
+            var siNode = child.children[si];
+            if (siNode && siNode.tag === 0x30 && siNode.children && siNode.children.length >= 5) {
+              var sigOctet = null;
+              for (var k = siNode.children.length - 1; k >= 0; k--) {
+                if (siNode.children[k].tag === 0x04) {
+                  sigOctet = siNode.children[k];
+                  break;
+                }
+              }
+              // Check signedAttrs [0] IMPLICIT for signingTime (1.2.840.113549.1.9.5) and timeStampToken (1.2.840.113549.1.9.16.2.14)
+              for (var sa = 0; sa < siNode.children.length; sa++) {
+                var attrSet = siNode.children[sa];
+                if (attrSet.tag === 0xa0 && attrSet.children) {
+                  for (var ai = 0; ai < attrSet.children.length; ai++) {
+                    var attrSeq = attrSet.children[ai];
+                    if (attrSeq && attrSeq.tag === 0x30 && attrSeq.children && attrSeq.children.length >= 2 && attrSeq.children[0].tag === 0x06) {
+                      var attrOid = decodeOidBytes(attrSeq.children[0].bytes);
+                      var attrValSet = attrSeq.children[1];
+                      if (attrOid === "1.2.840.113549.1.9.5" && attrValSet && attrValSet.children && attrValSet.children[0]) {
+                        var tNode = attrValSet.children[0];
+                        var tStr = decodeAsn1StringNode(tNode.tag, tNode.bytes);
+                        if (tStr && signingTimes.indexOf(tStr) === -1) signingTimes.push(tStr);
+                      } else if (attrOid === "1.2.840.113549.1.9.16.2.14" && attrValSet && attrValSet.children && attrValSet.children[0]) {
+                        // Nested TimeStampToken ContentInfo -> SignedData
+                        var tstCi = attrValSet.children[0];
+                        if (tstCi && tstCi.children && tstCi.children.length >= 2 && tstCi.children[1].children && tstCi.children[1].children[0]) {
+                          extractCertsAndSignersFromSignedData(tstCi.children[1].children[0]);
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              signerInfos.push({
+                hasSignatureBytes: Boolean(sigOctet && sigOctet.bytes && sigOctet.bytes.length >= 16),
+                signatureByteLength: sigOctet && sigOctet.bytes ? sigOctet.bytes.length : 0
+              });
+            }
+          }
+        }
+      }
+    }
+
+    if (signedDataSeq) {
+      extractCertsAndSignersFromSignedData(signedDataSeq);
+    }
+
+    var hasDstuOid = allOids.some(function (oid) {
+      return oid.indexOf("1.2.804.2.1.1.1") === 0;
+    });
+
+    // Select primary end-entity signer certificate (preferring non-CA / non-TSP cert)
+    var primaryCert = null;
+    for (var c = 0; c < certificates.length; c++) {
+      var crt = certificates[c];
+      var cnUpper = (crt.subject.cn || "").toUpperCase();
+      var isCaOrTsp = cnUpper.indexOf("КНЕДП") >= 0 || cnUpper.indexOf("АЦСК") >= 0 || cnUpper.indexOf("ЦСК") >= 0 || cnUpper.indexOf("TSP") >= 0 || cnUpper.indexOf("OCSP") >= 0 || (crt.subject.cn && crt.subject.cn === crt.issuer.cn);
+      if (!isCaOrTsp && (crt.subject.cn || crt.edrpou || crt.drfo)) {
+        primaryCert = crt;
+        break;
+      }
+    }
+    if (!primaryCert && certificates.length > 0) {
+      primaryCert = certificates[0];
+    }
+
+    var validStructure = Boolean(
+      isSignedDataContent &&
+      signedDataSeq &&
+      (certificates.length > 0 || signerInfos.length > 0) &&
+      (signerInfos.length === 0 || signerInfos.some(function (s) { return s.hasSignatureBytes; }))
+    );
+
+    var signerCn = primaryCert
+      ? (primaryCert.subject.cn || [primaryCert.subject.sn, primaryCert.subject.givenName].filter(Boolean).join(" ") || primaryCert.subject.org || "Не вказано в сертифікаті")
+      : "Сертифікат підписанта не вбудовано в контейнер";
+    var signerOrg = primaryCert ? (primaryCert.subject.org || primaryCert.subject.ou || "") : "";
+    var issuerCn = primaryCert ? (primaryCert.issuer.cn || primaryCert.issuer.org || "Не вказано") : "Не вказано";
+    var issuerOrg = primaryCert ? (primaryCert.issuer.org || primaryCert.issuer.cn || "") : "";
+    var edrpouFinal = primaryCert && primaryCert.edrpou ? primaryCert.edrpou : "Не вказано в сертифікаті";
+    var drfoFinal = primaryCert && primaryCert.drfo ? primaryCert.drfo : "";
+
+    var finalReasonCode = validStructure
+      ? "ok"
+      : (!isSignedDataContent ? "missing_signed_data_oid" : "missing_signer_info");
+    var cryptoDisclaimer =
+      "UNVERIFIED_CRYPTO: криптографічний підпис ДСТУ 4145 / ECDSA / RSA, геш підписаного документа та статус сертифіката (OCSP/CRL) у браузері не перевірялися";
 
     return {
-      filename: filename,
-      validPkcs7: derBytes.length > 32 && derBytes[0] === 0x30,
+      valid: validStructure,
+      validPkcs7: validStructure,
+      reasonCode: finalReasonCode,
+      structuralStatus: validStructure ? "PASS" : "FAIL",
+      cryptoStatus: "UNVERIFIED",
+      cryptoDisclaimer: cryptoDisclaimer,
+      error: validStructure ? null : "Відсутня обов'язкова структура CMS ContentInfo(signedData 1.2.840.113549.1.7.2) або підпис SignerInfo",
+      encodingFormat: encodingFormat,
+      contentTypeOid: contentTypeOid,
       hasDstuOid: hasDstuOid,
-      standard: hasDstuOid
-        ? "ДСТУ 4145-2002 / ГОСТ 34.311-95 (OID 1.2.804.2.1.1.1 · " + encodingFormat + ")"
-        : ("PKCS#7 CMS (" + encodingFormat + ")"),
-      sizeBytes: bytes.length,
+      oids: allOids,
+      sizeBytes: inputBytes.length,
       derSizeBytes: derBytes.length,
-      tspEndpoints: uniqueUrls.slice(0, 4),
-      edrpouHint: edrpouFinal,
-      tinHint: tinMatch ? tinMatch[1] : "",
-      signerCn: signerMatch ? signerMatch[0] : "КНЕДП ТОВ «Центр сертифікації ключів «Україна»"
+      certificatesCount: certificates.length,
+      signerInfosCount: signerInfos.length,
+      certificates: certificates,
+      signerInfos: signerInfos,
+      tspEndpoints: allUrls.slice(0, 6),
+      signerCn: signerCn,
+      signerOrg: signerOrg,
+      issuerCn: issuerCn,
+      issuerOrg: issuerOrg,
+      edrpou: edrpouFinal,
+      drfo: drfoFinal,
+      serialHex: primaryCert ? primaryCert.serialHex : "",
+      validFrom: primaryCert ? primaryCert.notBefore : "",
+      validTo: primaryCert ? primaryCert.notAfter : "",
+      signingTime: signingTimes.length > 0 ? signingTimes[0] : (primaryCert ? primaryCert.notBefore : "")
+    };
+  }
+
+  function parseP7sSignature(bytes, filename) {
+    var parsed = parseCmsSignedDataDer(bytes);
+    return {
+      filename: filename,
+      valid: parsed.valid,
+      validPkcs7: parsed.validPkcs7,
+      reasonCode: parsed.reasonCode,
+      structuralStatus: parsed.structuralStatus,
+      cryptoStatus: parsed.cryptoStatus,
+      cryptoDisclaimer: parsed.cryptoDisclaimer,
+      error: parsed.error,
+      hasDstuOid: parsed.hasDstuOid,
+      standard: !parsed.validPkcs7
+        ? ("НЕПІДТВЕРДЖЕНИЙ КОНТЕЙНЕР КЕП (" + (parsed.error || "помилка ASN.1 DER") + ")")
+        : (parsed.hasDstuOid
+          ? "ДСТУ 4145-2002 / ГОСТ 34.311-95 (OID 1.2.804.2.1.1.1 · " + parsed.encodingFormat + ")"
+          : ("PKCS#7 CMS SignedData (OID 1.2.840.113549.1.7.2 · " + parsed.encodingFormat + ")")),
+      sizeBytes: parsed.sizeBytes,
+      derSizeBytes: parsed.derSizeBytes,
+      certificatesCount: parsed.certificatesCount,
+      signerInfosCount: parsed.signerInfosCount,
+      tspEndpoints: parsed.tspEndpoints,
+      edrpouHint: parsed.edrpou,
+      tinHint: parsed.drfo,
+      signerCn: parsed.signerCn,
+      signerOrg: parsed.signerOrg,
+      issuerCn: parsed.issuerCn,
+      signingTime: parsed.signingTime,
+      serialHex: parsed.serialHex,
+      oids: parsed.oids
     };
   }
 
@@ -1105,9 +1750,9 @@
     { pattern: /^(с|сек|s)$/i, siUnit: "s", scale: 1.0, offset: 0, dim: [0, 0, 1, 0, 0, 0, 0], domain: "time" },
     { pattern: /^(мс|ms)$/i, siUnit: "s", scale: 0.001, offset: 0, dim: [0, 0, 1, 0, 0, 0, 0], domain: "time" },
     { pattern: /^(в|вольт|v)$/i, siUnit: "V", scale: 1.0, offset: 0, dim: [2, 1, -3, -1, 0, 0, 0], domain: "voltage" },
-    { pattern: /^(ма[·\.]?год|маг|mah)$/i, siUnit: "C", scale: 3.6, offset: 0, dim: [0, 0, 1, 1, 0, 0, 0], domain: "charge_capacity" },
-    { pattern: /^(а[·\.]?год|аг|ан|ah)$/i, siUnit: "C", scale: 3600.0, offset: 0, dim: [0, 0, 1, 1, 0, 0, 0], domain: "charge_capacity" },
-    { pattern: /^(вт[·\.]?год|wh)$/i, siUnit: "J", scale: 3600.0, offset: 0, dim: [2, 1, -2, 0, 0, 0, 0], domain: "energy" },
+    { pattern: /^(ма[·.]?год|маг|mah)$/i, siUnit: "C", scale: 3.6, offset: 0, dim: [0, 0, 1, 1, 0, 0, 0], domain: "charge_capacity" },
+    { pattern: /^(а[·.]?год|аг|ан|ah)$/i, siUnit: "C", scale: 3600.0, offset: 0, dim: [0, 0, 1, 1, 0, 0, 0], domain: "charge_capacity" },
+    { pattern: /^(вт[·.]?год|wh)$/i, siUnit: "J", scale: 3600.0, offset: 0, dim: [2, 1, -2, 0, 0, 0, 0], domain: "energy" },
     { pattern: /^(вт|w)$/i, siUnit: "W", scale: 1.0, offset: 0, dim: [2, 1, -3, 0, 0, 0, 0], domain: "power" },
     { pattern: /^(квт|kw)$/i, siUnit: "W", scale: 1000.0, offset: 0, dim: [2, 1, -3, 0, 0, 0, 0], domain: "power" },
     { pattern: /^(°c|град\.?\s*c|cels(?:ius)?)$/i, siUnit: "°C", scale: 1.0, offset: 0, dim: [0, 0, 0, 0, 1, 0, 0], domain: "temperature" },
@@ -1188,8 +1833,8 @@
     else if (/(?:не\s+більш|не\s+перевищ|до\s+\d|макс\.?|<=|≤)/i.test(s)) op = "<=";
 
     // Extract number + explicit physical unit first (longest unit match first so мА·год and місяців are matched before м)
-    var explicitUnitMatch = s.match(/([+-]?\d+(?:[.,]\d+)?)\s*(мА[·\.]?год|мАг|mAh|А[·\.]?год|Аг|АН|Ah|Вт[·\.]?год|Wh|км\/год|km\/h|см\/с|cm\/s|м\/с|m\/s|дюйм(?:ів|и|а)?|хвилин(?:и|а)?|хв|годин(?:и|а)?|год|місяц(?:ів|і|я)|міс\.?|кг|kg|г|g|км|km|мм|mm|см|cm|кВт|kW|Вт|W|ГГц|GHz|МГц|MHz|Гц|Hz|°\/с|deg\/s|°C|МП|MP|комплект(?:ів)?|цикл(?:ів)?|шт\.?|код|мс|ms|м|m|с|s|В|V)(?![а-яіїєґa-z0-9·])/i);
-    var numUnitMatch = explicitUnitMatch || s.match(/([+-]?\d+(?:[.,]\d+)?)\s*([а-яіїєґa-z°"\/·.]+)?/i);
+    var explicitUnitMatch = s.match(/([+-]?\d+(?:[.,]\d+)?)\s*(мА[·.]?год|мАг|mAh|А[·.]?год|Аг|АН|Ah|Вт[·.]?год|Wh|км\/год|km\/h|см\/с|cm\/s|м\/с|m\/s|дюйм(?:ів|и|а)?|хвилин(?:и|а)?|хв|годин(?:и|а)?|год|місяц(?:ів|і|я)|міс\.?|кг|kg|г|g|км|km|мм|mm|см|cm|кВт|kW|Вт|W|ГГц|GHz|МГц|MHz|Гц|Hz|°\/с|deg\/s|°C|МП|MP|комплект(?:ів)?|цикл(?:ів)?|шт\.?|код|мс|ms|м|m|с|s|В|V)(?![а-яіїєґa-z0-9·])/i);
+    var numUnitMatch = explicitUnitMatch || s.match(/([+-]?\d+(?:[.,]\d+)?)\s*([а-яіїєґa-z°"/·.]+)?/i);
     if (numUnitMatch) {
       var num = parseFloat(numUnitMatch[1].replace(",", "."));
       var uRaw = (numUnitMatch[2] || "").trim();
@@ -1524,7 +2169,7 @@
   ];
 
   function extractUkrainianProseSlots(proseInput, sourceFile) {
-    var text = "";
+    var text;
     if (Array.isArray(proseInput)) {
       text = proseInput.map(function (p) { return typeof p === "string" ? p : (p.text || ""); }).join("\n");
     } else {
@@ -1569,7 +2214,7 @@
     for (var sIdx = 0; sIdx < sentences.length; sIdx++) {
       var sent = sentences[sIdx].trim();
       if (sent.length < 12 || sent.length > 260) continue;
-      var genMatch = sent.match(/([А-ЯІЇЄҐа-яіїєґA-Za-z0-9\s()\/,-]{5,55}?)\s*(?:—|:|\s-\s|становить|повинна\s+бути|повинен\s+бути)\s*((?:не\s+менше(?:\s+ніж)?|не\s+більше|не\s+нижче|від|до)?\s*[+-]?\d+(?:[.,]\d+)?(?:\s*до\s*[+-]?\d+(?:[.,]\d+)?)?\s*(?:мА·год|мАг|А·год|Вт·год|км\/год|м\/с|хвилин(?:и|а)?|хв|місяц(?:ів|і|я)|міс\.?|год|кг|км|мм|см|ГГц|МГц|Гц|°C|°\/с|МП|комплект(?:ів)?|шт\.?|г|м|с|Вт|В)(?![а-яіїєґa-z0-9·]))/i);
+      var genMatch = sent.match(/([А-ЯІЇЄҐа-яіїєґA-Za-z0-9\s()/,-]{5,55}?)\s*(?:—|:|\s-\s|становить|повинна\s+бути|повинен\s+бути)\s*((?:не\s+менше(?:\s+ніж)?|не\s+більше|не\s+нижче|від|до)?\s*[+-]?\d+(?:[.,]\d+)?(?:\s*до\s*[+-]?\d+(?:[.,]\d+)?)?\s*(?:мА·год|мАг|А·год|Вт·год|км\/год|м\/с|хвилин(?:и|а)?|хв|місяц(?:ів|і|я)|міс\.?|год|кг|км|мм|см|ГГц|МГц|Гц|°C|°\/с|МП|комплект(?:ів)?|шт\.?|г|м|с|Вт|В)(?![а-яіїєґa-z0-9·]))/i);
       if (genMatch) {
         var pTitle = genMatch[1].trim();
         var pVal = genMatch[2].trim();
@@ -1681,10 +2326,11 @@
         if (src.phys.siMin !== dst.phys.siMin || src.phys.siMax !== dst.phys.siMax) {
           status = "FAIL_VALUE_CONFLICT";
           deltaExplain = "Розбіжність діапазонів: вимога [" + src.phys.siMin + ".." + src.phys.siMax + " " + src.phys.siUnit + "] ≠ факт у протоколі [" + dst.phys.siMin + ".." + dst.phys.siMax + " " + dst.phys.siUnit + "]";
+          var rangeCellLoc = dst.item.paramKey || (dst.item.factRef ? ("Клітинка " + dst.item.factRef + " («" + dst.item.paramName + "»)") : ("Рядок протоколу: «" + dst.item.paramName + "»"));
           remediationHint = {
             severity: "ПЕРЕВІРКА ЛЮДИНОЮ",
             targetFile: dst.item.sourceFile,
-            location: dst.item.paramKey || ("Рядок протоколу: «" + dst.item.paramName + "»"),
+            location: rangeCellLoc,
             currentValue: dst.item.rawValue,
             requiredValue: "Не змінювати автоматично! Потрібен акт кліматичних випробувань на " + src.item.rawValue + " або узгодження з комісією",
             reasonUk: "У протоколі випробувань зафіксовано вужчий температурний діапазон (" + dst.item.rawValue + " проти вимоги " + src.item.rawValue + "). Автоматично переписувати результати випробувань заборонено — потрібна перевірка інженером."
@@ -1708,10 +2354,11 @@
           var diffSigned = (dst.phys.siValue - src.phys.siValue);
           deltaExplain = "Розбіжність значень: вимога " + src.phys.siValue.toFixed(2) + " " + src.phys.siUnit + " проти факту " + dst.phys.siValue.toFixed(2) + " " + dst.phys.siUnit + " (різниця Δ = " + (diffSigned >= 0 ? "+" : "") + diffSigned.toFixed(2) + " " + dst.phys.siUnit + ")";
           var isConfigParam = String(dst.item.sourceFile || "").toLowerCase().indexOf(".param") >= 0;
+          var valCellLoc = dst.item.paramKey || (dst.item.factRef ? ("Клітинка " + dst.item.factRef + " («" + dst.item.paramName + "»)") : ("Комірка «" + dst.item.paramName + "»"));
           remediationHint = {
             severity: isConfigParam ? "АВТО-НАЛАШТУВАННЯ" : "ПЕРЕВІРКА ЛЮДИНОЮ",
             targetFile: dst.item.sourceFile,
-            location: dst.item.paramKey || ("Комірка «" + dst.item.paramName + "»"),
+            location: valCellLoc,
             currentValue: dst.item.rawValue,
             requiredValue: isConfigParam
               ? ("Можна виправити у файлі налаштувань .param відповідно до норми «" + src.item.rawValue + "»")
@@ -1747,9 +2394,11 @@
         tuParam: src.item.paramName,
         tuValue: src.item.rawValue,
         tuSource: src.item.sourceFile,
+        tuRef: src.item.normRef || src.item.cellRef || null,
         targetParam: dst.item.paramName,
         targetValue: dst.item.rawValue,
         targetSource: dst.item.sourceFile,
+        targetRef: dst.item.factRef || dst.item.cellRef || null,
         targetRole: dst.item.sourceRole,
         siDimension: src.phys.dimLabel,
         similarityPct: (asg.similarity * 100).toFixed(1) + "%",
@@ -1791,18 +2440,33 @@
     // 2. WebGPU Adapter / WGSL probe
     var hasWebGpuApi = (typeof navigator !== "undefined" && !!navigator.gpu);
     var webGpuLabel = hasWebGpuApi
-      ? "WebGPU WGSL Compute Ready (navigator.gpu Active)"
+      ? "navigator.gpu API Available (Capability Probe Only — JS TypedArray Execution)"
       : "Float64 TypedArray Vector Fallback (WebGPU Standby)";
 
     // 3. Cross-Origin Isolation / SharedArrayBuffer ServiceWorker Bypass
-    var isCoi = (typeof crossOriginIsolated !== "undefined" && !!crossOriginIsolated);
+    var isCoi = Boolean(global && global.crossOriginIsolated);
     var hasSab = (typeof SharedArrayBuffer !== "undefined");
     var coiLabel = isCoi
       ? "COOP/COEP Isolated (SharedArrayBuffer Zero-Copy Active)"
       : (hasSab ? "SharedArrayBuffer Active (SW COOP/COEP Bypass Ready)" : "ArrayBuffer In-RAM Isolation (SW COOP/COEP Bypass Ready)");
 
-    // 4. Zero-Egress CSP Lock
-    var cspZeroEgress = "ACTIVE · 0 B Egress (100% In-RAM ArrayBuffer)";
+    // 4. Honest PerformanceResourceTiming observation for network egress
+    var crossOriginCount = 0;
+    try {
+      if (typeof performance !== "undefined" && typeof performance.getEntriesByType === "function") {
+        var resEntries = performance.getEntriesByType("resource") || [];
+        var curOrigin = (typeof window !== "undefined" && window.location && window.location.origin) ? window.location.origin : "";
+        for (var ri = 0; ri < resEntries.length; ri++) {
+          var rName = String((resEntries[ri] && resEntries[ri].name) || "");
+          if (curOrigin && curOrigin !== "null" && /^https?:\/\//i.test(rName) && rName.indexOf(curOrigin) !== 0) {
+            crossOriginCount++;
+          }
+        }
+      }
+    } catch (_perfErr) {
+      crossOriginCount = 0;
+    }
+    var cspZeroEgress = "У цьому перевіреному сценарії не спостерігалося передавання вмісту тестових файлів (спостережено " + crossOriginCount + " видимих звернень до інших origin за PerformanceResourceTiming)";
 
     var msFixed = Math.max(0.15, Number(elapsedMs || 1.2)).toFixed(2);
     return {
@@ -1810,6 +2474,7 @@
       wasmSimd128Status: wasmSimdSupported ? "ACTIVE · 128-bit v128 Verified" : "SCALAR FALLBACK",
       coiSabStatus: coiLabel,
       zeroEgressCspStatus: cspZeroEgress,
+      crossOriginResourceCount: crossOriginCount,
       elapsedMs: msFixed,
       bytesProcessed: totalBytesProcessed || 0,
       paramsMatched: totalParamsMatched || 0
@@ -1822,7 +2487,18 @@
   function buildEngineeringActionPlan(analysisState) {
     var remediations = [];
     var rows = (analysisState && analysisState.alignedRows) || [];
+    var passRowsCount = 0;
+    var failRowsCount = 0;
+    var unverifiedRowsCount = 0;
     for (var i = 0; i < rows.length; i++) {
+      var st = rows[i].status;
+      if (st === "PASS" || st === "UNIT_CONVERTED_PASS" || st === "VERIFIED") {
+        passRowsCount++;
+      } else if (st === "FAIL_VALUE_CONFLICT" || st === "FAIL" || st === "CONFLICT" || st === "CRITICAL" || st === "WARN_RSID_INJECTION") {
+        failRowsCount++;
+      } else {
+        unverifiedRowsCount++;
+      }
       if (rows[i].remediationHint) {
         remediations.push(rows[i].remediationHint);
       }
@@ -1834,38 +2510,64 @@
       remediations.push(extraFindings[j]);
     }
 
-    // Guarantee at least one concrete optimization/verification action if 100% clean
+    var verificationMode = (analysisState && analysisState.verificationMode) || "CROSS_DOCUMENT";
+    // Guarantee INFO_HARDENING ONLY when genuinely 100% clean across cross-document verification
     if (remediations.length === 0) {
-      remediations.push({
-        severity: "INFO_HARDENING",
-        targetFile: (analysisState && analysisState.primaryFile) || "Комплект документації ТУ/ПМВ",
-        location: "Метадані docProps/core.xml та word/settings.xml",
-        currentValue: "Збережено історію точкових сесій редагування w:rsid та ім'я автора",
-        requiredValue: "Очистити w:rsid та персональні метадані перед публікацією у Prozorro / передачею замовнику",
-        reasonUk: "Усі числові ТТХ (100/100) збігаються за маскою SI, але очищення метаданих захищає виконавця від деанонімізації."
-      });
+      if (rows.length > 0 && passRowsCount > 0 && failRowsCount === 0 && unverifiedRowsCount === 0 && verificationMode === "CROSS_DOCUMENT") {
+        remediations.push({
+          severity: "INFO_HARDENING",
+          targetFile: (analysisState && analysisState.primaryFile) || "Комплект документації ТУ/ПМВ",
+          location: "Метадані docProps/core.xml та word/settings.xml",
+          currentValue: "Збережено історію точкових сесій редагування w:rsid та ім'я автора",
+          requiredValue: "Очистити w:rsid та персональні метадані перед публікацією у Prozorro / передачею замовнику",
+          reasonUk: "Усі числові ТТХ (100/100) збігаються за маскою SI, але очищення метаданих захищає виконавця від деанонімізації."
+        });
+      } else {
+        remediations.push({
+          severity: "UNVERIFIED",
+          targetFile: (analysisState && analysisState.primaryFile) || "Одиночний або неповний набір файлів",
+          location: "Контур крос-документної звірки (ТУ ↔ ПМВ / Паспорт)",
+          currentValue: rows.length === 0
+            ? "Не знайдено пар характеристик для порівняння (0 зіставлених рядків)"
+            : ("Неперевірених позицій: " + unverifiedRowsCount + " (режим: " + verificationMode + ")"),
+          requiredValue: "Додати другий незалежний документ (наприклад, табличний протокол ПМВ .xlsx або паспорт виробу .pdf) для крос-звірки",
+          reasonUk: "Надано лише одне джерело без другого документа для незалежної крос-звірки або у файлі відсутні парні колонки «Норма / Факт»."
+        });
+      }
     }
 
-    var fileCount = (analysisState && analysisState.files && analysisState.files.length) || 2;
+    var fileCount = (analysisState && Array.isArray(analysisState.files)) ? analysisState.files.length : 0;
     var slotCount = ((analysisState && analysisState.proseSlots && analysisState.proseSlots.length) || 0) + rows.length;
     var issueCount = remediations.length;
     var criticalCount = remediations.filter(function (r) {
       return r.severity === "CRITICAL" || r.severity === "ПЕРЕВІРКА ЛЮДИНОЮ";
     }).length;
 
+    var readinessStatus = "PASS_WITH_ADVISORIES";
+    if (criticalCount > 0 || failRowsCount > 0) {
+      readinessStatus = "REQUIRES_ENGINEERING_REVISION";
+    } else if (rows.length === 0 || passRowsCount === 0 || unverifiedRowsCount > 0 || verificationMode === "SINGLE_SOURCE_UNVERIFIED") {
+      readinessStatus = "UNVERIFIED";
+    }
+
     var remediationSummary = {
       filesEvaluated: fileCount,
       parametersChecked: slotCount,
       totalFindings: issueCount,
       criticalFindings: criticalCount,
+      passRowsCount: passRowsCount,
+      failRowsCount: failRowsCount,
+      unverifiedRowsCount: unverifiedRowsCount,
+      verificationMode: verificationMode,
       standardsCompliance: ["ДСТУ ГОСТ 2.503:2006", "STANAG 4586"],
-      readinessStatus: criticalCount === 0 ? "PASS_WITH_ADVISORIES" : "REQUIRES_ENGINEERING_REVISION"
+      readinessStatus: readinessStatus
     };
 
     var diagCapsule = {
       schema: "shmlv-diag-v5.0",
       generatedAtUtc: new Date().toISOString(),
-      executionMode: "100% In-Browser Zero-Cloud (0 Network Bytes)",
+      executionMode: "100% In-Browser Local ArrayBuffer",
+      verificationMode: verificationMode,
       presetOrBatchId: (analysisState && analysisState.presetId) || "custom_dropzone_batch",
       filesAnalyzed: ((analysisState && analysisState.files) || []).map(function (f) {
         return {
@@ -2037,35 +2739,96 @@
   function analyzeFileBatchSync(fileObjects, presetId) {
     var t0 = nowMs();
     var processedFiles = [];
+    var uniqueProcessedFiles = [];
+    var seenSha256Map = {};
+    var uniqueDocxCount = 0;
+    var specSourceFiles = {};
     var allTuItems = [];
     var allTargetItems = [];
     var allProseSlots = [];
     var extraRemediations = [];
     var totalBytes = 0;
 
-    function processSingleFile(filename, uint8, parentZipName) {
+    function processSingleFile(filename, uint8, parentZipName, zipDepth) {
+      var curDepth = typeof zipDepth === "number" ? zipDepth : 0;
+      var displayFilename = parentZipName ? (parentZipName + " → " + filename) : filename;
       var safeU8 = uint8 instanceof Uint8Array ? uint8 : new Uint8Array(uint8 || 0);
       totalBytes += safeU8.length;
       var magic = detectFileMagicAndFormat(filename, safeU8);
       var fHash = sha256Hex(safeU8);
-      var summaryUk = "";
+      var summaryUk;
       var subDetails = {};
 
       if (safeU8.length === 0) {
         summaryUk = "Порожній файл (0 байтів) — перевірте цілісність артефакту перед імпортом";
         processedFiles.push({
-          filename: parentZipName ? (parentZipName + " → " + filename) : filename,
+          filename: displayFilename,
           sizeBytes: 0,
           sha256: fHash,
           magic: magic,
+          isDuplicate: false,
+          duplicateOf: null,
           summaryUk: summaryUk,
           subDetails: { emptyFile: true }
         });
         return;
       }
 
+      if (seenSha256Map[fHash]) {
+        var origFile = seenSha256Map[fHash];
+        summaryUk = "⚠️ Побайтовий дублікат файлу «" + origFile + "» (SHA-256 ідентичний) — виключено з крос-звірки для запобігання самопорівнянню";
+        extraRemediations.push({
+          severity: "УТОЧНИТИ В ДОКУМЕНТІ",
+          code: "DUPLICATE_FILE_SHA256",
+          targetFile: displayFilename,
+          location: "Контрольна сума SHA-256 (" + fHash.slice(0, 16) + "…)",
+          currentValue: "Побайтовий дублікат уже завантаженого файлу «" + origFile + "»",
+          requiredValue: "Завантажити другий незалежний документ (наприклад, протокол ПМВ або інший тендерний додаток) для крос-звірки",
+          reasonUk: "Два завантажені файли мають ідентичний криптографічний геш SHA-256. Дублікат виключено зі звірки, щоб уникнути хибного самопорівняння."
+        });
+        processedFiles.push({
+          filename: displayFilename,
+          sizeBytes: safeU8.length,
+          sha256: fHash,
+          magic: magic,
+          isDuplicate: true,
+          duplicateOf: origFile,
+          summaryUk: summaryUk,
+          subDetails: { duplicateOf: origFile }
+        });
+        return;
+      }
+      seenSha256Map[fHash] = displayFilename;
+      uniqueProcessedFiles.push(displayFilename);
+
       if (magic.format === "docx" || magic.format === "xlsx" || magic.format === "zip") {
-        var entries = unpackZipEntriesSync(safeU8);
+        var entries;
+        try {
+          entries = unpackZipEntriesSync(safeU8);
+        } catch (zipErr) {
+          var errMsg = String(zipErr && zipErr.message ? zipErr.message : zipErr);
+          summaryUk = "🛑 Заблоковано небезпечний або пошкоджений ZIP/OOXML контейнер: " + errMsg;
+          extraRemediations.push({
+            severity: "CRITICAL",
+            code: (zipErr && zipErr.code) || "ZIP_SECURITY_VIOLATION",
+            targetFile: displayFilename,
+            location: "ZIP Central Directory / Deflate Stream",
+            currentValue: errMsg,
+            requiredValue: "Перевірити архів на наявність Zip-Slip (../) або ZIP-бомби (> 16 МБ на запис / > 32 МБ сумарно)",
+            reasonUk: "Контейнер заблоковано захисним лімітом декомпресії або перевіркою шляхів."
+          });
+          processedFiles.push({
+            filename: displayFilename,
+            sizeBytes: safeU8.length,
+            sha256: fHash,
+            magic: magic,
+            isDuplicate: false,
+            duplicateOf: null,
+            summaryUk: summaryUk,
+            subDetails: { zipError: errMsg }
+          });
+          return;
+        }
         var entryNames = entries.map(function (e) { return e.name; });
 
         if (entryNames.indexOf("word/document.xml") >= 0) {
@@ -2075,20 +2838,40 @@
           subDetails = docxInfo;
           summaryUk = "Розпаковано " + entries.length + " XML-компонентів OOXML; абзаців: " + docxInfo.paragraphs.length + ", табличних вимог: " + docxInfo.tablePairs.length + ", автор останніх правок: " + docxInfo.lastModifiedBy + " (рев. " + docxInfo.revision + ", " + docxInfo.totalTimeMin + " хв)";
 
+          uniqueDocxCount++;
+          var isSecondaryDocx = uniqueDocxCount >= 2;
+          var docxExtractedItems = [];
           for (var ti = 0; ti < docxInfo.tablePairs.length; ti++) {
-            allTuItems.push(docxInfo.tablePairs[ti]);
+            docxExtractedItems.push(docxInfo.tablePairs[ti]);
           }
           var pSlots = extractUkrainianProseSlots(docxInfo.paragraphs, filename);
           for (var psi = 0; psi < pSlots.length; psi++) {
             allProseSlots.push(pSlots[psi]);
             if (docxInfo.tablePairs.length === 0) {
-              allTuItems.push({
+              docxExtractedItems.push({
                 section: pSlots[psi].subsystem,
                 paramName: pSlots[psi].paramName,
                 rawValue: pSlots[psi].rawValue,
                 sourceFile: filename,
-                sourceRole: "TU_PROSE_DOCX"
+                sourceRole: isSecondaryDocx ? "TARGET_PROSE_DOCX" : "TU_PROSE_DOCX"
               });
+            }
+          }
+          if (docxExtractedItems.length > 0) {
+            specSourceFiles[displayFilename] = true;
+          }
+          for (var di = 0; di < docxExtractedItems.length; di++) {
+            if (isSecondaryDocx) {
+              var clonedForTarget = {
+                section: docxExtractedItems[di].section,
+                paramName: docxExtractedItems[di].paramName,
+                rawValue: docxExtractedItems[di].rawValue,
+                sourceFile: docxExtractedItems[di].sourceFile,
+                sourceRole: "TARGET_DOCX"
+              };
+              allTargetItems.push(clonedForTarget);
+            } else {
+              allTuItems.push(docxExtractedItems[di]);
             }
           }
 
@@ -2108,27 +2891,45 @@
           var xlsxInfo = parseXlsxFromEntries(entries, filename);
           subDetails = xlsxInfo;
           summaryUk = "Розпаковано " + entries.length + " XML-компонентів Excel; sharedStrings: " + xlsxInfo.sharedStringCount + ", рядків протоколу ПМВ: " + xlsxInfo.protocolItems.length;
+          if (xlsxInfo.protocolItems.length > 0) {
+            specSourceFiles[displayFilename] = true;
+          }
           for (var xi = 0; xi < xlsxInfo.protocolItems.length; xi++) {
             allTargetItems.push(xlsxInfo.protocolItems[xi]);
           }
         } else if (entries.length === 0) {
           summaryUk = "Пошкоджений або усічений ZIP/OOXML контейнер (" + safeU8.length + " Б) — не знайдено коректних записів Central Directory";
         } else {
-          // Generic ZIP archive: recursively process inner files
-          summaryUk = "ZIP-архів (" + entries.length + " вкладених файлів розпаковано в RAM)";
-          for (var zi = 0; zi < entries.length; zi++) {
-            if (entries[zi].data && entries[zi].data.length > 0 && entries[zi].name.slice(-1) !== "/") {
-              processSingleFile(entries[zi].name, entries[zi].data, filename);
+          // Generic ZIP archive: recursively process inner files with depth bound
+          if (curDepth >= DEFAULT_MAX_ZIP_DEPTH) {
+            summaryUk = "🛑 Досягнуто максимальної глибини вкладеності ZIP-архівів (" + DEFAULT_MAX_ZIP_DEPTH + ") — подальшу рекурсію зупинено";
+            extraRemediations.push({
+              severity: "CRITICAL",
+              code: "ZIP_NESTING_LIMIT_EXCEEDED",
+              targetFile: displayFilename,
+              location: "Вкладений ZIP-контейнер (рівень > " + DEFAULT_MAX_ZIP_DEPTH + ")",
+              currentValue: "Вкладеність архівів перевищує безпечний поріг",
+              requiredValue: "Розпакувати вкладені архіви перед перевіркою",
+              reasonUk: "Обмеження глибини рекурсії захищає браузер від рекурсивних ZIP-бомб (42.zip)."
+            });
+          } else {
+            summaryUk = "ZIP-архів (" + entries.length + " вкладених файлів розпаковано в RAM)";
+            for (var zi = 0; zi < entries.length; zi++) {
+              if (entries[zi].data && entries[zi].data.length > 0 && entries[zi].name.slice(-1) !== "/") {
+                processSingleFile(entries[zi].name, entries[zi].data, displayFilename, curDepth + 1);
+              }
             }
           }
         }
       } else if (magic.format === "pdf") {
         var pdfInfo = parsePdfBufferSync(safeU8, filename);
         subDetails = pdfInfo;
-        if (pdfInfo.textLines.length === 0 && typeof window !== "undefined" && window.SHMLV_WASM_RASTER_OCR && typeof window.SHMLV_WASM_RASTER_OCR.runFullStampedPdfOcrPipeline === "function") {
-          var ocrRes = window.SHMLV_WASM_RASTER_OCR.runFullStampedPdfOcrPipeline(safeU8);
+        var ocrApi = (typeof window !== "undefined" && window.SHMLV_WASM_RASTER_OCR) || (typeof globalThis !== "undefined" && globalThis.SHMLV_WASM_RASTER_OCR);
+        if (pdfInfo.textLines.length === 0 && ocrApi && typeof ocrApi.runFullStampedPdfOcrPipeline === "function") {
+          var ocrRes = ocrApi.runFullStampedPdfOcrPipeline(safeU8);
           if (ocrRes && ocrRes.rows && ocrRes.rows.length > 0) {
             subDetails.rasterOcr = ocrRes;
+            specSourceFiles[displayFilename] = true;
             summaryUk = "Растровий PDF-скан v" + pdfInfo.info.version + " (0 BT..ET) → WASM \\0asm OCR розпізнав " + ocrRes.rows.length + " рядків ТТХ (точність " + ocrRes.ocrAccuracyPct + "%, C=" + ocrRes.circularityScore + ")";
             for (var oi = 0; oi < ocrRes.rows.length; oi++) {
               var oRow = ocrRes.rows[oi];
@@ -2150,6 +2951,9 @@
           }
         } else {
           summaryUk = "PDF v" + pdfInfo.info.version + " · Author: " + pdfInfo.info.author + " · Decompiled Tj/TJ рядків: " + pdfInfo.textLines.length + " (витягнуто параметрів паспорта: " + pdfInfo.extractedPairs.length + ")";
+          if (pdfInfo.extractedPairs.length > 0) {
+            specSourceFiles[displayFilename] = true;
+          }
           for (var pi = 0; pi < pdfInfo.extractedPairs.length; pi++) {
             allTargetItems.push(pdfInfo.extractedPairs[pi]);
           }
@@ -2162,6 +2966,9 @@
         var paramList = parseParamText(decodeUtf8(safeU8), filename);
         subDetails = { params: paramList };
         summaryUk = "Конфігурація автопілота: розібрано " + paramList.length + " параметрів прошивки";
+        if (paramList.length > 0) {
+          specSourceFiles[displayFilename] = true;
+        }
         for (var prm = 0; prm < paramList.length; prm++) {
           var pObj = paramList[prm];
           allTargetItems.push(pObj);
@@ -2207,7 +3014,7 @@
           }
         }
         subDetails = { rowCount: dataRowCount, passCount: bomPassCount, failCount: bomFailCount };
-        summaryUk = "Таблична специфікація / матриця готовності (" + magic.ext + ") · Рядків даних: " + dataRowCount + (bomPassCount + bomFailCount > 0 ? (" (підтверджено: " + bomPassCount + ", критичних/відсутніх: " + bomFailCount + ", індекс готовності 49/100)") : "");
+        summaryUk = "Таблична специфікація / матриця готовності (" + magic.ext + ") · Рядків даних: " + dataRowCount + (bomPassCount + bomFailCount > 0 ? (" (підтверджено: " + bomPassCount + ", критичних/відсутніх: " + bomFailCount + ")") : "");
         var csvSlots = extractUkrainianProseSlots(csvText, filename);
         for (var csi = 0; csi < csvSlots.length; csi++) allProseSlots.push(csvSlots[csi]);
       } else if (magic.format === "ubx") {
@@ -2233,10 +3040,12 @@
       }
 
       processedFiles.push({
-        filename: parentZipName ? (parentZipName + " → " + filename) : filename,
+        filename: displayFilename,
         sizeBytes: safeU8.length,
         sha256: fHash,
         magic: magic,
+        isDuplicate: false,
+        duplicateOf: null,
         summaryUk: summaryUk,
         subDetails: subDetails
       });
@@ -2245,38 +3054,99 @@
     for (var f = 0; f < fileObjects.length; f++) {
       var fObj = fileObjects[f] || {};
       var fname = fObj.filename || fObj.name || ("artifact_" + (f + 1) + ".bin");
-      processSingleFile(fname, fObj.bytes || fObj.data || new Uint8Array(0), null);
+      processSingleFile(fname, fObj.bytes || fObj.data || new Uint8Array(0), null, 0);
     }
 
-    // If only TU items were loaded (e.g. single DOCX), align prose slots against table items or self-audit
-    if (allTargetItems.length === 0 && allTuItems.length > 0) {
-      allTargetItems = allTuItems.map(function (x) {
-        return {
-          paramName: x.paramName,
-          rawValue: x.rawValue,
-          sourceFile: x.sourceFile + " (Self-Audit)",
-          sourceRole: "SELF_AUDIT"
-        };
-      });
+    var uniqueSpecSourceCount = Object.keys(specSourceFiles).length;
+    var verificationMode;
+    var alignment = { alignedRows: [], blockedByPhysicsSamples: [] };
+
+    if (allTuItems.length > 0 && allTargetItems.length > 0) {
+      verificationMode = uniqueSpecSourceCount >= 2 ? "CROSS_DOCUMENT" : "INTERNAL_CONSISTENCY";
+      alignment = runNeuroSymbolicCrossAlignment(allTuItems, allTargetItems);
     } else if (allTuItems.length === 0 && allTargetItems.length > 0) {
-      allTuItems = allTargetItems.map(function (x) {
-        return {
-          paramName: x.paramName,
-          rawValue: x.normValue || x.rawValue,
-          sourceFile: x.sourceFile + " (Норма/База)",
-          sourceRole: "SELF_AUDIT_NORM"
-        };
+      var explicitNormItems = allTargetItems.filter(function (x) {
+        return x.hasExplicitNorm === true && x.normValue !== null && x.normValue !== undefined && String(x.normValue).trim() !== "";
       });
+      if (explicitNormItems.length > 0) {
+        verificationMode = "INTERNAL_CONSISTENCY";
+        var normTuItems = explicitNormItems.map(function (x) {
+          return {
+            paramName: x.paramName,
+            rawValue: x.normValue,
+            normRef: x.normRef || null,
+            cellRef: x.normRef || null,
+            sourceFile: x.sourceFile + " (Норма у таблиці)",
+            sourceRole: "INTERNAL_NORM_XLSX"
+          };
+        });
+        alignment = runNeuroSymbolicCrossAlignment(normTuItems, explicitNormItems);
+      } else {
+        verificationMode = "SINGLE_SOURCE_UNVERIFIED";
+        alignment = {
+          alignedRows: allTargetItems.map(function (x) {
+            var pInfo = parseValueAndSiPhysical(x.rawValue, x.paramName);
+            return {
+              conceptId: detectBestConceptId(x.paramName, x.rawValue),
+              tuParam: x.paramName,
+              tuValue: "— (відсутній другий документ ТУ)",
+              tuSource: "Другий документ не надано",
+              tuRef: null,
+              targetParam: x.paramName,
+              targetValue: x.rawValue,
+              targetSource: x.sourceFile,
+              targetRef: x.factRef || x.cellRef || null,
+              targetRole: x.sourceRole,
+              siDimension: pInfo.dimLabel,
+              similarityPct: "—",
+              similarityNum: 0,
+              status: "UNVERIFIED",
+              deltaExplain: "Надано лише одне джерело без другого документа для незалежної крос-звірки",
+              remediationHint: null
+            };
+          }),
+          blockedByPhysicsSamples: []
+        };
+      }
+    } else if (allTargetItems.length === 0 && allTuItems.length > 0) {
+      verificationMode = "SINGLE_SOURCE_UNVERIFIED";
+      alignment = {
+        alignedRows: allTuItems.map(function (x) {
+          var pInfo = parseValueAndSiPhysical(x.rawValue, x.paramName);
+          return {
+            conceptId: detectBestConceptId(x.paramName, x.rawValue),
+            tuParam: x.paramName,
+            tuValue: x.rawValue,
+            tuSource: x.sourceFile,
+            tuRef: x.normRef || x.cellRef || null,
+            targetParam: x.paramName,
+            targetValue: "— (відсутній протокол / другий документ)",
+            targetSource: "Другий документ не надано",
+            targetRef: null,
+            targetRole: "MISSING_TARGET",
+            siDimension: pInfo.dimLabel,
+            similarityPct: "—",
+            similarityNum: 0,
+            status: "UNVERIFIED",
+            deltaExplain: "Надано лише одне джерело без другого документа для незалежної крос-звірки",
+            remediationHint: null
+          };
+        }),
+        blockedByPhysicsSamples: []
+      };
+    } else {
+      verificationMode = "SINGLE_SOURCE_UNVERIFIED";
     }
 
-    var alignment = runNeuroSymbolicCrossAlignment(allTuItems, allTargetItems);
     var elapsed = nowMs() - t0;
     var hwStatus = probeSupercomputerCapabilities(elapsed, totalBytes, alignment.alignedRows.length);
 
     var state = {
       presetId: presetId || "custom_batch",
+      verificationMode: verificationMode,
       primaryFile: processedFiles.length > 0 ? processedFiles[0].filename : "batch",
       files: processedFiles,
+      uniqueFilesCount: uniqueProcessedFiles.length,
       proseSlots: allProseSlots,
       alignedRows: alignment.alignedRows,
       blockedByPhysicsSamples: alignment.blockedByPhysicsSamples,
@@ -2409,15 +3279,134 @@
   // DOM RENDERING & INTERACTIVE EVENT BINDING FOR MULTI-FILE VERIFIER
   // ==========================================================================
   var CURRENT_COCKPIT_STATE = null;
+  var ALIGNMENT_FILTER_PROBLEMS_ONLY = false;
+  var LAST_EXCERPT_TRIGGER_EL = null;
+  var COCKPIT_ASYNC_RUN_ID = 0;
+
+  function wrapNumUnitsHtml(rawStr) {
+    var safe = escHtml(rawStr == null ? "" : rawStr);
+    return safe.replace(/([+-]?\d+(?:[.,]\d+)?\s*(?:мА·год|мАг|А·год|Вт·год|км\/год|см\/с|м\/с|хвилин(?:и|а)?|хв|місяц(?:ів|і|я)|міс\.?|год|кг|км|мм|см|ГГц|МГц|Гц|°C|°\/с|МП|шт\.?|г|м|с|мс|Вт|кВт|В))(?![а-яіїєґa-z0-9])/gi, '<span class="num-unit">$1</span>');
+  }
+
+  function sanitizeCsvCell(val) {
+    var str = String(val == null ? "" : val).replace(/\r?\n/g, " ").trim();
+    if (/^[=+\-@ \t\r]/.test(str)) {
+      var isNegativeNumber = /^-[0-9]+(?:[.,][0-9]+)?(?:\s*[°A-Za-zА-ЯІЇЄҐа-яіїєґ%/·.]*)?$/.test(str);
+      if (!isNegativeNumber && /^[=+\-@\t\r]/.test(str)) {
+        str = "'" + str;
+      }
+    }
+    if (str.indexOf('"') >= 0 || str.indexOf(",") >= 0 || str.indexOf(";") >= 0) {
+      return '"' + str.replace(/"/g, '""') + '"';
+    }
+    return str;
+  }
+
+  function getRowSortPriority(status) {
+    var st = String(status || "").toUpperCase();
+    if (st === "FAIL_VALUE_CONFLICT" || st === "FAIL" || st === "CONFLICT" || st === "CRITICAL") {
+      return 1;
+    }
+    if (st === "UNVERIFIED" || st === "LOCKED" || st === "PARTIAL" || st === "WARN" || st === "WARN_RSID_INJECTION") {
+      return 2;
+    }
+    return 3;
+  }
+
+  function sortAlignmentRowsByPriority(rows) {
+    return (rows || []).slice().sort(function (a, b) {
+      var pa = getRowSortPriority(a && a.status);
+      var pb = getRowSortPriority(b && b.status);
+      if (pa !== pb) return pa - pb;
+      return 0;
+    });
+  }
+
+  function exportAlignmentMatrixCsv(state) {
+    var st = state || CURRENT_COCKPIT_STATE || { alignedRows: [] };
+    var sorted = sortAlignmentRowsByPriority(st.alignedRows || []);
+    var header = ["Параметр", "Результат / статус", "Джерела", "Наступна дія"].map(sanitizeCsvCell).join(",");
+    var lines = [header];
+    for (var i = 0; i < sorted.length; i++) {
+      var r = sorted[i];
+      var paramCell = (r.tuParam || r.targetParam || "") + " [ТУ: " + (r.tuValue || "—") + " | Факт: " + (r.targetValue || "—") + "]";
+      var statusCell = (r.status || "UNVERIFIED") + " — " + (r.deltaExplain || "");
+      var sourceCell = (r.tuSource || "—") + (r.tuRef ? (" (" + r.tuRef + ")") : "") + " ↔ " + (r.targetSource || "—") + (r.targetRef ? (" (" + r.targetRef + ")") : "");
+      var nextAction = (r.remediationHint && r.remediationHint.requiredValue) ? r.remediationHint.requiredValue : (r.status === "UNVERIFIED" ? "Надати друге незалежне джерело для крос-звірки" : "Не потребує коригувань");
+      lines.push([
+        sanitizeCsvCell(paramCell),
+        sanitizeCsvCell(statusCell),
+        sanitizeCsvCell(sourceCell),
+        sanitizeCsvCell(nextAction)
+      ].join(","));
+    }
+    return lines.join("\n");
+  }
+
+  function openSourceExcerptModal(excerptTitle, excerptBody, triggerEl) {
+    if (typeof document === "undefined") return;
+    LAST_EXCERPT_TRIGGER_EL = triggerEl || document.activeElement || null;
+    var modal = document.getElementById("wow11SourceExcerptModal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "wow11SourceExcerptModal";
+      modal.setAttribute("role", "dialog");
+      modal.setAttribute("aria-modal", "true");
+      modal.setAttribute("aria-labelledby", "wow11SourceExcerptModalTitle");
+      modal.style.cssText = "position:fixed;inset:0;background:rgba(15,23,42,0.55);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px;";
+      modal.innerHTML = [
+        "<div style='background:#ffffff;border:1px solid #cbd5e1;border-radius:12px;max-width:580px;width:100%;padding:18px 20px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.2)'>",
+        "  <div style='display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px'>",
+        "    <strong id='wow11SourceExcerptModalTitle' style='font-size:15px;color:#0f172a'></strong>",
+        "    <button type='button' id='wow11CloseExcerptModalBtn' class='btn-action' style='padding:4px 10px;font-size:12.5px'>Закрити ✕</button>",
+        "  </div>",
+        "  <div id='wow11SourceExcerptModalBody' style='font-size:13px;line-height:1.55;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;font-family:monospace;white-space:pre-wrap'></div>",
+        "</div>"
+      ].join("");
+      document.body.appendChild(modal);
+      var closeBtn = document.getElementById("wow11CloseExcerptModalBtn");
+      if (closeBtn) {
+        closeBtn.addEventListener("click", closeSourceExcerptModal);
+      }
+      modal.addEventListener("click", function (ev) {
+        if (ev.target === modal) closeSourceExcerptModal();
+      });
+      document.addEventListener("keydown", function (ev) {
+        if (ev.key === "Escape" && modal.style.display !== "none") {
+          closeSourceExcerptModal();
+        }
+      });
+    }
+    var titleEl = document.getElementById("wow11SourceExcerptModalTitle");
+    var bodyEl = document.getElementById("wow11SourceExcerptModalBody");
+    if (titleEl) titleEl.textContent = excerptTitle || "Витяг із первинного джерела";
+    if (bodyEl) bodyEl.textContent = excerptBody || "";
+    modal.style.display = "flex";
+    var cBtn = document.getElementById("wow11CloseExcerptModalBtn");
+    if (cBtn && typeof cBtn.focus === "function") cBtn.focus();
+  }
+
+  function closeSourceExcerptModal() {
+    if (typeof document === "undefined") return;
+    var modal = document.getElementById("wow11SourceExcerptModal");
+    if (modal) modal.style.display = "none";
+    if (LAST_EXCERPT_TRIGGER_EL && typeof LAST_EXCERPT_TRIGGER_EL.focus === "function") {
+      try {
+        LAST_EXCERPT_TRIGGER_EL.focus();
+      } catch (_focusErr) {
+        // Ignore if element was detached from DOM
+      }
+    }
+  }
 
   function renderSupercomputerStatusBar(hw) {
     var el = document.getElementById("wow11SupercomputerBar");
     if (!el || !hw) return;
     el.innerHTML = [
-      '<div class="sc-metric"><span class="sc-lbl">⚡ WebGPU / WGSL Compute</span><strong class="sc-val">' + escHtml(hw.webGpuStatus) + '</strong></div>',
+      '<div class="sc-metric"><span class="sc-lbl">⚡ WebGPU API Probe</span><strong class="sc-val">' + escHtml(hw.webGpuStatus) + '</strong></div>',
       '<div class="sc-metric"><span class="sc-lbl">🧬 WASM SIMD128 Vector</span><strong class="sc-val sc-ok">' + escHtml(hw.wasmSimd128Status) + '</strong></div>',
       '<div class="sc-metric"><span class="sc-lbl">🛡️ COOP/COEP SharedArrayBuffer</span><strong class="sc-val">' + escHtml(hw.coiSabStatus) + '</strong></div>',
-      '<div class="sc-metric"><span class="sc-lbl">🔒 Zero-Egress CSP Lock</span><strong class="sc-val sc-ok">' + escHtml(hw.zeroEgressCspStatus) + '</strong></div>',
+      '<div class="sc-metric"><span class="sc-lbl">🔒 Мережева телеметрія (ResourceTiming)</span><strong class="sc-val sc-ok">' + escHtml(hw.zeroEgressCspStatus) + '</strong></div>',
       '<div class="sc-metric"><span class="sc-lbl">⏱️ Час обробки в RAM</span><strong class="sc-val sc-blue">' + escHtml(hw.elapsedMs) + ' мс (' + escHtml((hw.bytesProcessed / 1024).toFixed(1)) + ' кБ)</strong></div>'
     ].join("");
   }
@@ -2463,9 +3452,9 @@
         "<td><code>" + escHtml(s.slotId) + "</code></td>",
         "<td><b>" + escHtml(s.paramName) + "</b><div style='font-size:11.5px;color:#526077'>" + escHtml(s.subsystem) + " · <code>" + escHtml(s.sourceFile) + "</code></div></td>",
         "<td><span class='pill-ok'>" + escHtml(s.operator) + "</span></td>",
-        "<td><b>" + escHtml(s.rawValue) + "</b></td>",
-        "<td><code>" + escHtml(siFormatted) + "</code><div style='font-size:11px;color:#526077'>" + escHtml(s.siDimLabel) + "</div></td>",
-        "<td style='font-size:12px;color:#334155'>«" + escHtml(s.evidenceSnippet) + "»</td>",
+        "<td><b>" + wrapNumUnitsHtml(s.rawValue) + "</b></td>",
+        "<td><code>" + wrapNumUnitsHtml(siFormatted) + "</code><div style='font-size:11px;color:#526077'>" + escHtml(s.siDimLabel) + "</div></td>",
+        "<td style='font-size:12px;color:#334155'>«" + wrapNumUnitsHtml(s.evidenceSnippet) + "»</td>",
         "</tr>"
       ].join("");
     }).join("");
@@ -2476,55 +3465,163 @@
     var blockedBody = document.getElementById("wow11PhysicsBlockedBody");
     var summaryBanner = document.getElementById("wow11AlignmentSummary");
 
+    var allRows = (state && state.alignedRows) || [];
+    var sortedRows = sortAlignmentRowsByPriority(allRows);
     var passCnt = 0;
     var failCnt = 0;
+    var unverifiedCnt = 0;
     var convCnt = 0;
-    for (var i = 0; i < state.alignedRows.length; i++) {
-      var st = state.alignedRows[i].status;
-      if (st === "FAIL_VALUE_CONFLICT" || st === "WARN_RSID_INJECTION") failCnt++;
-      else if (st === "UNIT_CONVERTED_PASS") { passCnt++; convCnt++; }
-      else passCnt++;
+
+    for (var i = 0; i < sortedRows.length; i++) {
+      var st = sortedRows[i].status;
+      if (st === "FAIL_VALUE_CONFLICT" || st === "FAIL" || st === "CONFLICT" || st === "CRITICAL") {
+        failCnt++;
+      } else if (st === "UNVERIFIED" || st === "LOCKED" || st === "PARTIAL" || st === "WARN" || st === "WARN_RSID_INJECTION") {
+        unverifiedCnt++;
+      } else if (st === "UNIT_CONVERTED_PASS") {
+        passCnt++;
+        convCnt++;
+      } else {
+        passCnt++;
+      }
     }
 
+    var isRestoredCapsuleOnly = Boolean(
+      (state && state.isRestoredFromCapsule) ||
+      (typeof window !== "undefined" && window.location && window.location.hash && window.location.hash.indexOf("#diag=") === 0 && (!state || !state.files || state.files.length === 0))
+    );
+
+    if (tbody && tbody.parentElement) {
+      var thead = tbody.parentElement.querySelector("thead");
+      if (thead) {
+        thead.innerHTML = "<tr><th>Параметр</th><th>Результат / статус</th><th>Джерела</th><th>Наступна дія</th></tr>";
+      }
+    }
+
+    var visibleRows = ALIGNMENT_FILTER_PROBLEMS_ONLY
+      ? sortedRows.filter(function (r) { return getRowSortPriority(r.status) < 3; })
+      : sortedRows;
+    var hiddenPassCount = ALIGNMENT_FILTER_PROBLEMS_ONLY ? passCnt : 0;
+
     if (summaryBanner) {
+      var filterBtnLabel = ALIGNMENT_FILTER_PROBLEMS_ONLY
+        ? "Показати всі перевірки (" + sortedRows.length + ")"
+        : "Лише проблеми й неперевірене (" + (failCnt + unverifiedCnt) + ")";
+      var hiddenPassNotice = hiddenPassCount > 0
+        ? (" · <span style='color:#475467;font-weight:600'>Приховано підтверджених збігів (PASS): " + hiddenPassCount + "</span>")
+        : "";
+      var capsuleNotice = isRestoredCapsuleOnly
+        ? "<div style='margin-top:6px;font-size:12.5px;color:#9a3412;background:#fff7ed;border:1px solid #fed7aa;padding:6px 10px;border-radius:6px'>📦 Доступний збережений витяг; вихідний файл не передано.</div>"
+        : "";
+
       summaryBanner.innerHTML = [
         "<div style='display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between'>",
         "<div><strong>💡 Підсумок порівняння вимог та протоколу:</strong> ",
-        "Перевірено пар характеристик: <b>" + state.alignedRows.length + "</b> · ",
-        "Збігається (PASS): <b style='color:#067647'>" + passCnt + "</b> (з них автоматично переведено в однакові одиниці вимірювання: <b>" + convCnt + "</b>) · ",
-        "Виявлено розбіжностей: <b style='color:#d92d20'>" + failCnt + "</b> · ",
-        "Відсіяно несумісних фізичних величин: <b style='color:#0022ff'>" + state.blockedByPhysicsSamples.length + "</b></div>",
-        "</div>"
+        "Перевірено позицій: <b>" + sortedRows.length + "</b> · ",
+        "Збігається (PASS): <b style='color:#067647'>" + passCnt + "</b> (переведено одиниці SI: <b>" + convCnt + "</b>) · ",
+        "Розбіжностей (FAIL): <b style='color:#d92d20'>" + failCnt + "</b> · ",
+        "Неперевірено / Заблоковано (UNVERIFIED): <b style='color:#b54708'>" + unverifiedCnt + "</b> · ",
+        "Відсіяно несумісних величин SI: <b style='color:#0022ff'>" + ((state && state.blockedByPhysicsSamples) ? state.blockedByPhysicsSamples.length : 0) + "</b>",
+        hiddenPassNotice,
+        "</div>",
+        "<div style='display:flex;gap:8px;align-items:center'>",
+        "  <button type='button' id='btnWow11ToggleProblemsFilter' class='btn-action' style='padding:5px 10px;font-size:12px'>" + escHtml(filterBtnLabel) + "</button>",
+        "</div>",
+        "</div>",
+        capsuleNotice
       ].join("");
+
+      var toggleBtn = document.getElementById("btnWow11ToggleProblemsFilter");
+      if (toggleBtn) {
+        toggleBtn.addEventListener("click", function () {
+          ALIGNMENT_FILTER_PROBLEMS_ONLY = !ALIGNMENT_FILTER_PROBLEMS_ONLY;
+          renderModuleBAlignmentMatrix(state);
+        });
+      }
     }
 
     if (tbody) {
-      tbody.innerHTML = state.alignedRows.map(function (r) {
-        var pillClass = (r.status === "FAIL_VALUE_CONFLICT" || r.status === "WARN_RSID_INJECTION") ? "pill-fail" : "pill-ok";
-        var pillText = r.status === "FAIL_VALUE_CONFLICT"
-          ? "❌ РОЗБІЖНІСТЬ (FAIL)"
-          : (r.status === "WARN_RSID_INJECTION" ? "⚠️ УТОЧНИТИ В ТЕКСТІ" : (r.status === "UNIT_CONVERTED_PASS" ? "✅ ОДИНИЦІ ПЕРЕВЕДЕНО (PASS)" : "✅ ЗБІГАЄТЬСЯ (PASS)"));
-        return [
-          "<tr>",
-          "<td><b>" + escHtml(r.tuParam) + "</b><div style='font-size:11.5px;color:#526077'>Вимога: <code>" + escHtml(r.tuValue) + "</code> (" + escHtml(r.tuSource) + ")</div></td>",
-          "<td><b>" + escHtml(r.targetParam) + "</b><div style='font-size:11.5px;color:#526077'>Факт у файлі: <code>" + escHtml(r.targetValue) + "</code> (" + escHtml(r.targetSource) + ")</div></td>",
-          "<td><code>" + escHtml(r.siDimension) + "</code></td>",
-          "<td><b>" + escHtml(r.similarityPct) + "</b><div style='font-size:11px;color:#067647'>Точна пара</div></td>",
-          "<td><span class='" + pillClass + "'>" + pillText + "</span><div style='font-size:12px;margin-top:4px'>" + escHtml(r.deltaExplain) + "</div></td>",
-          "</tr>"
-        ].join("");
-      }).join("");
+      if (visibleRows.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='4' style='text-align:center;color:#526077'>Немає записів для поточного фільтра" + (hiddenPassCount > 0 ? (" (Приховано підтверджених збігів (PASS): " + hiddenPassCount + ")") : "") + "</td></tr>";
+      } else {
+        tbody.innerHTML = visibleRows.map(function (r, rowIdx) {
+          var st = String(r.status || "UNVERIFIED");
+          var pillClass = "pill-ok";
+          var pillText = "✅ ЗБІГАЄТЬСЯ (PASS)";
+          if (st === "FAIL_VALUE_CONFLICT" || st === "FAIL" || st === "CONFLICT" || st === "CRITICAL") {
+            pillClass = "pill-fail";
+            pillText = "❌ РОЗБІЖНІСТЬ (FAIL)";
+          } else if (st === "LOCKED") {
+            pillClass = "pill-warn";
+            pillText = "🔒 ЗАБЛОКОВАНО (відсутній доказ / джерело)";
+          } else if (st === "UNVERIFIED") {
+            pillClass = "pill-warn";
+            pillText = "⚠️ НЕПЕРЕВІРЕНО (UNVERIFIED)";
+          } else if (st === "WARN_RSID_INJECTION" || st === "PARTIAL" || st === "WARN") {
+            pillClass = "pill-warn";
+            pillText = "⚠️ УТОЧНИТИ В ДОКУМЕНТІ";
+          } else if (st === "UNIT_CONVERTED_PASS") {
+            pillClass = "pill-ok";
+            pillText = "✅ ОДИНИЦІ ПЕРЕВЕДЕНО (PASS)";
+          }
+
+          var sourceNote = isRestoredCapsuleOnly
+            ? "Доступний збережений витяг; вихідний файл не передано"
+            : (escHtml(r.tuSource || "—") + (r.tuRef ? (" <code>" + escHtml(r.tuRef) + "</code>") : "") + " ↔ " + escHtml(r.targetSource || "—") + (r.targetRef ? (" <code>" + escHtml(r.targetRef) + "</code>") : ""));
+
+          var nextActionText = (r.remediationHint && r.remediationHint.requiredValue)
+            ? r.remediationHint.requiredValue
+            : (st === "LOCKED"
+              ? "ЗАБЛОКОВАНО (відсутній доказ / джерело) — додати первинний протокол або сертифікат"
+              : (st === "UNVERIFIED"
+                ? "Завантажити другий незалежний документ (протокол ПМВ або паспорт) для крос-звірки"
+                : "Підтверджено за маскою SI — додаткових дій не потрібно"));
+
+          var excerptPayload = [
+            "Параметр ТУ: " + (r.tuParam || "—") + " = " + (r.tuValue || "—") + " (" + (r.tuSource || "—") + (r.tuRef ? ", " + r.tuRef : "") + ")",
+            "Факт у файлі: " + (r.targetParam || "—") + " = " + (r.targetValue || "—") + " (" + (r.targetSource || "—") + (r.targetRef ? ", " + r.targetRef : "") + ")",
+            "Розмірність SI: " + (r.siDimension || "—"),
+            "Пояснення: " + (r.deltaExplain || "—"),
+            isRestoredCapsuleOnly ? "Статус джерела: Доступний збережений витяг; вихідний файл не передано" : ""
+          ].filter(Boolean).join("\n");
+
+          return [
+            "<tr>",
+            "<td><b>" + escHtml(r.tuParam || r.targetParam) + "</b>",
+            "<div style='font-size:11.5px;color:#526077;margin-top:3px'>Вимога: <code>" + wrapNumUnitsHtml(r.tuValue) + "</code> · Факт: <code>" + wrapNumUnitsHtml(r.targetValue) + "</code></div>",
+            "<div style='font-size:11px;color:#64748b;margin-top:2px'>SI: <code>" + escHtml(r.siDimension) + "</code></div></td>",
+            "<td><span class='" + pillClass + "'>" + pillText + "</span><div style='font-size:12px;margin-top:4px'>" + wrapNumUnitsHtml(r.deltaExplain) + "</div></td>",
+            "<td><div style='font-size:12px;color:#334155'>" + sourceNote + "</div>",
+            "<button type='button' class='source-excerpt-btn' data-row-idx='" + rowIdx + "' data-excerpt-title='" + escHtml(r.tuParam || r.targetParam) + "' data-excerpt-body='" + escHtml(excerptPayload) + "' style='margin-top:5px;padding:3px 8px;font-size:11.5px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;cursor:pointer'>📄 Показати витяг</button></td>",
+            "<td style='font-size:12.5px;color:#1e293b'>" + wrapNumUnitsHtml(nextActionText) + "</td>",
+            "</tr>"
+          ].join("");
+        }).join("");
+
+        var excerptBtns = tbody.querySelectorAll(".source-excerpt-btn");
+        for (var bi = 0; bi < excerptBtns.length; bi++) {
+          (function (btnEl) {
+            btnEl.addEventListener("click", function () {
+              openSourceExcerptModal(
+                btnEl.getAttribute("data-excerpt-title"),
+                btnEl.getAttribute("data-excerpt-body"),
+                btnEl
+              );
+            });
+          })(excerptBtns[bi]);
+        }
+      }
     }
 
     if (blockedBody) {
-      if (state.blockedByPhysicsSamples.length === 0) {
+      if (!state.blockedByPhysicsSamples || state.blockedByPhysicsSamples.length === 0) {
         blockedBody.innerHTML = "<tr><td colspan='4' style='text-align:center;color:#526077'>Усі порівняні показники мають сумісні фізичні одиниці вимірювання</td></tr>";
       } else {
         blockedBody.innerHTML = state.blockedByPhysicsSamples.map(function (b) {
           return [
             "<tr>",
-            "<td>" + escHtml(b.leftParam) + " <code>" + escHtml(b.leftDim) + "</code></td>",
-            "<td>" + escHtml(b.rightParam) + " <code>" + escHtml(b.rightDim) + "</code></td>",
+            "<td>" + wrapNumUnitsHtml(b.leftParam) + " <code>" + escHtml(b.leftDim) + "</code></td>",
+            "<td>" + wrapNumUnitsHtml(b.rightParam) + " <code>" + escHtml(b.rightDim) + "</code></td>",
             "<td>" + escHtml(b.lexicalCosPct) + " (схожі слова в назві)</td>",
             "<td><span class='pill-fail'>🛡️ " + escHtml(b.physicsGateResult) + "</span></td>",
             "</tr>"
@@ -2541,7 +3638,7 @@
     var remBody = document.getElementById("wow11RemediationBody");
     if (remBody) {
       remBody.innerHTML = ts.remediations.map(function (r, idx) {
-        var sevClass = (r.severity === "CRITICAL" || r.severity === "ПЕРЕВІРКА ЛЮДИНОЮ") ? "pill-fail" : ((r.severity === "HIGH" || r.severity === "УТОЧНИТИ В ДОКУМЕНТІ") ? "pill-warn" : "pill-ok");
+        var sevClass = (r.severity === "CRITICAL" || r.severity === "ПЕРЕВІРКА ЛЮДИНОЮ") ? "pill-fail" : ((r.severity === "HIGH" || r.severity === "УТОЧНИТИ В ДОКУМЕНТІ" || r.severity === "UNVERIFIED") ? "pill-warn" : "pill-ok");
         return [
           "<tr>",
           "<td><span class='" + sevClass + "'>" + escHtml(r.severity) + " #" + (idx + 1) + "</span></td>",
@@ -2597,10 +3694,10 @@
     var btn3 = document.getElementById("btnWow11Preset3");
     var btn4 = document.getElementById("btnWow11Preset4");
 
-    if (btn1) btn1.addEventListener("click", function () { applyStateToDom(runPreset1RealProzorroMatrice4T()); });
-    if (btn2) btn2.addEventListener("click", function () { applyStateToDom(runPreset2RealUkrainianProseAndKep()); });
-    if (btn3) btn3.addEventListener("click", function () { applyStateToDom(runPreset3FiveFormatOmnivoreBundle()); });
-    if (btn4) btn4.addEventListener("click", function () { applyStateToDom(runPreset4SiPhysicsAntiHallucination()); });
+    if (btn1) btn1.addEventListener("click", function () { COCKPIT_ASYNC_RUN_ID++; applyStateToDom(runPreset1RealProzorroMatrice4T()); });
+    if (btn2) btn2.addEventListener("click", function () { COCKPIT_ASYNC_RUN_ID++; applyStateToDom(runPreset2RealUkrainianProseAndKep()); });
+    if (btn3) btn3.addEventListener("click", function () { COCKPIT_ASYNC_RUN_ID++; applyStateToDom(runPreset3FiveFormatOmnivoreBundle()); });
+    if (btn4) btn4.addEventListener("click", function () { COCKPIT_ASYNC_RUN_ID++; applyStateToDom(runPreset4SiPhysicsAntiHallucination()); });
 
     // Bind Custom Prose Live Extractor
     var btnRunProse = document.getElementById("btnWow11RunCustomProse");
@@ -2623,23 +3720,36 @@
 
     function handleBrowserFileList(fileList) {
       if (!fileList || fileList.length === 0) return;
-      var loaded = [];
+      var runId = ++COCKPIT_ASYNC_RUN_ID;
+      var loaded = new Array(fileList.length);
       var remaining = fileList.length;
       for (var i = 0; i < fileList.length; i++) {
-        (function (fileObj) {
+        (function (idx, fileObj) {
           var reader = new FileReader();
           reader.onload = function (ev) {
-            loaded.push({
+            if (runId !== COCKPIT_ASYNC_RUN_ID) return;
+            loaded[idx] = {
               filename: fileObj.name,
               bytes: new Uint8Array(ev.target.result)
-            });
+            };
             remaining--;
             if (remaining === 0) {
-              applyStateToDom(analyzeFileBatchSync(loaded, "user_dropped_files"));
+              applyStateToDom(analyzeFileBatchSync(loaded.filter(Boolean), "user_dropped_files"));
+            }
+          };
+          reader.onerror = function () {
+            if (runId !== COCKPIT_ASYNC_RUN_ID) return;
+            loaded[idx] = {
+              filename: fileObj.name,
+              bytes: new Uint8Array(0)
+            };
+            remaining--;
+            if (remaining === 0) {
+              applyStateToDom(analyzeFileBatchSync(loaded.filter(Boolean), "user_dropped_files"));
             }
           };
           reader.readAsArrayBuffer(fileObj);
-        })(fileList[i]);
+        })(i, fileList[i]);
       }
     }
 
@@ -2682,10 +3792,17 @@
           : ((CURRENT_COCKPIT_STATE && CURRENT_COCKPIT_STATE.timeSaver) ? CURRENT_COCKPIT_STATE.timeSaver.diagJsonString : "");
         if (!jsonTxt) return;
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(jsonTxt);
-        }
-        if (copyFeedback) {
-          copyFeedback.textContent = "✅ Технічний звіт у форматі JSON (" + jsonTxt.length + " байтів) скопійовано в буфер обміну!";
+          navigator.clipboard.writeText(jsonTxt).then(function () {
+            if (copyFeedback) {
+              copyFeedback.textContent = "✅ Технічний звіт у форматі JSON (" + jsonTxt.length + " байтів) скопійовано в буфер обміну!";
+            }
+          }).catch(function (clipErr) {
+            if (copyFeedback) {
+              copyFeedback.textContent = "⚠️ Не вдалося скопіювати автоматично (" + String(clipErr && clipErr.message ? clipErr.message : "доступ до буфера обмежено") + ") — виділіть поле JSON вручну.";
+            }
+          });
+        } else if (copyFeedback) {
+          copyFeedback.textContent = "⚠️ Буфер обміну недоступний у цьому оточенні — скопіюйте JSON із текстового поля нижче.";
         }
       });
     }
@@ -2699,7 +3816,8 @@
           "# Звіт перевірки документації та список питань для інженера",
           "",
           "- **Згенеровано**: `" + ts.diagCapsule.generatedAtUtc + "`",
-          "- **Режим виконання**: `100% локально у браузері (0 байт у мережу)`",
+          "- **Режим виконання**: `" + ts.diagCapsule.executionMode + "`",
+          "- **Режим верифікації**: `" + (ts.diagCapsule.verificationMode || "CROSS_DOCUMENT") + "`",
           "- **Кількість порівняних пар характеристик**: `" + ts.diagCapsule.crossDocumentMatchesCount + "`",
           "- **Знайдено характеристик у суцільному тексті**: `" + ts.diagCapsule.proseSlotsExtractedCount + "`",
           "",
@@ -2725,8 +3843,11 @@
       });
     }
 
-    // Run Preset 1 by default on page load
-    applyStateToDom(runPreset1RealProzorroMatrice4T());
+    // Run Preset 1 by default on page load ONLY if there is no incoming #diag= hash
+    var hasIncomingDiagHash = (typeof window !== "undefined" && window.location && typeof window.location.hash === "string" && window.location.hash.indexOf("#diag=") === 0);
+    if (!hasIncomingDiagHash) {
+      applyStateToDom(runPreset1RealProzorroMatrice4T());
+    }
   }
 
   if (typeof document !== "undefined") {
@@ -2738,11 +3859,17 @@
   }
 
   var exportedApi = {
-    version: "5.0.0",
+    version: "5.1.0",
     SUPPORTED_EXTENSIONS: SUPPORTED_EXTENSIONS,
     sha256Hex: sha256Hex,
     escHtml: escHtml,
     escapeHtml: escapeHtml,
+    wrapNumUnitsHtml: wrapNumUnitsHtml,
+    sanitizeCsvCell: sanitizeCsvCell,
+    sortAlignmentRowsByPriority: sortAlignmentRowsByPriority,
+    exportAlignmentMatrixCsv: exportAlignmentMatrixCsv,
+    readStreamWithLimit: readStreamWithLimit,
+    isUnsafeZipEntryPath: isUnsafeZipEntryPath,
     inflateRawSync: inflateRawSync,
     decompressDeflateRawAsync: decompressDeflateRawAsync,
     detectFileMagicAndFormat: detectFileMagicAndFormat,
@@ -2753,6 +3880,7 @@
     parseParamText: parseParamText,
     parseIntelHexText: parseIntelHexText,
     parseElfBinary: parseElfBinary,
+    parseCmsSignedDataDer: parseCmsSignedDataDer,
     parseP7sSignature: parseP7sSignature,
     parseValueAndSiPhysical: parseValueAndSiPhysical,
     computeSubwordSvdEmbedding: computeSubwordSvdEmbedding,
@@ -2769,7 +3897,10 @@
     buildSyntheticZipBundleBytes: buildSyntheticZipBundleBytes,
     analyzeFileBatchSync: analyzeFileBatchSync,
     applyStateToDom: applyStateToDom,
+    renderModuleBAlignmentMatrix: renderModuleBAlignmentMatrix,
     getCurrentCockpitState: getCurrentCockpitState,
+    openSourceExcerptModal: openSourceExcerptModal,
+    closeSourceExcerptModal: closeSourceExcerptModal,
     runPreset1RealProzorroMatrice4T: runPreset1RealProzorroMatrice4T,
     runPreset2RealUkrainianProseAndKep: runPreset2RealUkrainianProseAndKep,
     runPreset3FiveFormatOmnivoreBundle: runPreset3FiveFormatOmnivoreBundle,
@@ -2777,6 +3908,7 @@
   };
 
   global.SHMLV_MULTI_FILE_VERIFIER = exportedApi;
+  global.SHMLV_MULTIFILE_VERIFIER = exportedApi;
   if (typeof module !== "undefined" && module.exports) {
     module.exports = exportedApi;
   }
