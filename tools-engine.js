@@ -2801,14 +2801,16 @@
           return { kind: "intervals", intervals: ivs, dim: dim0 };
         }
 
-        // 4. Multi-component SI physical vector (e.g. 260.6 мм × 113.7 мм × 138.4 мм or 1420 г / 1430 г)
+        // 4. Multi-component SI physical vector (e.g. 260.6 мм × 113.7 мм × 138.4 мм, 260.6 × 113.7 × 138.4 мм, or 1420 г / 1430 г)
         var vecParts = clean.split(/\s*(?:×|✕|\*|\/|(?<=\d|\s)[xхXХ](?=\s*\d))\s*/);
         if (vecParts.length >= 2 && vecParts.length <= 4) {
+          var tailUnitM = vecParts[vecParts.length - 1].match(/^[+-]?\d+(?:[.,]\d+)?\s*([^\d\s].*?)$/);
+          var sharedTailU = tailUnitM ? tailUnitM[1].trim() : "";
           var vecScalars = [];
           var vecDim = null;
           var allValidVec = true;
           for (var vi = 0; vi < vecParts.length; vi++) {
-            var sc = parseScalarSpec(vecParts[vi]);
+            var sc = parseScalarSpec(vecParts[vi]) || (sharedTailU ? parseScalarSpec(vecParts[vi] + " " + sharedTailU) : null);
             if (!sc || (vecDim && sc.dim !== vecDim)) {
               allValidVec = false;
               break;
@@ -2973,6 +2975,18 @@
             loc: locs
           };
         }
+        var expCleanTxt = stripMetaNotesJS(String(expStr || "")).replace(/\s+/g, " ").trim();
+        var actCleanTxt = stripMetaNotesJS(String(actStr || "")).replace(/\s+/g, " ").trim();
+        var unverifiedMarkerRe = /(?:^|[\s,;()])(—|-|n\/a|tbd|не\s+перевірено|не\s+підтверджено|відсутн\S*|немає|потребує)(?:$|[\s,;()])/i;
+        if (expCleanTxt && actCleanTxt && !/\d/.test(expCleanTxt) && !/\d/.test(actCleanTxt) && !unverifiedMarkerRe.test(expCleanTxt) && !unverifiedMarkerRe.test(actCleanTxt)) {
+          var okTxt = expCleanTxt.toLowerCase() === actCleanTxt.toLowerCase();
+          return {
+            param: param, expected: expStr, actual: actStr,
+            status: okTxt ? "PASS" : "FAIL",
+            reason: (okTxt ? "Текстова характеристика збігається з нормою ТУ" : "Розбіжність текстової характеристики: «" + expStr + "» ≠ «" + actStr + "»") + infTag,
+            loc: locs
+          };
+        }
         return {
           param: param, expected: expStr, actual: actStr,
           status: "UNVERIFIED",
@@ -2980,6 +2994,9 @@
           loc: locs
         };
       }
+      __globalRoot.compareSpecPair = compareSpecPair;
+      __globalRoot.parseScalarSpec = parseScalarSpec;
+      __globalRoot.parseComplexSpec = parseComplexSpec;
 
       function inferColumnsByPhysicsJS(records) {
         if (!records || records.length < 2) return null;

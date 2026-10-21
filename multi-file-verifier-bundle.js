@@ -1967,9 +1967,89 @@
     if (/(?:не\s+менш|не\s+нижч|щонайменш|мінімум|від\s+\d|>=|≥)/i.test(s)) op = ">=";
     else if (/(?:не\s+більш|не\s+перевищ|до\s+\d|макс\.?|<=|≤)/i.test(s)) op = "<=";
 
+    // Multi-component SI physical vector: e.g. "260.6 × 113.7 × 138.4 мм", "260.6 мм × 113.7 мм × 138.4 мм", "1420 г (...) / 1430 г (...)"
+    var sVecClean = s.replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").trim();
+    var vecParts = sVecClean.split(/\s*(?:×|✕|\*|\/|(?<=\d|\s)[xхXХ](?=\s*\d))\s*/);
+    if (vecParts.length >= 2 && vecParts.length <= 4) {
+      var tailUnitMatch = vecParts[vecParts.length - 1].match(/^[+-]?\d+(?:[.,]\d+)?\s*([^\d\s].*?)$/);
+      var sharedTailUnit = tailUnitMatch ? tailUnitMatch[1].trim() : "";
+      var vecSiVals = [];
+      var vecRawUnits = [];
+      var vecReg = null;
+      var allVecValid = true;
+      for (var vi = 0; vi < vecParts.length; vi++) {
+        var vp = vecParts[vi].trim();
+        var vm = vp.match(/^(?:не\s+більш\S*|не\s+менш\S*|до|від|<=|>=|<|>|=)?\s*([+-]?\d+(?:[.,]\d+)?)(?:\s*([^\d\s].*?))?$/i);
+        if (!vm) {
+          allVecValid = false;
+          break;
+        }
+        var vNum = parseFloat(vm[1].replace(",", "."));
+        var vUnitRaw = (vm[2] || sharedTailUnit || "").trim();
+        if (!vUnitRaw) {
+          allVecValid = false;
+          break;
+        }
+        var matchedReg = null;
+        for (var ri = 0; ri < SI_UNIT_REGISTRY.length; ri++) {
+          if (SI_UNIT_REGISTRY[ri].pattern.test(vUnitRaw)) {
+            matchedReg = SI_UNIT_REGISTRY[ri];
+            break;
+          }
+        }
+        if (!matchedReg || (vecReg && matchedReg.domain !== vecReg.domain)) {
+          allVecValid = false;
+          break;
+        }
+        vecReg = matchedReg;
+        vecSiVals.push(vNum * matchedReg.scale + matchedReg.offset);
+        vecRawUnits.push(vUnitRaw);
+      }
+      if (allVecValid && vecReg && vecSiVals.length >= 2) {
+        return {
+          operator: "VECTOR",
+          valMin: Math.min.apply(null, vecSiVals),
+          valMax: Math.max.apply(null, vecSiVals),
+          valPrimary: vecSiVals[0],
+          rawUnit: vecRawUnits[0],
+          siUnit: vecReg.siUnit,
+          siMin: Math.min.apply(null, vecSiVals),
+          siMax: Math.max.apply(null, vecSiVals),
+          siValue: vecSiVals[0],
+          siVector: vecSiVals,
+          dim: vecReg.dim,
+          dimLabel: "[" + vecReg.dim.join(",") + "] (" + vecReg.siUnit + ")",
+          domain: vecReg.domain
+        };
+      }
+    }
+
+    // Collect all explicit <number + physical unit> occurrences to detect multi-condition clauses (e.g. "100 Вт ... не більше 82 Вт")
+    var explicitUnitRegexSource = "([+-]?\\d+(?:[.,]\\d+)?)\\s*(мА[·.]?год|мАг|mAh|А[·.]?год|Аг|АН|Ah|Вт[·.]?год|Wh|км\\/год|km\\/h|см\\/с|cm\\/s|м\\/с|m\\/s|дюйм(?:ів|и|а)?|хвилин(?:и|а)?|хв|годин(?:и|а)?|год|місяц(?:ів|і|я)|міс\\.?|кг|kg|г|g|км|km|мм|mm|см|cm|кВт|kW|Вт|W|ГГц|GHz|МГц|MHz|Гц|Hz|°\\/с|deg\\/s|°C|МП|MP|комплект(?:ів)?|цикл(?:ів)?|шт\\.?|код|мс|ms|м|m|с|s|В|V)(?![а-яіїєґa-z0-9·])";
+    var explicitGlobalRe = new RegExp(explicitUnitRegexSource, "gi");
+    var explicitMeasures = [];
+    var egm;
+    while ((egm = explicitGlobalRe.exec(s)) !== null) {
+      var eNum = parseFloat(egm[1].replace(",", "."));
+      var eUnit = egm[2].trim();
+      var eSiVal = eNum;
+      var eSiUnit = eUnit;
+      var eDomain = "scalar";
+      for (var ei = 0; ei < SI_UNIT_REGISTRY.length; ei++) {
+        if (SI_UNIT_REGISTRY[ei].pattern.test(eUnit)) {
+          eSiVal = eNum * SI_UNIT_REGISTRY[ei].scale + SI_UNIT_REGISTRY[ei].offset;
+          eSiUnit = SI_UNIT_REGISTRY[ei].siUnit;
+          eDomain = SI_UNIT_REGISTRY[ei].domain;
+          break;
+        }
+      }
+      explicitMeasures.push({ num: eNum, rawUnit: eUnit, siVal: eSiVal, siUnit: eSiUnit, domain: eDomain });
+    }
+
     // Extract number + explicit physical unit first (longest unit match first so мА·год and місяців are matched before м)
-    var explicitUnitMatch = s.match(/([+-]?\d+(?:[.,]\d+)?)\s*(мА[·.]?год|мАг|mAh|А[·.]?год|Аг|АН|Ah|Вт[·.]?год|Wh|км\/год|km\/h|см\/с|cm\/s|м\/с|m\/s|дюйм(?:ів|и|а)?|хвилин(?:и|а)?|хв|годин(?:и|а)?|год|місяц(?:ів|і|я)|міс\.?|кг|kg|г|g|км|km|мм|mm|см|cm|кВт|kW|Вт|W|ГГц|GHz|МГц|MHz|Гц|Hz|°\/с|deg\/s|°C|МП|MP|комплект(?:ів)?|цикл(?:ів)?|шт\.?|код|мс|ms|м|m|с|s|В|V)(?![а-яіїєґa-z0-9·])/i);
-    var numUnitMatch = explicitUnitMatch || s.match(/([+-]?\d+(?:[.,]\d+)?)\s*([а-яіїєґa-z°"/·.]+)?/i);
+    var explicitUnitMatch = s.match(new RegExp(explicitUnitRegexSource, "i"));
+    var pureScalarMatch = !explicitUnitMatch ? s.match(/^(?:до|від|не\s+більш\S*|не\s+менш\S*|<=|>=|<|>|=)?\s*([+-]?\d+(?:[.,]\d+)?)\s*([а-яіїєґa-z°"/·.]+)?$/i) : null;
+    var numUnitMatch = explicitUnitMatch || pureScalarMatch;
     if (numUnitMatch) {
       var num = parseFloat(numUnitMatch[1].replace(",", "."));
       var uRaw = (numUnitMatch[2] || "").trim();
@@ -1990,26 +2070,30 @@
             siMin: siVal,
             siMax: siVal,
             siValue: siVal,
+            explicitMeasures: explicitMeasures,
             dim: reg.dim,
             dimLabel: "[" + reg.dim.join(",") + "] (" + reg.siUnit + ")",
             domain: reg.domain
           };
         }
       }
-      return {
-        operator: op,
-        valMin: num,
-        valMax: num,
-        valPrimary: num,
-        rawUnit: uRaw || "од",
-        siUnit: "scalar",
-        siMin: num,
-        siMax: num,
-        siValue: num,
-        dim: [0, 0, 0, 0, 0, 0, 0],
-        dimLabel: "[0,0,0,0,0,0,0] (scalar)",
-        domain: "scalar"
-      };
+      if (!uRaw) {
+        return {
+          operator: op,
+          valMin: num,
+          valMax: num,
+          valPrimary: num,
+          rawUnit: "од",
+          siUnit: "scalar",
+          siMin: num,
+          siMax: num,
+          siValue: num,
+          explicitMeasures: explicitMeasures,
+          dim: [0, 0, 0, 0, 0, 0, 0],
+          dimLabel: "[0,0,0,0,0,0,0] (scalar)",
+          domain: "scalar"
+        };
+      }
     }
 
     return {
@@ -2381,7 +2465,12 @@
 
   // --- Cross-Document Semantic & SI Alignment Engine ---
   function runNeuroSymbolicCrossAlignment(tuItems, targetItems) {
-    var enrichedTu = tuItems.map(function (it) {
+    var enrichedTu = tuItems.map(function (rawIt) {
+      var it = Object.assign({}, rawIt, {
+        paramName: rawIt.paramName || rawIt.name || rawIt.parameter || rawIt.label || "",
+        rawValue: rawIt.rawValue !== undefined ? rawIt.rawValue : (rawIt.rawVal !== undefined ? rawIt.rawVal : (rawIt.expected !== undefined ? rawIt.expected : (rawIt.value || ""))),
+        normRef: rawIt.normRef || rawIt.sourceRef || rawIt.cellRef || null
+      });
       var phys = parseValueAndSiPhysical(it.rawValue, it.paramName);
       var conceptId = detectBestConceptId(it.paramName, it.rawValue);
       var emb = computeSubwordSvdEmbedding(it.paramName + " " + conceptId + " " + (it.section || ""));
@@ -2393,7 +2482,12 @@
       };
     });
 
-    var enrichedTgt = targetItems.map(function (it) {
+    var enrichedTgt = targetItems.map(function (rawIt) {
+      var it = Object.assign({}, rawIt, {
+        paramName: rawIt.paramName || rawIt.name || rawIt.parameter || rawIt.label || "",
+        rawValue: rawIt.rawValue !== undefined ? rawIt.rawValue : (rawIt.factVal !== undefined ? rawIt.factVal : (rawIt.rawVal !== undefined ? rawIt.rawVal : (rawIt.actual !== undefined ? rawIt.actual : (rawIt.value || "")))),
+        factRef: rawIt.factRef || rawIt.sourceRef || rawIt.cellRef || null
+      });
       var phys = parseValueAndSiPhysical(it.rawValue, it.paramName);
       var conceptId = detectBestConceptId(it.paramName, it.rawValue);
       var emb = computeSubwordSvdEmbedding(it.paramName + " " + conceptId + " " + (it.paramKey || ""));
@@ -2416,7 +2510,7 @@
         var mask = checkSiPhysicsMask(A.phys, B.phys);
         var rawCos = cosineSimilarity64(A.emb, B.emb);
         if (A.conceptId !== "GENERIC_PARAM" && A.conceptId === B.conceptId) {
-          rawCos = Math.max(rawCos, 0.94);
+          rawCos = Math.max(rawCos, 0.90 + rawCos * 0.09);
         }
         var finalSim = mask.compatible ? (rawCos * mask.multiplier) : 0.0;
         rowSims.push(finalSim);
@@ -2473,7 +2567,59 @@
             reasonUk: "У протоколі випробувань зафіксовано вужчий температурний діапазон (" + dst.item.rawValue + " проти вимоги " + src.item.rawValue + "). Автоматично переписувати результати випробувань заборонено — потрібна перевірка інженером."
           };
         }
+      } else if (src.phys.operator === "VECTOR" || dst.phys.operator === "VECTOR") {
+        var vecMatch = false;
+        if (src.phys.siVector && dst.phys.siVector && src.phys.siVector.length === dst.phys.siVector.length) {
+          vecMatch = true;
+          for (var vk = 0; vk < src.phys.siVector.length; vk++) {
+            var vDiff = Math.abs(src.phys.siVector[vk] - dst.phys.siVector[vk]) / Math.max(Math.abs(src.phys.siVector[vk]), 1e-9);
+            if (vDiff > 0.005) {
+              vecMatch = false;
+              break;
+            }
+          }
+        }
+        if (!vecMatch) {
+          status = "FAIL_VALUE_CONFLICT";
+          deltaExplain = "Розбіжність компонентів складеної величини (габаритів/вектора): вимога «" + src.item.rawValue + "» ≠ факт «" + dst.item.rawValue + "»";
+          var vecCellLoc = dst.item.paramKey || (dst.item.factRef ? ("Клітинка " + dst.item.factRef + " («" + dst.item.paramName + "»)") : ("Комірка «" + dst.item.paramName + "»"));
+          remediationHint = {
+            severity: "ПЕРЕВІРКА ЛЮДИНОЮ",
+            targetFile: dst.item.sourceFile,
+            location: vecCellLoc,
+            currentValue: dst.item.rawValue,
+            requiredValue: "Не змінювати автоматично! Звірити всі компоненти габаритів/вектора з нормою «" + src.item.rawValue + "»",
+            reasonUk: "Один або кілька компонентів складеної фізичної величини у протоколі («" + dst.item.rawValue + "») не збігаються з вимогою («" + src.item.rawValue + "»)."
+          };
+        } else if (src.phys.rawUnit.toLowerCase() !== dst.phys.rawUnit.toLowerCase()) {
+          status = "UNIT_CONVERTED_PASS";
+          deltaExplain = "Одиниці переведено автоматично для всіх компонентів вектора: " + src.item.rawValue + " = " + dst.item.rawValue;
+        }
+      } else if (src.phys.explicitMeasures && src.phys.explicitMeasures.length >= 2 && (!dst.phys.explicitMeasures || dst.phys.explicitMeasures.length < src.phys.explicitMeasures.length)) {
+        status = "UNVERIFIED";
+        deltaExplain = "Неповне підтвердження складеної вимоги: у вимозі " + src.phys.explicitMeasures.length + " числових умов («" + src.item.rawValue + "»), а у факті підтверджено лише " + (dst.phys.explicitMeasures ? dst.phys.explicitMeasures.length : 0) + " («" + dst.item.rawValue + "») — потрібна ручна перевірка всіх умов";
+        var multiCellLoc = dst.item.paramKey || (dst.item.factRef ? ("Клітинка " + dst.item.factRef + " («" + dst.item.paramName + "»)") : ("Комірка «" + dst.item.paramName + "»"));
+        remediationHint = {
+          severity: "ПЕРЕВІРКА ЛЮДИНОЮ",
+          targetFile: dst.item.sourceFile,
+          location: multiCellLoc,
+          currentValue: dst.item.rawValue,
+          requiredValue: "Потрібна ручна перевірка інженером: у складеній вимозі кілька умов («" + src.item.rawValue + "»), а у факті підтверджено лише частину («" + dst.item.rawValue + "»)",
+          reasonUk: "Одиночне значення у протоколі не підтверджує додаткові числові обмеження складеної вимоги."
+        };
       } else if (src.phys.siValue !== null && dst.phys.siValue !== null) {
+        var multiConflict = false;
+        if (src.phys.explicitMeasures && dst.phys.explicitMeasures && src.phys.explicitMeasures.length >= 2 && src.phys.explicitMeasures.length === dst.phys.explicitMeasures.length) {
+          for (var mk = 0; mk < src.phys.explicitMeasures.length; mk++) {
+            var mA = src.phys.explicitMeasures[mk];
+            var mB = dst.phys.explicitMeasures[mk];
+            var mRel = Math.abs(mA.siVal - mB.siVal) / Math.max(Math.abs(mA.siVal), 1e-9);
+            if (mA.domain !== mB.domain || mRel > 0.005) {
+              multiConflict = true;
+              break;
+            }
+          }
+        }
         var relDiff = Math.abs(src.phys.siValue - dst.phys.siValue) / Math.max(Math.abs(src.phys.siValue), 1e-9);
         var boundSatisfied = false;
         if (src.phys.operator === ">=" && dst.phys.siValue >= src.phys.siValue - 1e-6) {
@@ -2486,10 +2632,12 @@
           boundSatisfied = true;
         }
 
-        if (relDiff > 0.005 && !boundSatisfied) {
+        if ((relDiff > 0.005 && !boundSatisfied) || multiConflict) {
           status = "FAIL_VALUE_CONFLICT";
           var diffSigned = (dst.phys.siValue - src.phys.siValue);
-          deltaExplain = "Розбіжність значень: вимога " + src.phys.siValue.toFixed(2) + " " + src.phys.siUnit + " проти факту " + dst.phys.siValue.toFixed(2) + " " + dst.phys.siUnit + " (різниця Δ = " + (diffSigned >= 0 ? "+" : "") + diffSigned.toFixed(2) + " " + dst.phys.siUnit + ")";
+          deltaExplain = multiConflict
+            ? ("Розбіжність компонентів складеної вимоги: «" + src.item.rawValue + "» ≠ «" + dst.item.rawValue + "»")
+            : ("Розбіжність значень: вимога " + src.phys.siValue.toFixed(2) + " " + src.phys.siUnit + " проти факту " + dst.phys.siValue.toFixed(2) + " " + dst.phys.siUnit + " (різниця Δ = " + (diffSigned >= 0 ? "+" : "") + diffSigned.toFixed(2) + " " + dst.phys.siUnit + ")");
           var isConfigParam = String(dst.item.sourceFile || "").toLowerCase().indexOf(".param") >= 0;
           var valCellLoc = dst.item.paramKey || (dst.item.factRef ? ("Клітинка " + dst.item.factRef + " («" + dst.item.paramName + "»)") : ("Комірка «" + dst.item.paramName + "»"));
           remediationHint = {
@@ -2511,17 +2659,34 @@
           status = "PASS";
           deltaExplain = "Вимогу виконано (" + src.phys.operator + "): " + dst.phys.siValue.toFixed(2) + " " + dst.phys.siUnit + " відповідає умові " + src.phys.siValue.toFixed(2) + " " + dst.phys.siUnit;
         }
-      } else if (src.phys.domain === "firmware_id") {
-        if (String(src.item.rawValue).indexOf("Канадка") >= 0) {
-          status = "WARN_RSID_INJECTION";
-          deltaExplain = "Уточнення в окремій сесії Word (w:rsidR=00D84633): вказано неофіційну назву прошивки «Канадка» без номера версії";
+      } else if (src.phys.domain === "firmware_id" && String(src.item.rawValue).indexOf("Канадка") >= 0) {
+        status = "WARN_RSID_INJECTION";
+        deltaExplain = "Уточнення в окремій сесії Word (w:rsidR=00D84633): вказано неофіційну назву прошивки «Канадка» без номера версії";
+        remediationHint = {
+          severity: "УТОЧНИТИ В ДОКУМЕНТІ",
+          targetFile: src.item.sourceFile,
+          location: "Абзац #134 (сесія Word w:rsidR=00D84633 «ПРОШИВКА: Канадка»)",
+          currentValue: "«Канадка» (розмовна назва без номера версії прошивки)",
+          requiredValue: "Вказати офіційну назву та номер версії прошивки за паспортом виробника",
+          reasonUk: "Технічна мітка w:rsid показує, що цей рядок дописано в окремій сесії Word. Сама мітка w:rsid не є ознакою підробки, але розмовну назву «Канадка» варто замінити на точний інженерний номер версії ПЗ."
+        };
+      } else {
+        var normSrcText = String(src.item.rawValue || "").toLowerCase().replace(/\s+/g, " ").trim();
+        var normDstText = String(dst.item.rawValue || "").toLowerCase().replace(/\s+/g, " ").trim();
+        if (normSrcText && normSrcText === normDstText) {
+          status = "PASS";
+          deltaExplain = "Текстове значення збігається з вимогою («" + src.item.rawValue + "»)";
+        } else {
+          status = "FAIL_VALUE_CONFLICT";
+          deltaExplain = "Розбіжність текстових значень: вимога «" + src.item.rawValue + "» ≠ факт «" + dst.item.rawValue + "»";
+          var txtCellLoc = dst.item.paramKey || (dst.item.factRef ? ("Клітинка " + dst.item.factRef + " («" + dst.item.paramName + "»)") : ("Комірка «" + dst.item.paramName + "»"));
           remediationHint = {
-            severity: "УТОЧНИТИ В ДОКУМЕНТІ",
-            targetFile: src.item.sourceFile,
-            location: "Абзац #134 (сесія Word w:rsidR=00D84633 «ПРОШИВКА: Канадка»)",
-            currentValue: "«Канадка» (розмовна назва без номера версії прошивки)",
-            requiredValue: "Вказати офіційну назву та номер версії прошивки за паспортом виробника",
-            reasonUk: "Технічна мітка w:rsid показує, що цей рядок дописано в окремій сесії Word. Сама мітка w:rsid не є ознакою підробки, але розмовну назву «Канадка» варто замінити на точний інженерний номер версії ПЗ."
+            severity: "ПЕРЕВІРКА ЛЮДИНОЮ",
+            targetFile: dst.item.sourceFile,
+            location: txtCellLoc,
+            currentValue: dst.item.rawValue,
+            requiredValue: "Не змінювати автоматично! Звірити текстову характеристику з вимогою «" + src.item.rawValue + "»",
+            reasonUk: "Текстове значення у протоколі («" + dst.item.rawValue + "») суперечить вимозі документа («" + src.item.rawValue + "»)."
           };
         }
       }
@@ -3882,7 +4047,7 @@
               ? "ЗАБЛОКОВАНО (відсутній доказ / джерело) — додати первинний протокол або сертифікат"
               : (st === "UNVERIFIED"
                 ? "Завантажити другий незалежний документ (протокол ПМВ або паспорт) для крос-звірки"
-                : "Підтверджено за маскою SI — додаткових дій не потрібно"));
+                : "Збіг у межах автоматизованого профілю SI"));
 
           var excerptPayload = [
             "Параметр ТУ: " + (r.tuParam || "—") + " = " + (r.tuValue || "—") + " (" + (r.tuSource || "—") + (r.tuRef ? ", " + r.tuRef : "") + ")",
