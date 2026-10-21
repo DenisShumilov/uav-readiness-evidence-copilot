@@ -1,0 +1,87 @@
+{
+  "name": "uav-readiness",
+  "version": "0.8.1",
+  "private": false,
+  "description": "Локальна перевірка інженерної документації, простежуваності доказів та повноти пакету документів.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DenisShumilov/uav-readiness-evidence-copilot.git"
+  },
+  "homepage": "https://denisshumilov.github.io/uav-readiness-evidence-copilot/",
+  "bugs": "https://github.com/DenisShumilov/uav-readiness-evidence-copilot/issues",
+  "keywords": [
+    "documentation",
+    "readiness",
+    "evidence",
+    "traceability",
+    "qa",
+    "sarif",
+    "cli"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "module",
+  "bin": {
+    "uav-readiness": "./packages/cli/bin/uav-readiness.mjs"
+  },
+  "files": [
+    "packages/cli/bin",
+    "packages/cli/src",
+    "packages/cli/package.json",
+    "packages/core/src",
+    "packages/core/package.json",
+    "packages/evidence/src",
+    "packages/evidence/package.json",
+    "packages/parsers/src",
+    "packages/parsers/package.json",
+    "packages/reports/src",
+    "packages/reports/package.json",
+    "packages/rules/src",
+    "packages/rules/package.json",
+    "scripts/demoReadiness.ts",
+    "examples/demo-uav-readiness/BOM.csv",
+    "examples/demo-uav-readiness/demo_manual.md",
+    "examples/demo-uav-readiness/test_log.csv",
+    "examples/demo-uav-readiness/qa_notes.md",
+    "examples/demo-uav-readiness/README.md",
+    "examples/demo-uav-readiness/README.en.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "demo:readiness": "tsx scripts/demoReadiness.ts",
+    "demo:maintenance": "tsx scripts/demoMaintenance.ts",
+    "demo:conflict": "tsx scripts/demoConflict.ts",
+    "demo:tdp": "tsx scripts/demoTdp.ts",
+    "demo:selfaudit": "tsx scripts/demoSelfAudit.ts",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@uav-readiness/cli": "file:packages/cli",
+    "@uav-readiness/core": "file:packages/core",
+    "@uav-readiness/evidence": "file:packages/evidence",
+    "@uav-readiness/parsers": "file:packages/parsers",
+    "@uav-readiness/reports": "file:packages/reports",
+    "@uav-readiness/rules": "file:packages/rules",
+    "tsx": "^4.22.4",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.9.3",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "eslint": "^10.4.1",
+    "playwright": "^1.60.0",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.61.0",
+    "vitest": "^4.1.8"
+  }
+}

@@ -1,0 +1,141 @@
+import { mkdirSync, writeFileSync } from "node:fs";
+import { basename, join } from "node:path";
+import { pathToFileURL } from "node:url";
+import { buildEvidenceGraphFromBundle } from "@uav-readiness/evidence";
+import { parseDemoBundle } from "@uav-readiness/parsers";
+import {
+  generateArtifactHashes,
+  generateEngineeringReviewHtml,
+  generateEngineeringReviewMarkdown,
+  generateReadinessReportMarkdown,
+  generateReadinessSarif,
+  generateTraceabilityMatrix
+} from "@uav-readiness/reports";
+import { evaluateReadiness, ReadinessAssessmentSchema } from "@uav-readiness/rules";
+
+export type RunReadinessDemoOptions = {
+  fixtureDir?: string;
+  outputDir?: string;
+};
+
+export function runReadinessDemo(options: RunReadinessDemoOptions = {}) {
+  const fixtureDir =
+    options.fixtureDir ?? join(process.cwd(), "examples", "demo-uav-readiness");
+  const outputDir = options.outputDir ?? join(fixtureDir, "output");
+  const exampleDir = `examples/${basename(fixtureDir)}/`;
+
+  const bundle = parseDemoBundle(fixtureDir);
+  const evidenceGraph = buildEvidenceGraphFromBundle(bundle);
+  const readinessAssessment = ReadinessAssessmentSchema.parse(
+    evaluateReadiness(bundle)
+  );
+  const traceabilityMatrix = generateTraceabilityMatrix(
+    bundle,
+    readinessAssessment
+  );
+  const artifactHashes = generateArtifactHashes(fixtureDir);
+  const markdown = generateReadinessReportMarkdown(
+    bundle,
+    evidenceGraph,
+    readinessAssessment
+  );
+  const files = [
+    "readiness-report.md",
+    "evidence-graph.json",
+    "readiness-assessment.json",
+    "traceability-matrix.csv",
+    "artifact-hashes.json",
+    "readiness.sarif",
+    "engineering-review.md",
+    "engineering-review.html",
+    "engineering-review.en.html",
+    "engineering-review.uk.html"
+  ];
+  const reviewDemo = generateEngineeringReviewMarkdown(
+    bundle,
+    evidenceGraph,
+    readinessAssessment,
+    files
+  );
+  const reviewDemoHtml = generateEngineeringReviewHtml(
+    bundle,
+    evidenceGraph,
+    readinessAssessment,
+    files
+  );
+  const reviewDemoHtmlEn = generateEngineeringReviewHtml(
+    bundle,
+    evidenceGraph,
+    readinessAssessment,
+    files,
+    "en"
+  );
+  const reviewDemoHtmlUk = generateEngineeringReviewHtml(
+    bundle,
+    evidenceGraph,
+    readinessAssessment,
+    files,
+    "uk"
+  );
+
+  mkdirSync(outputDir, { recursive: true });
+  writeFileSync(join(outputDir, "readiness-report.md"), markdown, "utf8");
+  writeFileSync(
+    join(outputDir, "evidence-graph.json"),
+    JSON.stringify(evidenceGraph, null, 2),
+    "utf8"
+  );
+  writeFileSync(
+    join(outputDir, "readiness-assessment.json"),
+    JSON.stringify(readinessAssessment, null, 2),
+    "utf8"
+  );
+  writeFileSync(
+    join(outputDir, "traceability-matrix.csv"),
+    traceabilityMatrix,
+    "utf8"
+  );
+  writeFileSync(
+    join(outputDir, "artifact-hashes.json"),
+    JSON.stringify(artifactHashes, null, 2),
+    "utf8"
+  );
+  writeFileSync(
+    join(outputDir, "readiness.sarif"),
+    generateReadinessSarif(
+      bundle,
+      evidenceGraph,
+      readinessAssessment,
+      exampleDir
+    ),
+    "utf8"
+  );
+  writeFileSync(join(outputDir, "engineering-review.md"), reviewDemo, "utf8");
+  writeFileSync(
+    join(outputDir, "engineering-review.html"),
+    reviewDemoHtml,
+    "utf8"
+  );
+  writeFileSync(
+    join(outputDir, "engineering-review.en.html"),
+    reviewDemoHtmlEn,
+    "utf8"
+  );
+  writeFileSync(
+    join(outputDir, "engineering-review.uk.html"),
+    reviewDemoHtmlUk,
+    "utf8"
+  );
+
+  return {
+    outputDir,
+    readinessScore: readinessAssessment.readinessScore,
+    files
+  };
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const result = runReadinessDemo();
+  console.log(`Demo readiness score: ${result.readinessScore}/100`);
+  console.log(`Wrote output to: ${result.outputDir}`);
+}

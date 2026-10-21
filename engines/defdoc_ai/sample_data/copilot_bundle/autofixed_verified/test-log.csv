@@ -1,0 +1,3 @@
+test_id,rule_code,parameter,tu_requirement,passport_claim,pmv_measured,verdict
+VERIFIED-01,VP-09 (R1/СІ),Розмах крила (`wingspan_mm` — автоконвертація м ↔ мм),2400 ±15 мм,2.4 м (== 2400 мм),2405 мм (у допуску ±15 мм),PASS
+VERIFIED-02,VP-09 (R1/СІ),Ємність АКБ (`battery_capacity_mah` — автоконвертація А·год ↔ мА·год),16800 мА·год (22.2 В),16.8 А·год (== 16800 мА·год),16850 мА·год (≥ норми),PASS

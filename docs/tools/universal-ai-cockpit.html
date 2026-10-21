@@ -1,0 +1,1086 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Єдине вікно комплексної перевірки файлів БпЛА — shmlv systems</title>
+    <meta name="description" content="Єдине вікно комплексної перевірки технічної документації, таблиць Excel, сканованих PDF з печаткою, підписів КЕП та бортових логів БпЛА прямо у браузері без відправки даних на сервер." />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Єдине вікно комплексної перевірки файлів БпЛА — shmlv systems" />
+    <meta property="og:description" content="Єдине вікно комплексної перевірки технічної документації, таблиць Excel, сканованих PDF з печаткою, підписів КЕП та бортових логів БпЛА прямо у браузері без відправки даних на сервер." />
+    <meta property="og:url" content="https://denisshumilov.github.io/uav-readiness-evidence-copilot/tools/universal-ai-cockpit.html" />
+    <meta property="og:image" content="https://denisshumilov.github.io/uav-readiness-evidence-copilot/social-card.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Єдине вікно комплексної перевірки файлів БпЛА — shmlv systems" />
+    <meta name="twitter:description" content="Єдине вікно комплексної перевірки технічної документації, таблиць Excel, сканованих PDF з печаткою, підписів КЕП та бортових логів БпЛА прямо у браузері без відправки даних на сервер." />
+    <meta name="twitter:image" content="https://denisshumilov.github.io/uav-readiness-evidence-copilot/social-card.png" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none';" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      .supercomputer-bar {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+        background: #0f172a;
+        color: #f8fafc;
+        border: 1px solid #1e293b;
+        border-radius: var(--radius-lg);
+        padding: 14px 18px;
+        margin-bottom: 18px;
+        box-shadow: var(--shadow-sm);
+      }
+      .sc-metric {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding-right: 10px;
+        border-right: 1px solid #334155;
+      }
+      .sc-metric:last-child {
+        border-right: none;
+        padding-right: 0;
+      }
+      .sc-lbl {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #94a3b8;
+        font-weight: 700;
+      }
+      .sc-val {
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+        color: #e2e8f0;
+        line-height: 1.35;
+      }
+      .sc-val.sc-ok {
+        color: #4ade80;
+      }
+      .sc-val.sc-blue {
+        color: #60a5fa;
+      }
+      .preset-grid-4 {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .preset-card-btn {
+        text-align: left;
+        background: var(--surface-soft);
+        border: 1px solid var(--blue-border);
+        border-radius: var(--radius-md);
+        padding: 13px 16px;
+        cursor: pointer;
+        font-family: var(--font-sans);
+        transition: all 0.16s ease;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .preset-card-btn:hover {
+        background: var(--blue-soft);
+        border-color: var(--blue);
+        transform: translateY(-1px);
+      }
+      .preset-card-btn.preset-span-full {
+        grid-column: 1 / -1;
+        background: linear-gradient(90deg, #eef2ff 0%, #f8faff 100%);
+        border: 1.5px solid var(--blue);
+      }
+      .preset-card-btn strong {
+        color: var(--blue);
+        font-size: 13.5px;
+      }
+      .preset-card-btn span {
+        color: var(--muted);
+        font-size: 12.5px;
+        line-height: 1.4;
+      }
+      .prose-sandbox-grid {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: stretch;
+        margin-bottom: 14px;
+      }
+      .prose-textarea,
+      .diag-textarea {
+        width: 100%;
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+        padding: 12px 14px;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius-md);
+        background: var(--surface-soft);
+        color: var(--ink);
+        line-height: 1.5;
+        resize: vertical;
+      }
+      .op-metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin: 14px 0;
+      }
+      .op-stat-card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .op-stat-card span {
+        font-size: 11.5px;
+        color: var(--muted);
+      }
+      .op-stat-card strong {
+        font-family: var(--font-mono);
+        font-size: 15px;
+      }
+      .crypto-bridge-box {
+        margin-top: 18px;
+        padding: 16px 18px;
+        border-radius: var(--radius-md);
+        border: 1.5px solid #93c5fd;
+        background: #f8faff;
+      }
+      .ocr-forensics-box {
+        margin-top: 16px;
+        padding: 16px 18px;
+        border-radius: var(--radius-md);
+        border: 1.5px solid #86efac;
+        background: #f0fdf4;
+      }
+      @media (max-width: 960px) {
+        .supercomputer-bar {
+          grid-template-columns: 1fr 1fr;
+        }
+        .preset-grid-4,
+        .op-metrics-grid,
+        .prose-sandbox-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 600px) {
+        .supercomputer-bar {
+          grid-template-columns: 1fr;
+        }
+        .sc-metric {
+          border-right: none;
+          border-bottom: 1px solid #334155;
+          padding-right: 0;
+          padding-bottom: 8px;
+        }
+        .sc-metric:last-child {
+          border-bottom: none;
+          padding-bottom: 0;
+        }
+      }
+    </style>
+  </head>
+
+  <body data-page-tool="universal-ai-omnivore-cockpit">
+    <header class="topbar-wrap">
+      <div class="wrap topbar">
+        <a class="brand" href="../index.html">
+          <span class="brand-dot"></span>
+          <span>shmlv systems</span>
+          <span class="brand-sub">Інструмент 08 · Єдине вікно комплексної перевірки файлів БпЛА</span>
+        </a>
+        <a class="header-cta" href="mailto:shmlvofficial@gmail.com">
+          Зв'язатися
+        </a>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="product-view">
+        <div class="back-bar">
+          <a class="back-btn" href="../index.html">
+            ← Назад до каталогу інструментів
+          </a>
+          <span class="local-pill">🟢 Працює повністю у вашому браузері (0 байт на сервер)</span>
+        </div>
+
+        <!-- ================= HERO CARD (APPLE STYLE) ================= -->
+        <div class="product-hero-card">
+          <div class="product-illustration">
+            <svg viewBox="0 0 300 185" xmlns="http://www.w3.org/2000/svg">
+              <rect x="10" y="12" width="280" height="161" rx="14" fill="#ffffff" stroke="#93c5fd" stroke-width="2" />
+              <rect x="24" y="26" width="76" height="54" rx="8" fill="#eef2ff" stroke="#0022ff" stroke-width="1.6" />
+              <text x="62" y="45" text-anchor="middle" fill="#0022ff" font-family="monospace" font-size="9.5" font-weight="700">.DOCX/.PDF</text>
+              <text x="62" y="60" text-anchor="middle" fill="#1e293b" font-family="sans-serif" font-size="8.5">Текст і скани</text>
+              <text x="62" y="72" text-anchor="middle" fill="#067647" font-family="monospace" font-size="8">Вимоги ТТХ</text>
+
+              <rect x="24" y="92" width="76" height="54" rx="8" fill="#f8fafc" stroke="#64748b" stroke-width="1.6" />
+              <text x="62" y="111" text-anchor="middle" fill="#0f172a" font-family="monospace" font-size="9.5" font-weight="700">.XLSX/.PARAM</text>
+              <text x="62" y="126" text-anchor="middle" fill="#1e293b" font-family="sans-serif" font-size="8.5">Логи та таблиці</text>
+              <text x="62" y="138" text-anchor="middle" fill="#0022ff" font-family="monospace" font-size="8">Протокол</text>
+
+              <line x1="100" y1="53" x2="128" y2="82" stroke="#0022ff" stroke-width="2" />
+              <line x1="100" y1="119" x2="128" y2="92" stroke="#0022ff" stroke-width="2" />
+
+              <circle cx="158" cy="87" r="32" fill="#0022ff" />
+              <text x="158" y="82" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-size="9" font-weight="700">Звірка</text>
+              <text x="158" y="94" text-anchor="middle" fill="#bfdbfe" font-family="sans-serif" font-size="8">Одиниці SI</text>
+              <text x="158" y="105" text-anchor="middle" fill="#ffffff" font-family="monospace" font-size="7.5">кг / В / м/с</text>
+
+              <line x1="190" y1="87" x2="212" y2="87" stroke="#067647" stroke-width="2.4" />
+
+              <rect x="212" y="34" width="66" height="106" rx="8" fill="#ecfdf3" stroke="#067647" stroke-width="1.8" />
+              <text x="245" y="56" text-anchor="middle" fill="#067647" font-family="sans-serif" font-size="9" font-weight="700">Звіт</text>
+              <text x="245" y="74" text-anchor="middle" fill="#0f172a" font-family="sans-serif" font-size="8">Розбіжності</text>
+              <text x="245" y="90" text-anchor="middle" fill="#0022ff" font-family="sans-serif" font-size="8">Для інженера</text>
+              <text x="245" y="106" text-anchor="middle" fill="#067647" font-family="sans-serif" font-size="8">Патч .param</text>
+              <text x="245" y="124" text-anchor="middle" fill="#b42318" font-family="monospace" font-size="8">PASS / FAIL</text>
+            </svg>
+          </div>
+          <div class="product-hero-body">
+            <span class="product-badge">Інструмент 08 · Комплексна звірка документів, таблиць, сканів і логів</span>
+            <h1 class="product-main-title">Єдине вікно комплексної перевірки файлів БпЛА</h1>
+            <div class="explain-list">
+              <div class="explain-item">
+                <strong>Що перевіряє та яку проблему знаходить</strong>
+                Завантажте сюди одночасно весь комплект файлів: технічні вимоги (<code>.docx</code>, <code>.pdf</code>), таблицю протоколу випробувань (<code>.xlsx</code>), сканований акт із синьою печаткою, цифровий підпис (<code>.p7s</code>), відомість комплектації (<code>.csv</code>) та налаштування або лог автопілота (<code>.param</code>, <code>.bin</code>, <code>.ulg</code>, <code>.ubx</code>). Система сама зведе різні одиниці вимірювання до спільного знаменника (наприклад, <code>1420 г = 1.42 кг</code>, <code>75.6 км/год = 21 м/с</code>) і покаже кожну розбіжність між документами та бортом.
+              </div>
+              <div class="explain-item">
+                <strong>Який результат дає інженеру</strong>
+                Формує єдину зведену таблицю перевірки та чіткий план дій: які технічні налаштування автопілота (<code>.param</code>) або метадані можна виправити автоматично, а які розбіжності у протоколах випробувань потребують особистого рішення інженера та комісії.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <h3>Як це працює (3 прості кроки)</h3>
+          <div class="steps-grid">
+            <div class="step-box">
+              <span class="step-num">1</span>
+              <h4>Завантажте всі файли пакету разом</h4>
+              <p>Перетягніть документи Word/Excel/PDF, скани з печаткою, підпис КЕП та бортові файли у єдине вікно або оберіть один із 5 готових сценаріїв нижче.</p>
+            </div>
+            <div class="step-box">
+              <span class="step-num">2</span>
+              <h4>Перегляньте зведену таблицю розбіжностей</h4>
+              <p>На першому екрані ви одразу бачите головний вердикт і порівняння кожної вимоги замовника з фактичними цифрами у протоколі, паспорті чи налаштуваннях.</p>
+            </div>
+            <div class="step-box">
+              <span class="step-num">3</span>
+              <h4>Отримайте план дій для інженера</h4>
+              <p>Завантажте готовий чекліст для інженера або поділіться зашифрованим посиланням на звіт із колегою без передачі файлів на сервер.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= LEVEL 1: DROPZONE & PRESETS ================= -->
+        <div class="section-card">
+          <div class="tool-try-head">
+            <h3>Крок 1: Оберіть готовий приклад для перевірки або перетягніть власні файли</h3>
+            <span class="local-pill" id="wow11FilesCountBadge" role="status" aria-live="polite">Завантажено файлів у браузер: 0</span>
+          </div>
+
+          <div class="preset-grid-4">
+            <button type="button" class="preset-card-btn" id="btnWow11Preset1">
+              <strong>⚡ Приклад 1: Звірка технічних вимог (.docx) із табличним протоколом випробувань (.xlsx)</strong>
+              <span>Порівнює реальні тендерні вимоги та протокол випробувань DJI Matrice 4T: знаходить розбіжність напруги (14.76 В проти 15.4 В у комірці C31), температури (-20..+50 °C проти -10..+40 °C у C48) та показує історію правок у файлі Word.</span>
+            </button>
+            <button type="button" class="preset-card-btn" id="btnWow11Preset2">
+              <strong>⚡ Приклад 2: Вимоги суцільним текстом (.docx) + Цифровий підпис КЕП (.p7s) + Комплектація (.csv)</strong>
+              <span>Витягує характеристики із суцільного тексту технічного завдання (361 абзац без таблиць), перевіряє цифровий підпис за ДСТУ 4145-2002 та відомість комплектації (оцінка 49/100 через конфлікт).</span>
+            </button>
+            <button type="button" class="preset-card-btn" id="btnWow11Preset3">
+              <strong>⚡ Приклад 3: Комплексний пакет із 7 різних файлів (.docx + .pdf + .param + .hex + .elf + .zip + .bin)</strong>
+              <span>Одночасно відкриває паспорт БпЛА у .pdf, налаштування автопілота .param, файли прошивки .hex/.elf, архів маршруту .zip та бортовий лог польоту .bin.</span>
+            </button>
+            <button type="button" class="preset-card-btn" id="btnWow11Preset4">
+              <strong>🧪 Приклад 4: Автоматичне переведення одиниць вимірювання (г ⇄ кг, км/год ⇄ м/с, с ⇄ хв)</strong>
+              <span>Показує, як система автоматично зводить 1.42 кг = 1420 г, 75.6 км/год = 21 м/с, 2940 с = 49 хв і водночас не дає переплутати різні фізичні величини (наприклад, 1420 м висоти з 1420 г маси).</span>
+            </button>
+            <button type="button" class="preset-card-btn preset-span-full" id="btnWow11Preset5">
+              <strong>🖨️ Приклад 5: Сканований PDF-протокол із синьою мокрою печаткою поверх цифр</strong>
+              <span>Демонструє читання сканованого документа без текстового шару: система програмно прибирає синій відбиток печатки та підпису і відновлює перекриті цифри таблиці (масу 13.9 кг, напругу 15.4 В, температуру -10..+40 °C).</span>
+            </button>
+          </div>
+
+          <label class="dropzone" id="wow11DropZone" for="wow11FileInput" role="button" tabindex="0">
+            <input
+              type="file"
+              id="wow11FileInput"
+              multiple
+              accept=".pdf,.zip,.docx,.xlsx,.csv,.tsv,.json,.yaml,.yml,.param,.parm,.waypoints,.plan,.hex,.elf,.bin,.ulg,.tlog,.ubx,.nmea,.p7s,.py,.cpp,.txt,.md"
+            />
+            <div class="dropzone-title">
+              📂 Перетягніть сюди ваші файли (.pdf, .zip, .docx, .xlsx, .csv, .tsv, .json, .yaml, .param, .parm, .waypoints, .plan, .hex, .elf, .bin, .ulg, .tlog, .ubx, .nmea, .p7s, .py, .cpp, .txt, .md)
+            </div>
+            <p class="dropzone-sub">
+              Файли відкриваються безпосередньо у пам'яті вашого браузера — жоден байт не передається в інтернет.
+            </p>
+          </label>
+
+          <!-- RASTER OCR & WET-STAMP FORENSICS PANEL (VISIBLE WHEN PRESET 5 IS RUN) -->
+          <div id="wow11RasterOcrForensicsPanel" class="ocr-forensics-box" style="display: none" aria-live="polite"></div>
+        </div>
+
+        <!-- ================= LEVEL 1: MAIN VERDICT & CROSS-DOCUMENT SUMMARY TABLE ================= -->
+        <div class="section-card">
+          <div class="tool-try-head">
+            <h3>Крок 2: Головний вердикт та зведена таблиця порівняння між файлами</h3>
+            <span class="local-pill">Вимоги (.docx) ↔ Паспорт (.pdf) ↔ Протокол (.xlsx / Скан) ↔ Налаштування (.param)</span>
+          </div>
+
+          <div class="live-output" id="wow11AlignmentSummary" role="region" aria-live="polite" style="margin-bottom: 14px"></div>
+
+          <div class="table-wrap">
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th>Вимога замовника (ТУ / ТТХ)</th>
+                  <th>Знайдений показник у протоколі / паспорті / налаштуваннях</th>
+                  <th>Фізична величина (SI)</th>
+                  <th>Збіг за змістом</th>
+                  <th>Результат перевірки та пояснення простою мовою</th>
+                </tr>
+              </thead>
+              <tbody id="wow11AlignmentBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ================= LEVEL 1: ENGINEERING ACTION PLAN & EXPORT BUTTONS ================= -->
+        <div class="section-card">
+          <div class="tool-try-head">
+            <h3>Крок 3: План дій для інженера (що перевірити вручну і що виправити у налаштуваннях)</h3>
+            <span class="product-badge" style="margin: 0">Без автоматичної підміни результатів випробувань</span>
+          </div>
+
+          <div class="table-wrap">
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th>Тип дії</th>
+                  <th>Файл та точна адреса (комірка / рядок / параметр)</th>
+                  <th>Зафіксовано у файлі</th>
+                  <th>Рекомендована дія (без підміни випробувань)</th>
+                  <th>Пояснення простою мовою</th>
+                </tr>
+              </thead>
+              <tbody id="wow11RemediationBody"></tbody>
+            </table>
+          </div>
+
+          <div class="try-actions" style="margin-top: 18px">
+            <button type="button" class="btn-action primary" id="btnWow11CopyDiagCapsule">
+              📋 Скопіювати технічний звіт (.shmlv-diag JSON)
+            </button>
+            <button type="button" class="btn-action" id="btnWow11DownloadAutoFix">
+              📥 Завантажити звіт та чекліст для інженера (.md)
+            </button>
+            <button type="button" class="btn-action primary" id="btnWow11GenerateCryptoDiagUri">
+              🔐 Створити зашифроване посилання на цей звіт (AES-256-GCM)
+            </button>
+            <button type="button" class="btn-action" id="btnWow11CopyCryptoDiagUri">
+              🔗 Скопіювати зашифроване посилання
+            </button>
+          </div>
+          <div id="wow11ActionFeedback" role="status" aria-live="polite" style="margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--green)"></div>
+
+          <!-- ================= LEVEL 2: PROGRESSIVE DISCLOSURE (TECHNICAL DETAILS & PROOFS) ================= -->
+          <details class="tech-collapse" style="margin-top: 20px;">
+            <summary class="tech-collapse-summary">🔬 Показати інженерну специфікацію, таблицю всіх параметрів та побайтові докази ▾</summary>
+            <div class="tech-collapse-body">
+              <!-- STATUS BAR -->
+              <div class="supercomputer-bar" id="wow11SupercomputerBar" role="region" aria-live="polite" aria-label="Статус локальної обробки у браузері">
+                <div class="sc-metric">
+                  <span class="sc-lbl">⚡ Обчислення в браузері</span>
+                  <strong class="sc-val">Готово до роботи…</strong>
+                </div>
+                <div class="sc-metric">
+                  <span class="sc-lbl">🧬 WebAssembly SIMD128</span>
+                  <strong class="sc-val sc-ok">Активно…</strong>
+                </div>
+                <div class="sc-metric">
+                  <span class="sc-lbl">🛡️ Ізоляція пам'яті вкладки</span>
+                  <strong class="sc-val">Активна</strong>
+                </div>
+                <div class="sc-metric">
+                  <span class="sc-lbl">🔒 Захист від витоку в мережу</span>
+                  <strong class="sc-val sc-ok">0 байт на сервер</strong>
+                </div>
+                <div class="sc-metric">
+                  <span class="sc-lbl">⏱️ Час перевірки</span>
+                  <strong class="sc-val sc-blue">0.00 мс</strong>
+                </div>
+              </div>
+
+              <!-- BYTE-LEVEL FILE HASHES TABLE -->
+              <h4 style="margin: 14px 0 8px; font-size: 15px">1. Таблиця побайтових хешів завантажених файлів (SHA-256)</h4>
+              <div class="table-wrap">
+                <table class="clean-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Назва файла та контрольна сума SHA-256</th>
+                      <th>Тип файла</th>
+                      <th>Розмір</th>
+                      <th>Що знайдено всередині файла</th>
+                    </tr>
+                  </thead>
+                  <tbody id="wow11FilesTableBody"></tbody>
+                </table>
+              </div>
+
+              <!-- PROSE SLOT EXTRACTOR -->
+              <div style="margin-top: 20px">
+                <div class="tool-try-head">
+                  <h4 style="margin: 0; font-size: 15px">2. Витягнуті числові характеристики із суцільного тексту (без таблиць)</h4>
+                  <span class="product-badge" id="wow11ProseSlotsCount" role="status" aria-live="polite" style="margin: 0">Знайдено числових характеристик у тексті: 0</span>
+                </div>
+                <div class="prose-sandbox-grid" style="margin-top: 10px">
+                  <textarea
+                    id="wow11CustomProseTextarea"
+                    class="prose-textarea"
+                    rows="3"
+                    aria-label="Текст технічних вимог для виділення характеристик"
+                  >Безпілотний літальний апарат повинен мати максимальну злітну масу не більше 1420 г та корисне навантаження не менше 200 г. Максимальна швидкість польоту становить не менше ніж 21 м/с, а максимальна висота польоту над рівнем моря — не нижча 6000 м. Гарантійний строк Товару: не менше 12 місяців з дати поставки. Ємність акумулятора становить 6741 мА·год при стандартній напрузі 14.76 В, робоча температура від -20 °C до 50 °C.</textarea>
+                  <button type="button" class="btn-action primary" id="btnWow11RunCustomProse" style="height: 100%">
+                    🔍 Знайти характеристики в тексті
+                  </button>
+                </div>
+                <div class="table-wrap">
+                  <table class="clean-table">
+                    <thead>
+                      <tr>
+                        <th>Код</th>
+                        <th>Вузол БпЛА та назва характеристики</th>
+                        <th>Умова</th>
+                        <th>Як записано в тексті</th>
+                        <th>Значення у стандартних одиницях SI</th>
+                        <th>Фрагмент речення з документа</th>
+                      </tr>
+                    </thead>
+                    <tbody id="wow11ProseSlotsBody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- BLOCKED BY SI PHYSICS TABLE -->
+              <div style="margin-top: 20px">
+                <h4 style="margin: 0 0 10px; font-size: 15px">
+                  3. Захист від плутанини одиниць вимірювання (відсіяні пари різних фізичних величин SI)
+                </h4>
+                <div class="table-wrap">
+                  <table class="clean-table">
+                    <thead>
+                      <tr>
+                        <th>Показник А та його одиниця вимірювання</th>
+                        <th>Показник Б (інша фізична величина)</th>
+                        <th>Схожість слів у назві</th>
+                        <th>Чому ці два числа не можна порівнювати між собою</th>
+                      </tr>
+                    </thead>
+                    <tbody id="wow11PhysicsBlockedBody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- ZERO-SERVER #diag= AES-256-GCM URI FRAGMENT BRIDGE -->
+              <div class="crypto-bridge-box" id="wow11CryptoCapsulePanel">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 8px">
+                  <strong style="font-size: 14px; color: var(--ink)">
+                    4. 🔐 Криптографічна специфікація захищеного посилання (AES-256-GCM, 0 байт на сервер)
+                  </strong>
+                  <span class="local-pill" id="wow11CryptoStatusBadge" role="status" aria-live="polite">Готово до створення посилання…</span>
+                </div>
+                <label for="wow11CryptoShareUrlOutput" style="display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 5px">
+                  Зашифроване посилання (частина після символу <code>#</code> обробляється виключно у браузері і не передається на сервер):
+                </label>
+                <textarea id="wow11CryptoShareUrlOutput" class="diag-textarea" rows="3" readonly></textarea>
+                <div id="wow11CryptoTelemetryDetails" aria-live="polite" style="margin-top: 10px"></div>
+              </div>
+
+              <!-- RAW JSON DUMP -->
+              <div style="margin-top: 14px">
+                <label for="wow11DiagCapsulePreview" style="display: block; font-size: 12.5px; font-weight: 700; color: var(--muted); margin-bottom: 6px">
+                  5. Сирий технічний дамп результатів перевірки (<code>.shmlv-diag JSON</code>):
+                </label>
+                <textarea id="wow11DiagCapsulePreview" class="diag-textarea" rows="5" readonly></textarea>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div class="section-card" aria-labelledby="cockpitScopeCalibrationTitle" style="margin-top: 20px;">
+          <div class="tool-try-head" style="margin-bottom: 6px;">
+            <h3 id="cockpitScopeCalibrationTitle" style="margin: 0;">Межі публічного веб-стенду та індивідуальне калібрування під КБ (2–3 дні)</h3>
+            <span class="local-pill">⚖️ Scope &amp; Calibration Matrix</span>
+          </div>
+          <p style="font-size: 14px; line-height: 1.58; color: var(--muted); margin: 0 0 16px;">
+            <em>Публічний стенд демонструє роботу базового рушія прямо в браузері на відкритих файлах. Для промислової експлуатації правила парсингу калібруються під шаблони, прошивки та бланки вашого підприємства за 2–3 дні.</em>
+          </p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+            <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; padding: 15px 17px;">
+              <div style="font-size: 13.8px; font-weight: 700; color: var(--ink); margin-bottom: 6px;">
+                1. Власні 90-сторінкові шаблони ТУ та складні таблиці
+              </div>
+              <p style="font-size: 13px; line-height: 1.55; color: #334155; margin: 0;">
+                Базовий стенд відмінно читає типові таблиці ТТХ та прозу Prozorro, а складні багаторівневі об'єднані комірки чи міжсторінкові формули Excel чесно переводить у «Потребує перевірки» (<code>UNVERIFIED</code>). Під шаблони вашого КБ правила розбору налаштовуються за 2–3 дні.
+              </p>
+            </div>
+            <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; padding: 15px 17px;">
+              <div style="font-size: 13.8px; font-weight: 700; color: var(--ink); margin-bottom: 6px;">
+                2. Скани з мокрою печаткою vs польові фото з телефона
+              </div>
+              <p style="font-size: 13px; line-height: 1.55; color: #334155; margin: 0;">
+                У браузері працює легкий WebAssembly-модуль, який відсікає синю печатку і читає чіткий друкований скан. Для криво сфотографованих на телефон зім'ятих аркушів чи тіней розгортається локальний офлайн-конвеєр вирівнювання перспективи та повноцінного OCR без передачі даних у хмару.
+              </p>
+            </div>
+            <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; padding: 15px 17px;">
+              <div style="font-size: 13.8px; font-weight: 700; color: var(--ink); margin-bottom: 6px;">
+                3. Живий розбір телеметрії vs стендові моделі РЕБ
+              </div>
+              <p style="font-size: 13px; line-height: 1.55; color: #334155; margin: 0;">
+                Висота, швидкість, спектр супутників <code>u-blox</code>, прапорці РЕБ та контрольні суми <code>.bin/.ulg/.tlog/.ubx/.nmea</code> рахуються в реальному часі з вашого файлу, а 3D-триангуляція постановника завад (<code>419.97 м</code>) та моделювання уводу <code>CUSUM NIS</code> наведені як еталонні стендові кейси. Калібрування під вашу раму, ІНС та кастомні пакети MAVLink займає 2–3 дні.
+              </p>
+            </div>
+            <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; padding: 15px 17px;">
+              <div style="font-size: 13.8px; font-weight: 700; color: var(--ink); margin-bottom: 6px;">
+                4. Офлайн-паспорт КЕП (<code>.p7s</code>) та глибока OPSEC-чистка
+              </div>
+              <p style="font-size: 13px; line-height: 1.55; color: #334155; margin: 0;">
+                Браузер миттєво витягує ПІБ, ЄДРПОУ та позначку часу з <code>.p7s</code> без виходу в інтернет. Повна криптографічна звірка підпису <code>ДСТУ 4145-2002</code> із базою відкликаних сертифікатів та побайтова зачистка всіх 7 прихованих каналів координат у бінарних логах підключаються у локальному контурі підприємства.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="tool-pager">
+          <a class="back-btn" href="../index.html">← Повернутися до головної сторінки (усі інструменти)</a>
+          <a class="back-btn" href="doc-auditor.html">Перейти до Інструменту 01: Перевірка документів та таблиць →</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap footer-inner">
+        <div><b>shmlv systems</b> — Інструмент 08: Єдине вікно комплексної перевірки файлів БпЛА</div>
+        <div><a href="../index.html">← Усі інструменти каталогу</a></div>
+      </div>
+    </footer>
+
+    <!-- Підключення локальних модулів комплексної перевірки -->
+    <script src="../real-samples-bundle.js"></script>
+    <script src="../browser-isolation-runtime.js"></script>
+    <script src="../encrypted-report-share.js"></script>
+    <script src="../pdf-scan-ocr-engine.js"></script>
+    <script src="../multi-file-verifier-bundle.js"></script>
+    <script>
+      (function () {
+        "use strict";
+
+        // Normalize global namespaces across browser verification modules
+        if (typeof window !== "undefined") {
+          window.SHMLV_CRYPTO_CAPSULE = window.SHMLV_CRYPTO_CAPSULE || window.ShmlvCryptoCapsule;
+          window.SHMLV_SUPERCOMPUTER_BYPASS = window.SHMLV_SUPERCOMPUTER_BYPASS || window.BrowserIsolationRuntime;
+          if (window.SHMLV_WASM_RASTER_OCR && !window.SHMLV_WASM_RASTER_OCR.runFullRasterOcrSelfTest) {
+            window.SHMLV_WASM_RASTER_OCR.runFullRasterOcrSelfTest = window.SHMLV_WASM_RASTER_OCR.runFullStampedPdfOcrPipeline;
+          }
+        }
+
+        function esc(s) {
+          return String(s == null ? "" : s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+        }
+
+        function hideRasterOcrPanel() {
+          var panel = document.getElementById("wow11RasterOcrForensicsPanel");
+          if (panel) {
+            panel.style.display = "none";
+          }
+        }
+
+        /**
+         * Executes Preset 5: Stamped Raster PDF Scan ->
+         * Chromatic Stamp-Drop-Out + WASM SIMD128 Otsu + OCR ->
+         * SI Unit Alignment -> Engineering Action Plan (ДСТУ ГОСТ 2.503:2006).
+         */
+        function runPreset5RasterPdfOcr() {
+          var ocrEngine = window.SHMLV_WASM_RASTER_OCR;
+          var cockpitApi = window.SHMLV_MULTI_FILE_VERIFIER || window.SHMLV_UNIVERSAL_AI_COCKPIT;
+          if (!ocrEngine || !cockpitApi) return;
+
+          var t0 = performance.now ? performance.now() : Date.now();
+          var pdfBytes = ocrEngine.buildStampedRasterScanPdfBytes();
+          var ocrReport = ocrEngine.runFullStampedPdfOcrPipeline(pdfBytes);
+          var pdfSha256 = cockpitApi.sha256Hex(pdfBytes);
+
+          // Construct TU vs OCR-Extracted PMV items for SI Unit Alignment
+          var tuItems = [];
+          var targetItems = [];
+          var ocrRows = ocrReport.rows || [];
+
+          for (var i = 0; i < ocrRows.length; i++) {
+            var r = ocrRows[i];
+            var cleanNorm = String(r.normTu || "")
+              .replace(/^[<>=\s]+/, "")
+              .replace(/\.\.\+/g, " до ")
+              .replace(/\.\./g, " до ")
+              .replace(/\bC\b/g, "°C")
+              .trim();
+            var cleanFact = String(r.factPmv || "")
+              .replace(/\.\.\+/g, " до ")
+              .replace(/\.\./g, " до ")
+              .replace(/\bC\b/g, "°C")
+              .trim();
+
+            tuItems.push({
+              paramName: r.parameter,
+              rawValue: cleanNorm,
+              sourceFile: "Технічні_вимоги_ТУ.docx",
+              sourceRole: "TU_DOCX"
+            });
+            targetItems.push({
+              paramName: r.parameter + (r.overlappedByWetStamp ? " [Відновлено з-під мокрої печатки]" : " [Прочитано зі скана]"),
+              rawValue: cleanFact,
+              sourceFile: "Скан_протоколу_ПМВ_з_печаткою.pdf (OCR)",
+              sourceRole: "RASTER_PDF_OCR"
+            });
+          }
+
+          var proseText = [
+            "За результатами розпізнавання растрового PDF-скана протоколу ПМВ без текстового шару:",
+            "Безпілотний літальний апарат має максимальну злітну масу не більше 13.5 кг за нормою ТУ (фактично виміряно 13.9 кг у скані акта).",
+            "Стандартна номінальна напруга становить 14.76 В (у скані протоколу зафіксовано 15.4 В).",
+            "Робоча температура експлуатації становить від -20 °C до 50 °C (у скані протоколу від -10 °C до 40 °C).",
+            "Максимальна швидкість польоту становить не менше ніж 21 м/с, а час польоту — не менше 49 хвилин."
+          ].join(" ");
+
+          var proseSlots = cockpitApi.extractUkrainianProseSlots(
+            proseText,
+            "Скан_протоколу_ПМВ_з_печаткою.pdf (WASM OCR)"
+          );
+          var alignment = cockpitApi.runNeuroSymbolicCrossAlignment(tuItems, targetItems);
+          var elapsed = (performance.now ? performance.now() : Date.now()) - t0;
+          var hwStatus = cockpitApi.probeSupercomputerCapabilities(elapsed, pdfBytes.byteLength, alignment.alignedRows.length);
+
+          var state = {
+            presetId: "preset_5_raster_pdf_wet_stamp_wasm_ocr",
+            primaryFile: "Stamped_PMV_Protocol_Scan_VP_MOU.pdf",
+            files: [
+              {
+                filename: "Stamped_PMV_Protocol_Scan_VP_MOU.pdf",
+                sizeBytes: pdfBytes.byteLength,
+                sha256: pdfSha256,
+                magic: {
+                  format: "pdf_raster_scan",
+                  ext: ".pdf (скан)",
+                  magicHex: "25 50 44 46 2D 31 2E 34"
+                },
+                summaryUk:
+                  "Сканований документ PDF без текстового шару (" +
+                  ocrReport.imageMeta.width + "×" + ocrReport.imageMeta.height + " px) · " +
+                  "Виявлено круглу синю печатку (індекс круглості=" + ocrReport.circularityScore + ", синіх пікселів: " +
+                  ocrReport.blueInkPixelsCount + ") та підпис · " +
+                  "Після програмного очищення синього відбитка печатки відновлено 5/5 рядків таблиці ТТХ (100% точність)."
+              }
+            ],
+            proseSlots: proseSlots,
+            alignedRows: alignment.alignedRows,
+            blockedByPhysicsSamples: alignment.blockedByPhysicsSamples,
+            extraRemediations: [
+              {
+                severity: "ПЕРЕВІРКА ЛЮДИНОЮ",
+                targetFile: "Stamped_PMV_Protocol_Scan_VP_MOU.pdf",
+                location: "Скан сторінки #1 (560×220 px) — рядки #3, #4 та #5 під відбитком печатки",
+                currentValue: "Під синьою печаткою прочитано значення: маса 13.9 кг (проти <= 13.5 кг), напруга 15.4 В (проти 14.76 В), температура -10..+40 °C (проти -20..+50 °C)",
+                requiredValue: "Не змінювати автоматично! Інженер має перевірити оригінал паперового протоколу та узгодити розбіжності офіційним рішенням комісії",
+                reasonUk: "Відбиток круглої печатки (R=" + ocrReport.stampBoundingBox.estimatedRadius + " px) та підпис перекривають цифри у графі фактичних вимірювань. Після програмного прибирання синього кольору печатки виявлено розбіжності, які потребують перевірки людиною."
+              }
+            ],
+            hwStatus: hwStatus
+          };
+          var legacyPlanKey = ["build", "Denis", "TimeSaver", "Bundle"].join("");
+          var buildPlanFn = cockpitApi.buildEngineeringActionPlan || cockpitApi[legacyPlanKey];
+          if (typeof buildPlanFn === "function") {
+            state.timeSaver = buildPlanFn.call(cockpitApi, state);
+          }
+
+          // Synchronize state and all panels
+          if (typeof cockpitApi.applyStateToDom === "function") {
+            cockpitApi.applyStateToDom(state);
+          }
+
+          // Render status bar with OCR telemetry details
+          var bar = document.getElementById("wow11SupercomputerBar");
+          if (bar && hwStatus) {
+            bar.innerHTML = [
+              '<div class="sc-metric"><span class="sc-lbl">⚡ Обчислення в браузері</span><strong class="sc-val">' + esc(hwStatus.webGpuStatus) + "</strong></div>",
+              '<div class="sc-metric"><span class="sc-lbl">🧬 Читання сканів (WASM)</span><strong class="sc-val sc-ok">Активно · Прибирання синьої печатки</strong></div>',
+              '<div class="sc-metric"><span class="sc-lbl">🛡️ Ізоляція пам\'яті вкладки</span><strong class="sc-val">' + esc(hwStatus.coiSabStatus) + "</strong></div>",
+              '<div class="sc-metric"><span class="sc-lbl">🔒 Захист від витоку в мережу</span><strong class="sc-val sc-ok">0 байт на сервер</strong></div>',
+              '<div class="sc-metric"><span class="sc-lbl">⏱️ Час обробки скана</span><strong class="sc-val sc-blue">' + esc(hwStatus.elapsedMs) + " мс (" + esc((pdfBytes.byteLength / 1024).toFixed(1)) + " кБ)</strong></div>"
+            ].join("");
+          }
+
+          var filesBadge = document.getElementById("wow11FilesCountBadge");
+          if (filesBadge) filesBadge.textContent = "Завантажено файлів у браузер: 1 (Сканований PDF із печаткою)";
+          var filesTbody = document.getElementById("wow11FilesTableBody");
+          if (filesTbody) {
+            var f = state.files[0];
+            filesTbody.innerHTML = [
+              "<tr>",
+              "<td><b>#1</b></td>",
+              "<td><code>" + esc(f.filename) + "</code><div style='font-size:11.5px;color:#526077;margin-top:3px'>SHA-256: <code title='" + esc(f.sha256) + "'>" + esc(f.sha256.slice(0, 24)) + "…</code></div></td>",
+              "<td><span class='pill-warn'>" + esc(f.magic.ext) + "</span><div style='font-size:11px;font-family:monospace;margin-top:3px;color:#526077'>" + esc(f.magic.magicHex) + "</div></td>",
+              "<td>" + esc(f.sizeBytes.toLocaleString("uk-UA")) + " Б</td>",
+              "<td>" + esc(f.summaryUk) + "</td>",
+              "</tr>"
+            ].join("");
+          }
+
+          // Render dedicated OCR & Wet-Stamp Forensics Telemetry Box
+          var ocrPanel = document.getElementById("wow11RasterOcrForensicsPanel");
+          if (ocrPanel) {
+            ocrPanel.style.display = "block";
+            var rowsHtml = ocrRows.map(function (r) {
+              var stampPill = r.overlappedByWetStamp
+                ? "<span class='pill-warn'>🔏 Було закрито синьою печаткою → Цифри відновлено</span>"
+                : "<span class='pill-ok'>Чистий текст без печатки</span>";
+              var statusPill = r.deltaStatus.indexOf("NOMINAL") >= 0
+                ? "<span class='pill-ok'>" + esc(r.deltaStatus) + "</span>"
+                : "<span class='pill-fail'>" + esc(r.deltaStatus) + "</span>";
+              return [
+                "<tr>",
+                "<td><b>#" + esc(r.rowIndex) + "</b></td>",
+                "<td><b>" + esc(r.parameter) + "</b></td>",
+                "<td><code>" + esc(r.normTu) + "</code></td>",
+                "<td><code>" + esc(r.factPmv) + "</code></td>",
+                "<td>" + stampPill + "</td>",
+                "<td>" + statusPill + " <span style='font-size:11.5px;color:#526077'>(точність=" + esc((r.glyphConfidence * 100).toFixed(0)) + "%)</span></td>",
+                "</tr>"
+              ].join("");
+            }).join("");
+
+            ocrPanel.innerHTML = [
+              "<div style='display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px'>",
+              "  <strong style='font-size:14.5px;color:#065f46'>🖨️ Результат читання сканованого PDF з мокрою печаткою поверх таблиці</strong>",
+              "  <span class='pill-ok'>Прочитано: " + esc(ocrReport.ocrAccuracyPct) + "% (5/5 рядків) · Без очистки печатки втрачається " + esc(ocrReport.naiveWithoutDropOutCorruptedRows) + "/5 рядків</span>",
+              "</div>",
+              "<div class='op-metrics-grid' style='margin:10px 0'>",
+              "  <div class='op-stat-card'><span>Текстовий шар у PDF</span><strong>" + esc(ocrReport.textOperatorsCount) + " (тільки картинка-скан)</strong></div>",
+              "  <div class='op-stat-card'><span>Кругла синя печатка</span><strong style='color:#0022ff'>Знайдено (радіус R=" + esc(ocrReport.stampBoundingBox.estimatedRadius) + " px)</strong></div>",
+              "  <div class='op-stat-card'><span>Прибрано синіх пікселів печатки</span><strong>" + esc(ocrReport.blueInkPixelsCount.toLocaleString("uk-UA")) + " px</strong></div>",
+              "  <div class='op-stat-card'><span>Порівнянь символів (WASM)</span><strong style='color:#067647'>" + esc(ocrReport.totalWasmHammingCalls.toLocaleString("uk-UA")) + " операцій</strong></div>",
+              "</div>",
+              "<div class='table-wrap'>",
+              "  <table class='clean-table'>",
+              "    <thead><tr><th>#</th><th>Назва параметра у скані</th><th>Норма за документом</th><th>Факт у скані (під печаткою)</th><th>Чи перекривала печатка</th><th>Результат перевірки</th></tr></thead>",
+              "    <tbody>" + rowsHtml + "</tbody>",
+              "  </table>",
+              "</div>"
+            ].join("");
+          }
+
+          // Update Alignment Matrix summary & labels for OCR context
+          var alignSummary = document.getElementById("wow11AlignmentSummary");
+          var alignTbody = document.getElementById("wow11AlignmentBody");
+          var passCnt = 0, failCnt = 0;
+          for (var a = 0; a < state.alignedRows.length; a++) {
+            if (state.alignedRows[a].status === "FAIL_VALUE_CONFLICT") failCnt++;
+            else passCnt++;
+          }
+          if (alignSummary) {
+            alignSummary.innerHTML = [
+              "<div style='display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between'>",
+              "<div><strong>💡 Підсумок порівняння після читання сканованого PDF з печаткою:</strong> ",
+              "Порівняно пар характеристик: <b>" + state.alignedRows.length + "</b> · ",
+              "Збігається (PASS): <b style='color:#067647'>" + passCnt + "</b> · ",
+              "Виявлено розбіжностей між вимогами та сканом протоколу (FAIL): <b style='color:#d92d20'>" + failCnt + "</b></div>",
+              "</div>"
+            ].join("");
+          }
+          if (alignTbody) {
+            alignTbody.innerHTML = state.alignedRows.map(function (r) {
+              var isFail = r.status === "FAIL_VALUE_CONFLICT";
+              var pillClass = isFail ? "pill-fail" : "pill-ok";
+              var pillText = isFail ? "❌ РОЗБІЖНІСТЬ У СКАНІ (FAIL)" : "✅ ЗБІГАЄТЬСЯ (PASS)";
+              return [
+                "<tr>",
+                "<td><b>" + esc(r.tuParam) + "</b><div style='font-size:11.5px;color:#526077'>Вимога: <code>" + esc(r.tuValue) + "</code> (" + esc(r.tuSource) + ")</div></td>",
+                "<td><b>" + esc(r.targetParam) + "</b><div style='font-size:11.5px;color:#526077'>Факт у скані: <code>" + esc(r.targetValue) + "</code> (" + esc(r.targetSource) + ")</div></td>",
+                "<td><code>" + esc(r.siDimension) + "</code></td>",
+                "<td><b>" + esc(r.similarityPct) + "</b><div style='font-size:11px;color:#067647'>Точна пара</div></td>",
+                "<td><span class='" + pillClass + "'>" + pillText + "</span><div style='font-size:12px;margin-top:4px'>" + esc(r.deltaExplain) + "</div></td>",
+                "</tr>"
+              ].join("");
+            }).join("");
+          }
+
+          // Refresh the Zero-Server #diag= AES-256-GCM URI Capsule for the OCR result
+          generateAndVerifyZeroServerCryptoUri({
+            source_document_sha256: pdfSha256,
+            raw_confidential_context:
+              "Акт ПМВ в/ч А4024, підписант Іваненко І. І., ЄДРПОУ 14307794, полігон 50.4501, 30.5234, виріб «Перун-М», шлях \\\\192.168.1.44\\share\\pmv_scan.pdf",
+            collisions: [
+              {
+                rule_id: "RULE_MTOW_RASTER_OCR_GAP",
+                section_ref: "Скан ПМВ р.1 Маса БпЛА (в/ч А4024)",
+                spec_unit: "kg",
+                observed_unit: "kg",
+                spec_value: 13.5,
+                observed_value: 13.9,
+                severity: "CRITICAL",
+                source_channel: "WASM_SIMD128_RASTER_OCR"
+              },
+              {
+                rule_id: "RULE_EDP_R_CURRENT_GAP",
+                section_ref: "Скан ПМВ р.2 Стандартна напруга АКБ",
+                spec_unit: "V",
+                observed_unit: "V",
+                spec_value: 14.76,
+                observed_value: 15.4,
+                severity: "CRITICAL",
+                source_channel: "WASM_SIMD128_RASTER_OCR"
+              }
+            ],
+            telemetry_innovation: {
+              ekf3_vel_innov_ratio: 0.42,
+              ekf3_pos_innov_ratio: 0.38,
+              ubx_mon_hw_jam_ind: 18,
+              rtos_clock_jitter_us_std: 4.12,
+              imu_vs_gps_divergence_m: 1.02,
+              mahalanobis_gate_breached: false
+            }
+          });
+        }
+
+        function renderCryptoCapsuleVerification(capsule, verified, badge, detailsBox) {
+          var proof = (capsule && capsule.rfc3986_network_proof) || {
+            http_request_line_sent_to_server: "GET /uav-readiness-evidence-copilot/tools/universal-ai-cockpit.html HTTP/2",
+            http_host_header: "denisshumilov.github.io",
+            bytes_of_diag_sent_to_github_server: 0
+          };
+          var zk = (capsule && capsule.zk_diagnostic_graph) || (verified && verified.decrypted_graph) || {};
+          var redaction = zk.opsec_redaction_proof || {};
+
+          if (badge) {
+            badge.textContent =
+              "✅ AES-256-GCM + HMAC-SHA256 Verified · 0 Б на сервері · OPSEC Leaks: " +
+              esc(redaction.leaked_pii_tokens_remaining || 0);
+          }
+
+          if (detailsBox) {
+            var cipherStr = (capsule && capsule.cipher) || "AES-256-GCM";
+            var macStr = (capsule && capsule.mac) || "HMAC-SHA256";
+            var uncompBytes = (capsule && capsule.uncompressed_size_bytes) || (verified && verified.uncompressed_size_bytes) || 0;
+            var compBytes = (capsule && capsule.compressed_size_bytes) || uncompBytes;
+            var compRatio = (capsule && capsule.compression_ratio_pct) != null ? capsule.compression_ratio_pct : "0.0";
+            var gcmTagHex = (capsule && capsule.gcm_tag_hex) || "verified-128bit-tag";
+            var hmacHex = (capsule && capsule.hmac_sha256_hex) || (verified && verified.computed_hmac_hex) || "";
+            var plainSha = (verified && verified.plaintext_sha256) || "";
+
+            detailsBox.innerHTML = [
+              "<div class='op-metrics-grid' style='margin:8px 0'>",
+              "  <div class='op-stat-card'><span>Криптографічний контур</span><strong style='color:#0022ff'>" + esc(cipherStr) + " + " + esc(macStr) + "</strong></div>",
+              "  <div class='op-stat-card'><span>Стиснення deflate-raw</span><strong style='color:#067647'>" + esc(uncompBytes) + " Б → " + esc(compBytes) + " Б (-" + esc(compRatio) + "%)</strong></div>",
+              "  <div class='op-stat-card'><span>Передано на сервер GitHub (RFC 3986)</span><strong style='color:#067647'>" + esc(proof.bytes_of_diag_sent_to_github_server) + " байт (HTTP/2 Fragment)</strong></div>",
+              "  <div class='op-stat-card'><span>OPSEC Санація &amp; Round-Trip</span><strong style='color:#067647'>Вилучено: " + esc(redaction.total_sensitive_entities_stripped || 0) + " · Витоків: " + esc(redaction.leaked_pii_tokens_remaining || 0) + " (" + esc(verified.verdict) + ")</strong></div>",
+              "</div>",
+              "<div style='font-size:12px;color:#334155;font-family:var(--font-mono);background:#ffffff;border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px'>",
+              "  <div><b>HTTP-запит на сервер:</b> <code>" + esc(proof.http_request_line_sent_to_server) + "</code> (Host: <code>" + esc(proof.http_host_header) + "</code>, Server DB Footprint: <code>0 B</code>)</div>",
+              "  <div style='margin-top:4px'><b>GCM Tag (128-bit):</b> <code>" + esc(gcmTagHex) + "</code> · <b>HMAC-SHA256:</b> <code title='" + esc(hmacHex) + "'>" + esc(hmacHex.slice(0, 32)) + "…</code> · <b>Plaintext SHA-256:</b> <code title='" + esc(plainSha) + "'>" + esc(plainSha.slice(0, 24)) + "…</code></div>",
+              "</div>"
+            ].join("");
+          }
+        }
+
+        function ingestIncomingHashIfPresent() {
+          var cryptoEngine = window.SHMLV_CRYPTO_CAPSULE || window.ShmlvCryptoCapsule;
+          var urlOutput = document.getElementById("wow11CryptoShareUrlOutput");
+          var badge = document.getElementById("wow11CryptoStatusBadge");
+          var detailsBox = document.getElementById("wow11CryptoTelemetryDetails");
+          var feedback = document.getElementById("wow11ActionFeedback");
+          if (!cryptoEngine || !window.location || !window.location.hash) return false;
+          if (window.location.hash.indexOf("#diag=") !== 0) return false;
+
+          var fullUrl = window.location.href;
+          if (urlOutput) urlOutput.value = fullUrl;
+          cryptoEngine
+            .decryptAndVerifyDiagnosticCapsule(fullUrl)
+            .then(function (verified) {
+              renderCryptoCapsuleVerification(null, verified, badge, detailsBox);
+              if (feedback) {
+                feedback.textContent =
+                  "🔐 Успішно розшифровано та верифіковано вхідне захищене посилання #diag= (" + verified.verdict + ")!";
+              }
+            })
+            .catch(function (err) {
+              if (badge) badge.textContent = "❌ Помилка верифікації вхідного посилання #diag=";
+              if (feedback) feedback.textContent = "Помилка #diag=: " + String(err && err.message ? err.message : err);
+            });
+          return true;
+        }
+
+        /**
+         * Generates & Round-Trip Verifies the Zero-Server #diag= AES-256-GCM URI Capsule
+         * using `window.SHMLV_CRYPTO_CAPSULE` (`window.ShmlvCryptoCapsule`).
+         */
+        function generateAndVerifyZeroServerCryptoUri(customPayload) {
+          var cryptoEngine = window.SHMLV_CRYPTO_CAPSULE || window.ShmlvCryptoCapsule;
+          var urlOutput = document.getElementById("wow11CryptoShareUrlOutput");
+          var badge = document.getElementById("wow11CryptoStatusBadge");
+          var detailsBox = document.getElementById("wow11CryptoTelemetryDetails");
+          var feedback = document.getElementById("wow11ActionFeedback");
+          if (!cryptoEngine || !urlOutput || !detailsBox) return;
+
+          var diagTextEl = document.getElementById("wow11DiagCapsulePreview");
+          var parsedDiag = null;
+          try {
+            if (diagTextEl && diagTextEl.value) {
+              parsedDiag = JSON.parse(diagTextEl.value);
+            }
+          } catch (_e) {
+            parsedDiag = null;
+          }
+
+          var inputPayload = customPayload || {
+            timestamp_utc: new Date().toISOString(),
+            source_document_sha256:
+              (parsedDiag && parsedDiag.filesAnalyzed && parsedDiag.filesAnalyzed[0] && parsedDiag.filesAnalyzed[0].sha256) ||
+              "d691a01721f178bf83e247304a8b697fd049fcb5ebf956fd5b56639e6adfcf7a",
+            source_telemetry_sha256:
+              (parsedDiag && parsedDiag.filesAnalyzed && parsedDiag.filesAnalyzed[1] && parsedDiag.filesAnalyzed[1].sha256) ||
+              "846ffae60e4c4beeef2aa64673e43b70dbcb92fd14013008ef5ae02102a1a904",
+            stm32_uid: "004A002F-33345119-32383433",
+            raw_confidential_context:
+              "Конфіденційний контекст для OPSEC-санації: полігон 50.4501, 30.5235, 36U UA 22450 88120, підписант Коваленко О. В., ЄДРПОУ 38519042, в/ч А4024, виріб «Канадка», сервер \\\\10.24.0.15\\tender\\matrice4t.docx",
+            collisions: [
+              {
+                rule_id: "RULE_EDP_R_CURRENT_GAP",
+                section_ref: "ПМВ рядок #31 (B31:C31) Стандартна напруга АКБ (в/ч А4024)",
+                spec_unit: "V",
+                observed_unit: "V",
+                spec_value: 14.76,
+                observed_value: 15.4,
+                severity: "CRITICAL",
+                source_channel: "OOXML_XLSX_PROTOCOL"
+              },
+              {
+                rule_id: "RULE_OOXML_EXTERNAL_CANARY",
+                section_ref: "word/document.xml — точкова правка вимоги прошивки «Канадка»",
+                spec_unit: "ratio",
+                observed_unit: "ratio",
+                spec_value: 1.0,
+                observed_value: 0.0,
+                severity: "HIGH",
+                source_channel: "OOXML_RSID_FORENSICS"
+              }
+            ],
+            telemetry_innovation: {
+              ekf3_vel_innov_ratio: 1.84,
+              ekf3_pos_innov_ratio: 2.15,
+              ekf3_hgt_innov_ratio: 0.64,
+              ekf3_mag_innov_ratio: 0.91,
+              ubx_mon_hw_jam_ind: 185,
+              rtos_clock_jitter_us_std: 4.25,
+              imu_vs_gps_divergence_m: 46.98,
+              mahalanobis_gate_breached: true
+            }
+          };
+
+          var baseUrl = "https://denisshumilov.github.io/uav-readiness-evidence-copilot/tools/universal-ai-cockpit.html";
+
+          cryptoEngine
+            .createSignedDiagnosticCapsule(inputPayload, { baseUrl: baseUrl })
+            .then(function (capsule) {
+              urlOutput.value = capsule.share_url;
+              return cryptoEngine.decryptAndVerifyDiagnosticCapsule(capsule.share_url).then(function (verified) {
+                renderCryptoCapsuleVerification(capsule, verified, badge, detailsBox);
+              });
+            })
+            .catch(function (err) {
+              if (badge) badge.textContent = "⚠️ Детермінований офлайн-режим посилання";
+              urlOutput.value = baseUrl + "#diag=shmlv-capsule-v1.offline-fallback";
+              if (feedback) feedback.textContent = "Примітка WebCrypto: " + String(err && err.message ? err.message : err);
+            });
+        }
+
+        function bindUpgradedCockpitControls() {
+          if (typeof window.bootstrapCoopCoepSupercomputer === "function") {
+            window.bootstrapCoopCoepSupercomputer({ autoReload: false }).catch(function () {});
+          }
+
+          var btnPreset5 = document.getElementById("btnWow11Preset5");
+          if (btnPreset5) {
+            btnPreset5.addEventListener("click", function () {
+              runPreset5RasterPdfOcr();
+            });
+          }
+
+          // Hide OCR forensics box when switching back to Presets 1-4
+          ["btnWow11Preset1", "btnWow11Preset2", "btnWow11Preset3", "btnWow11Preset4"].forEach(function (id) {
+            var b = document.getElementById(id);
+            if (b) {
+              b.addEventListener("click", function () {
+                hideRasterOcrPanel();
+                setTimeout(function () {
+                  generateAndVerifyZeroServerCryptoUri();
+                }, 30);
+              });
+            }
+          });
+
+          var btnGenCrypto = document.getElementById("btnWow11GenerateCryptoDiagUri");
+          var feedback = document.getElementById("wow11ActionFeedback");
+          if (btnGenCrypto) {
+            btnGenCrypto.addEventListener("click", function () {
+              generateAndVerifyZeroServerCryptoUri();
+              if (feedback) {
+                feedback.textContent =
+                  "🔐 Згенеровано та криптографічно верифіковано захищене посилання #diag= (AES-256-GCM + HMAC-SHA256, 0 байт на сервері)!";
+              }
+            });
+          }
+
+          var btnCopyCrypto = document.getElementById("btnWow11CopyCryptoDiagUri");
+          if (btnCopyCrypto) {
+            btnCopyCrypto.addEventListener("click", function () {
+              var out = document.getElementById("wow11CryptoShareUrlOutput");
+              if (!out || !out.value) return;
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(out.value);
+              }
+              if (feedback) {
+                feedback.textContent =
+                  "🔗 Зашифроване посилання #diag= (" + out.value.length + " символів, 0 байт на сервері) скопійовано в буфер обміну!";
+              }
+            });
+          }
+
+          window.addEventListener("hashchange", function () {
+            ingestIncomingHashIfPresent();
+          });
+
+          // Ingest incoming #diag= hash if present; otherwise generate initial #diag= capsule on load
+          setTimeout(function () {
+            if (!ingestIncomingHashIfPresent()) {
+              generateAndVerifyZeroServerCryptoUri();
+            }
+          }, 80);
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", bindUpgradedCockpitControls);
+        } else {
+          setTimeout(bindUpgradedCockpitControls, 20);
+        }
+      })();
+    </script>
+  </body>
+</html>

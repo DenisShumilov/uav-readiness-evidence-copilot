@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  verify:
+    name: Verify TypeScript & CLI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Demo readiness
+        run: npm run demo:readiness
+
+      - name: Self-audit (docs vs engine — fails on drift)
+        run: npm run demo:selfaudit
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Audit
+        run: npm audit --audit-level=moderate
+
+  python-verify:
+    name: Verify Python Engines
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: DefDoc AI self-test
+        run: python3 engines/defdoc_ai/defdoc_auditor.py --self-test
+
+      - name: DefDoc AI client regression suite (21 tests)
+        run: python3 engines/defdoc_ai/defdoc_auditor.py --test-client
+
+      - name: DefDoc AI adversarial benchmark (17 scenarios)
+        run: python3 engines/defdoc_ai/defdoc_auditor.py --benchmark
+
+      - name: Telemetry EW regression suite (21 tests)
+        run: python3 engines/telemetry_ew/telemetry_analyzer.py --self-test
+
+  dogfood:
+    name: Dogfood Action
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Run local readiness action
+        id: readiness
+        uses: ./
+        with:
+          path: examples/demo-uav-readiness/input
+          min-score: 40
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: ${{ steps.readiness.outputs.sarif }}
+          category: uav-readiness

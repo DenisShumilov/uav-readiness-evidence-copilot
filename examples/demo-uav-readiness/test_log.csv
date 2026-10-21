@@ -1,0 +1,6 @@
+check_id,check_name,check_type,result,evidence_status,evidence_id,notes
+CHECK-001,BOM file present,documentation,pass,verified,EV-BOM-001,Synthetic BOM row exists
+CHECK-002,Manual summary present,documentation,pass,verified,EV-MAN-001,Synthetic manual page exists
+CHECK-003,Connector note review,bench_documentation,warning,partial,EV-WIRE-001,One connector note lacks a second source
+CHECK-004,Config owner assigned,qa_review,blocked,locked,,Owner field is missing in synthetic config
+CHECK-005,Safety label set listed,documentation,pass,verified,EV-QA-001,Synthetic label set is listed

@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' blob: data:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none';" />
+    <title>03. Аналізатор польотної телеметрії та РЕБ — shmlv systems</title>
+    <meta name="description" content="Локальний розшифровувач бінарних логів автопілота (ArduPilot .bin, PX4 .ulg, u-blox .ubx, MAVLink .tlog, NMEA .nmea) для виявлення дії РЕБ та GPS-спуфінгу." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="shmlv systems" />
+    <meta property="og:locale" content="uk_UA" />
+    <meta property="og:title" content="03. Аналізатор польотної телеметрії та РЕБ — shmlv systems" />
+    <meta property="og:description" content="Локальний розшифровувач бінарних логів автопілота (ArduPilot .bin, PX4 .ulg, u-blox .ubx, MAVLink .tlog, NMEA .nmea) для виявлення дії РЕБ та GPS-спуфінгу." />
+    <meta property="og:url" content="https://denisshumilov.github.io/uav-readiness-evidence-copilot/tools/telemetry-analyzer.html" />
+    <meta property="og:image" content="https://denisshumilov.github.io/uav-readiness-evidence-copilot/social-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="03. Аналізатор польотної телеметрії та РЕБ — shmlv systems" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="03. Аналізатор польотної телеметрії та РЕБ — shmlv systems" />
+    <meta name="twitter:description" content="Локальний розшифровувач бінарних логів автопілота (ArduPilot .bin, PX4 .ulg, u-blox .ubx, MAVLink .tlog, NMEA .nmea) для виявлення дії РЕБ та GPS-спуфінгу." />
+    <meta name="twitter:image" content="https://denisshumilov.github.io/uav-readiness-evidence-copilot/social-card.png" />
+    <meta name="twitter:image:alt" content="03. Аналізатор польотної телеметрії та РЕБ — shmlv systems" />
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+
+  <body data-page-tool="telemetry">
+    <header class="topbar-wrap">
+      <div class="wrap topbar">
+        <a class="brand" href="../index.html">
+          <span class="brand-dot"></span>
+          <span>shmlv systems</span>
+          <span class="brand-sub">Інструмент 03 із 08</span>
+        </a>
+        <a class="header-cta" href="mailto:shmlvofficial@gmail.com">
+          Зв'язатися
+        </a>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="product-view">
+        <div class="back-bar">
+          <a class="back-btn" href="../index.html">
+            ← Назад до каталогу (усі 8 інструментів)
+          </a>
+          <a class="back-btn" href="universal-ai-cockpit.html">
+            🚀 08. Єдине вікно комплексної перевірки →
+          </a>
+        </div>
+
+        <div class="product-hero-card">
+          <div class="product-illustration">
+            <svg viewBox="0 0 280 150" xmlns="http://www.w3.org/2000/svg">
+              <rect x="16" y="22" width="248" height="106" rx="12" fill="#ffffff" stroke="#93c5fd" stroke-width="2"/>
+              <line x1="34" y1="92" x2="246" y2="92" stroke="#067647" stroke-width="2" stroke-dasharray="4,4"/>
+              <polyline fill="none" stroke="#0022ff" stroke-width="3" points="34,92 96,92 126,46 176,46 206,92 246,92"/>
+              <circle cx="126" cy="46" r="4" fill="#d92d20"/>
+              <circle cx="176" cy="46" r="4" fill="#d92d20"/>
+              <text x="140" y="114" text-anchor="middle" fill="#64748b" font-family="sans-serif" font-size="10.5" font-weight="600">Барометр 450 м vs Стрибок GPS 592 м</text>
+            </svg>
+          </div>
+          <div class="product-hero-body">
+            <span class="product-badge">Інструмент 03 · Аналіз польотних логів та навігації</span>
+            <h1 class="product-main-title">Аналізатор польотної телеметрії та РЕБ</h1>
+            <div class="explain-list">
+              <div class="explain-item">
+                <strong>Що перевіряє та яку проблему знаходить</strong>
+                Інструмент розшифровує бінарні журнали автопілотів (<code>ArduPilot .bin</code>, <code>PX4 .ulg</code>, <code>MAVLink .tlog</code>) і супутникових приймачів (<code>u-blox .ubx</code>, <code>NMEA .nmea</code>) прямо у браузері. Він допомагає швидко встановити причину аварії чи втрати борту: відрізняє помилку оператора на стіках керування від відмови датчиків, критичного просідання акумулятора або зовнішнього подавлення та GPS-спуфінгу.
+              </div>
+              <div class="explain-item">
+                <strong>Який результат дає інженеру</strong>
+                Показує покрокову картину польоту, виявляє розходження між барометром і GPS, підсвічує небезпечно вимкнені аварійні захисти (<code>Failsafe</code>), підтверджує фізичну справжність логу проти симулятора та розраховує інерціальний еліпс імовірного місця посадки борту при втраті зв'язку.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <h3>Як це працює (3 прості кроки)</h3>
+          <div class="steps-grid">
+            <div class="step-box">
+              <span class="step-num">1</span>
+              <h4>Перевірка керування, живлення та захистів</h4>
+              <p>Система звіряє команди пілота на пульті з фактичною роботою моторів, перевіряє стабільність оцінки висоти, просідання напруги АКБ та стан аварійних захистів <code>Failsafe</code>.</p>
+            </div>
+            <div class="step-box">
+              <span class="step-num">2</span>
+              <h4>Підтвердження реального польоту</h4>
+              <p>Перевіряє апаратні ознаки фізичного польотного контролера, роботу термодатчиків та внутрішній опір батареї під навантаженням, відсіюючи штучні записи із симулятора.</p>
+            </div>
+            <div class="step-box">
+              <span class="step-num">3</span>
+              <h4>Виявлення РЕБ, спуфінгу та зони пошуку</h4>
+              <p>Аналізує рівні сигналів супутників за секторами неба, фіксує підміну координат GPS і розраховує орієнтовний еліпс пошуку точки приземлення БпЛА.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="tool-Try-card">
+          <div class="tool-try-head">
+            <h3>Інтерактивна перевірка: перетягніть файл логу автопілота (.bin, .ulg, .ubx, .tlog, .nmea)</h3>
+            <span class="local-pill">🟢 Працює локально у браузері (0 байт у хмару)</span>
+          </div>
+
+          <label class="dropzone" id="dropZoneArea" for="localFileInput" tabindex="0">
+            <input type="file" id="localFileInput" multiple accept=".pdf,.zip,.docx,.xlsx,.csv,.tsv,.json,.yaml,.yml,.param,.parm,.waypoints,.plan,.hex,.elf,.bin,.ulg,.tlog,.ubx,.nmea,.p7s,.txt,.md">
+            <div class="dropzone-title">📂 Перетягніть сюди бінарний лог польоту (.bin, .ulg, .ubx, .tlog) або трек NMEA (.nmea)</div>
+            <p class="dropzone-sub">Підтримуються ArduPilot DataFlash, PX4 ULog, u-blox UBX, MAVLink .tlog та NMEA 0183. Або натисніть на один із готових логів нижче:</p>
+          </label>
+
+          <div class="try-actions">
+            <button type="button" class="btn-action primary" id="btnTelemUbx">⚡ Тест u-blox (.ubx)</button>
+            <button type="button" class="btn-action" id="btnTelemBin">⚡ Тест ArduPilot (.bin)</button>
+            <button type="button" class="btn-action" id="btnTelemUlg">⚡ Тест PX4 ULog (.ulg)</button>
+            <button type="button" class="btn-action" id="btnTelemNmea">⚡ Тест NMEA 0183 (.nmea)</button>
+          </div>
+
+          <div class="open-data-banner">
+            <div class="open-data-head">
+              <span class="open-data-title">🏛️ Перевірка на реальних польотних записах та стендових сценаріях</span>
+              <span class="provenance-pill">Джерело: PX4 / ArduPilot / u-blox / MAVLink</span>
+            </div>
+            <p class="open-data-desc">Протестуйте бінарний декодер на реальних записах польотів PX4 Autopilot, ArduPilot DataFlash, MAVLink та приймачів u-blox/NMEA: перевірка контуру керування та аварійних захистів, підтвердження реального заліза проти симулятора, оцінка впливу РЕБ та відновлення пошкоджених секторів чорної скриньки:</p>
+            <div class="open-data-actions">
+              <button type="button" class="btn-action open-data-btn" data-real-sample="telem-real-ulg">🏛️ Реальний політ PX4 Autopilot (.ulg)</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="telem-real-bin">🏛️ Реальний лог ArduPilot DataFlash (.bin)</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="telem-real-tlog">🏛️ Реальна телеметрія MAVLink (.tlog)</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="telem-real-ubx">🏛️ Реальний запис приймача u-blox (.ubx)</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="telem-real-nmea">🏛️ Реальний трек супутників Multi-GNSS (.nmea)</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="telem-ekf-divergence-sticks">🎛️ Розбір аварії: команди пілота, збій оцінки висоти та перевірка захистів Failsafe</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="telem-silicon-vs-sitl">🔬 Перевірка справжності логу: фізичний контролер та батарея проти симулятора</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="telem-ew-cep-jammer">📡 Детекція GPS-спуфінгу, оцінка зони пошуку борту та напрямку на перешкоду РЕБ</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="sample-corrupt-telemetry-resync">🛠️ Відновлення пошкодженого логу польоту після аварійного знеструмлення (.bin/.tlog)</button>
+            </div>
+          </div>
+
+          <div class="live-output" id="localCheckResult" aria-live="polite"></div>
+
+          <details class="tech-collapse" style="margin-top: 14px;">
+            <summary class="tech-collapse-summary">📄 Показати вхідний текстовий буфер та сирі дані перевірки ▾</summary>
+            <div class="tech-collapse-body">
+              <p style="margin: 0; font-size: 12.5px; color: var(--muted);">
+                Бінарний аналізатор перевіряє узгодженість вхідних команд керування (<code>RCIN</code>) із виходами регуляторів моторів (<code>RCOU</code>), інновації навігаційного фільтра Калмана (<code>EKF</code>), параметри аварійного захисту (<code>Failsafe</code>), азимутальний розподіл відношення сигнал/шум супутників та балістичний еліпс розсіювання (<code>CEP</code>) при втраті ГНСС.
+              </p>
+            </div>
+          </details>
+        </div>
+
+        <div class="tool-pager">
+          <a class="back-btn" href="cross-verify.html">← Попередній: 02. Звірка ПМВ із чорною скринькою</a>
+          <a class="back-btn" href="cyber-forensics.html">Наступний: 04. Детектор прихованих підробок →</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap footer-inner">
+        <div><b>shmlv systems</b> — Інструмент 03: Аналізатор польотної телеметрії</div>
+        <div><a href="universal-ai-cockpit.html">08. Єдине вікно</a> &nbsp;·&nbsp; <a href="../index.html">← Усі 8 інструментів каталогу</a></div>
+      </div>
+    </footer>
+    <script src="../real-samples-bundle.js"></script>
+    <script src="../browser-isolation-runtime.js"></script>
+    <script src="../encrypted-report-share.js"></script>
+    <script src="../pdf-scan-ocr-engine.js"></script>
+    <script src="../multi-file-verifier-bundle.js"></script>
+    <script src="../tools-engine.js"></script>
+  </body>
+</html>

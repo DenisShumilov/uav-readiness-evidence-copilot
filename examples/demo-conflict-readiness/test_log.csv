@@ -1,0 +1,4 @@
+check_id,check_name,check_type,result,evidence_status,evidence_id,notes
+CHECK-001,Document index present,documentation,pass,verified,EV-TEST-001,Synthetic document index exists
+CHECK-002,Review packet present,documentation,pass,verified,EV-TEST-002,Synthetic review packet exists
+CHECK-003,Sign-off sheet present,documentation,pass,verified,EV-TEST-003,Synthetic sign-off sheet exists

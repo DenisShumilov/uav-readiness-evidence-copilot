@@ -1,0 +1,6 @@
+item_id,component,tu_spec_qty,passport_qty,pmv_verified_qty,unit,spec_parameter,status
+BOM-01,UAV Airframe [ASSET_01],3,3,3,pcs,wingspan=2400mm; max_mass<=13.5kg,CONFLICT_MASS_13.9KG
+BOM-02,Ground Control Station (GCS),1,1,1,pcs,freq=433.05-434.79 & 868-915 MHz,MISSING_433MHZ_TEST
+BOM-03,Traction Battery 6S4P 16800mAh,4,2,4,pcs,16800 mAh == 16.8 Ah (22.2V),CONFLICT_QTY_4_VS_2
+BOM-04,Directional Patch Antenna,2,1,2,pcs,1200-1360 & 5150-5850 MHz,CONFLICT_QTY_2_VS_1
+BOM-05,Technical Documentation Set (PS + NE),1,1,1,set,TU U 30.3-45901234-001:2026 / DSTU V 15.210:2022,CONFLICT_OLD_GOST_1978

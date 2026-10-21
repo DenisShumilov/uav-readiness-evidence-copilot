@@ -1,0 +1,215 @@
+{
+  "schemaVersion": "2.0.0",
+  "generatedFor": "MilTech UAV Co-Pilot Workbench v2 — Real Open-Data Sample Pack",
+  "totalSamples": 12,
+  "verificationGuarantee": "10 of 12 files are verbatim public open-data artifacts (Prozorro public procurement tenders, PX4 Autopilot pyulog, ArduPilot/DroneKit testdata, SEMU Consulting pyubx2; binary telemetry slices 01..03 are byte-exact, frame-aligned contiguous prefixes ending cleanly on packet boundaries with zero trailing bytes alongside full 4.05 MB / 2.98 MB / 5.86 MB originals), while 2 files (07 XLSX protocol and 09 CSV BOM matrix) are structured tabular verification fixtures built directly from the real Prozorro tender specification rows to demonstrate deterministic PASS/FAIL and CONFLICT_CEILING=49 logic.",
+  "samples": [
+    {
+      "key": "prozorro_matrice4t_docx",
+      "filename": "06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx",
+      "sourceOrg": "ДП «Прозорро» (Prozorro Public Procurement)",
+      "tenderOrRepo": "UA-2026-04-09-012218-a",
+      "sourceUrl": "https://prozorro.gov.ua/tender/UA-2026-04-09-012218-a",
+      "license": "Open Government Data Ukraine (Закон України «Про публічні закупівлі» / CC BY 4.0)",
+      "descriptionUk": "Реальний тендерний додаток DOCX (Технічні вимоги на БпЛА DJI Matrice 4T, тендер UA-2026-04-09-012218-a)",
+      "sha256": "d691a01721f178bf83e247304a8b697fd049fcb5ebf956fd5b56639e6adfcf7a",
+      "sizeBytes": 24334,
+      "isFrameAlignedSlice": false,
+      "originalFile": {
+        "filename": "06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx",
+        "sha256": "d691a01721f178bf83e247304a8b697fd049fcb5ebf956fd5b56639e6adfcf7a",
+        "sizeBytes": 24334
+      }
+    },
+    {
+      "key": "prozorro_matrice4t_tender2_docx",
+      "filename": "06a_Prozorro_UAV_TechVymogy_DJI_Matrice_4T_Tender2.docx",
+      "sourceOrg": "ДП «Прозорро» (Prozorro Public Procurement)",
+      "tenderOrRepo": "UA-2026-04-08-006104-a",
+      "sourceUrl": "https://prozorro.gov.ua/tender/UA-2026-04-08-006104-a",
+      "license": "Open Government Data Ukraine (Закон України «Про публічні закупівлі» / CC BY 4.0)",
+      "descriptionUk": "Реальний тендерний додаток DOCX з другого незалежного тендеру Prozorro на DJI Matrice 4T (UA-2026-04-08-006104-a, 14/14 PASS при звірянні з тендером 1)",
+      "sha256": "b03d75a03dd80d637f526f4795a25ab63d3a0e43d47f5e7e16b11a5886eacff5",
+      "sizeBytes": 28653,
+      "isFrameAlignedSlice": false,
+      "originalFile": {
+        "filename": "06a_Prozorro_UAV_TechVymogy_DJI_Matrice_4T_Tender2.docx",
+        "sha256": "b03d75a03dd80d637f526f4795a25ab63d3a0e43d47f5e7e16b11a5886eacff5",
+        "sizeBytes": 28653
+      }
+    },
+    {
+      "key": "prozorro_mavic3t_docx",
+      "filename": "06b_Prozorro_UAV_TTX_DJI_Mavic_3T.docx",
+      "sourceOrg": "ДП «Прозорро» (Prozorro Public Procurement)",
+      "tenderOrRepo": "UA-2023-03-10-010419-a",
+      "sourceUrl": "https://prozorro.gov.ua/tender/UA-2023-03-10-010419-a",
+      "license": "Open Government Data Ukraine (Закон України «Про публічні закупівлі» / CC BY 4.0)",
+      "descriptionUk": "Реальний тендерний додаток DOCX з ТТХ БпЛА DJI Mavic 3T (UA-2023-03-10-010419-a, виявляє 4 розбіжності ТТХ при порівнянні з Matrice 4T)",
+      "sha256": "a1440393ecf82ddb70e0a1007771cd08373e0fdbc17575694c2af710876c6645",
+      "sizeBytes": 29585,
+      "isFrameAlignedSlice": false,
+      "originalFile": {
+        "filename": "06b_Prozorro_UAV_TTX_DJI_Mavic_3T.docx",
+        "sha256": "a1440393ecf82ddb70e0a1007771cd08373e0fdbc17575694c2af710876c6645",
+        "sizeBytes": 29585
+      }
+    },
+    {
+      "key": "prozorro_protocol_xlsx",
+      "filename": "07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx",
+      "sourceOrg": "ДП «Прозорро» (Prozorro Public Procurement)",
+      "tenderOrRepo": "UA-2026-04-09-012218-a",
+      "sourceUrl": "https://prozorro.gov.ua/tender/UA-2026-04-09-012218-a",
+      "license": "Open Government Data Ukraine (Закон України «Про публічні закупівлі» / CC BY 4.0)",
+      "descriptionUk": "Табличний протокол перевірки ТТХ XLSX на базі специфікації Prozorro UA-2026-04-09-012218-a (DJI Matrice 4T, 52 рядки / 51 ТТХ: 49 PASS / 2 FAIL у клітинках C31 14.76 vs 15.4 В та C48 -20..50°C vs -10..40°C)",
+      "sha256": "846ffae60e4c4beeef2aa64673e43b70dbcb92fd14013008ef5ae02102a1a904",
+      "sizeBytes": 4823,
+      "isFrameAlignedSlice": false,
+      "originalFile": {
+        "filename": "07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx",
+        "sha256": "846ffae60e4c4beeef2aa64673e43b70dbcb92fd14013008ef5ae02102a1a904",
+        "sizeBytes": 4823
+      }
+    },
+    {
+      "key": "prozorro_tender104_xlsx",
+      "filename": "07a_Prozorro_Real_Tender_Attachment_104.xlsx",
+      "sourceOrg": "ДП «Прозорро» (Prozorro Public Procurement)",
+      "tenderOrRepo": "UA-2026-06-11-010211-a",
+      "sourceUrl": "https://prozorro.gov.ua/tender/UA-2026-06-11-010211-a",
+      "license": "Open Government Data Ukraine (Закон України «Про публічні закупівлі» / CC BY 4.0)",
+      "descriptionUk": "Реальний незмінений табличний тендерний додаток XLSX (95 рядків, 81 формула <f>, рахунок 104) із публічної закупівлі Prozorro UA-2026-06-11-010211-a",
+      "sha256": "1a6d2cc99fb25886fa739cd95666fdaf17ddef75a4b3ddf3f63a93012764ec84",
+      "sizeBytes": 20372,
+      "isFrameAlignedSlice": false,
+      "originalFile": {
+        "filename": "07a_Prozorro_Real_Tender_Attachment_104.xlsx",
+        "sha256": "1a6d2cc99fb25886fa739cd95666fdaf17ddef75a4b3ddf3f63a93012764ec84",
+        "sizeBytes": 20372
+      }
+    },
+    {
+      "key": "ublox_nav_ubx",
+      "filename": "04_uBlox_official_pygpsdata_NAV.ubx",
+      "sourceOrg": "SEMU Consulting / pyubx2 Official GNSS Test Suite",
+      "tenderOrRepo": "semuconsulting/pyubx2 (tests/pygpsdata-NAV.log)",
+      "sourceUrl": "https://raw.githubusercontent.com/semuconsulting/pyubx2/master/tests/pygpsdata-NAV.log",
+      "license": "BSD-3-Clause",
+      "descriptionUk": "Офіційний статичний бінарний GNSS-лог u-blox UBX (28 пакетів класу UBX-NAV 0x01: 1×UBX-NAV-PVT numSV=26, 1×UBX-NAV-SAT numSvs=43 із секторним затіненням 135°–146° Пд-Сх, 1×UBX-NAV-STATUS gpsFix=3 spoofDetState=1 [No spoofing indicated], 100% валідний Fletcher-8 CRC)",
+      "sha256": "d931b83094f6698d6245f5bcdadae8a909839abfb6171f5044512a463ddd0d8b",
+      "sizeBytes": 2900,
+      "isFrameAlignedSlice": false,
+      "originalFile": {
+        "filename": "04_uBlox_official_pygpsdata_NAV.ubx",
+        "sha256": "d931b83094f6698d6245f5bcdadae8a909839abfb6171f5044512a463ddd0d8b",
+        "sizeBytes": 2900
+      }
+    },
+    {
+      "key": "multignss_nmea",
+      "filename": "05_NMEA_official_pygpsdata.nmea",
+      "sourceOrg": "SEMU Consulting / pyubx2 Official GNSS Test Suite",
+      "tenderOrRepo": "semuconsulting/pyubx2 (tests/pygpsdata-NMEA.log)",
+      "sourceUrl": "https://raw.githubusercontent.com/semuconsulting/pyubx2/master/tests/pygpsdata-NMEA.log",
+      "license": "BSD-3-Clause",
+      "descriptionUk": "Офіційний мультисистемний GNSS-лог NMEA 0183 / 4.10 ($PUBX,00/03/04, $INGGA, $GBGSV, $GPRMA, $GPRMB, $PGRME/M/Z, $GPBOD та ін. — 21 речення з валідними XOR-сумами)",
+      "sha256": "1071d756891ca68a5c4239dd10f926c607b69ae78317509b5563f83be7b88a3a",
+      "sizeBytes": 1309,
+      "isFrameAlignedSlice": false,
+      "originalFile": {
+        "filename": "05_NMEA_official_pygpsdata.nmea",
+        "sha256": "1071d756891ca68a5c4239dd10f926c607b69ae78317509b5563f83be7b88a3a",
+        "sizeBytes": 1309
+      }
+    },
+    {
+      "key": "px4_sample_ulg",
+      "filename": "01_PX4_official_sample_slice.ulg",
+      "sourceOrg": "PX4 Autopilot / Dronecode Foundation (pyulog)",
+      "tenderOrRepo": "PX4/pyulog (test/sample.ulg)",
+      "sourceUrl": "https://raw.githubusercontent.com/PX4/pyulog/main/test/sample.ulg",
+      "license": "BSD-3-Clause",
+      "descriptionUk": "Побайтово вирівняний по межах пакетів префікс-зріз (54 577 Б із повного файлу 4 053 364 Б / 4.05 МБ для миттєвого демо в браузері) офіційного польотного логу PX4 ULog (16-байтний заголовок + 946 пакетів: 0×B, 4×I, 103×F, 493×P, 43×A, 300×D, 3×O; повний оригінал містить 65 199 пакетів включно з 64 542×D)",
+      "sha256": "0af44cfc8c697316b9c39f79bc9b1e92d5166c814827e7f1430d7a9f01f88afe",
+      "sizeBytes": 54577,
+      "isFrameAlignedSlice": true,
+      "originalFile": {
+        "filename": "01_PX4_official_sample.ulg",
+        "sha256": "81952e6059bc095717e7911c010e07f85749d6b04d332a5ffc51575a3fd0a558",
+        "sizeBytes": 4053364
+      }
+    },
+    {
+      "key": "ardupilot_log171_bin",
+      "filename": "02_ArduPilot_dronekit_log171_slice.bin",
+      "sourceOrg": "ArduPilot / DroneKit Log Analyzer Official Test Data",
+      "tenderOrRepo": "dronekit/dronekit-la-testdata (log171.bin)",
+      "sourceUrl": "https://raw.githubusercontent.com/dronekit/dronekit-la-testdata/master/log171.bin",
+      "license": "Apache-2.0 / GPL-3.0",
+      "descriptionUk": "Побайтово вирівняний по межах фреймів 0xA3 0x95 префікс-зріз (55 006 Б із повного файлу 2 981 888 Б / 2.98 МБ для миттєвого демо в браузері) реального польотного логу ArduPilot DataFlash (1697 фреймів: 72 схеми FMT + 1625 записів PARM/GPS/BARO/ATT/IMU; повний оригінал містить 91 530 фреймів)",
+      "sha256": "62ed3a3423e9deeb558286b7501c08c7f791663676e48cbb716a81063cdbbb42",
+      "sizeBytes": 55006,
+      "isFrameAlignedSlice": true,
+      "originalFile": {
+        "filename": "02_ArduPilot_dronekit_log171.bin",
+        "sha256": "a4a3883fa13f28d55878c041cb4cc14deb3e5335aad6b9091f235c9b4e0d95f0",
+        "sizeBytes": 2981888
+      }
+    },
+    {
+      "key": "mavlink_flight_tlog",
+      "filename": "03_MAVLink_dronekit_flight_slice.tlog",
+      "sourceOrg": "DroneKit / MAVLink Official Flight Telemetry Test Data",
+      "tenderOrRepo": "dronekit/dronekit-la-testdata (flight.tlog)",
+      "sourceUrl": "https://raw.githubusercontent.com/dronekit/dronekit-la-testdata/master/flight.tlog",
+      "license": "Apache-2.0",
+      "descriptionUk": "Побайтово вирівняний по межах фреймів префікс-зріз (48 012 Б із повного файлу 5 865 441 Б clean / 5 865 472 Б raw / 5.86 МБ для миттєвого демо в браузері) реальної телеметрії MAVLink TLOG (1301 повний фрейм включно з 30×GLOBAL_POSITION_INT #33 та 31×GPS_RAW_INT #24; повний clean-лог містить 163 851 повний фрейм)",
+      "sha256": "e5ded3e0b4cafa5132e0baacd4b3616b6f3f3e0b48b5bac107b67efdeb6a91a5",
+      "sizeBytes": 48012,
+      "isFrameAlignedSlice": true,
+      "originalFile": {
+        "filename": "03_MAVLink_dronekit_flight_clean.tlog",
+        "sha256": "012f7c8ae6e933ec04bb86b06314857bb3ca4b6f28b8cb7a219d7f8798a6f657",
+        "sizeBytes": 5865441,
+        "upstreamRawFilename": "03_MAVLink_dronekit_flight.tlog",
+        "upstreamRawSha256": "1efad3ba1bfbd0aa9edbfcd6ab2fb8c5252ee6180db40d7eb2d11b3ebbd19eb0",
+        "upstreamRawSizeBytes": 5865472
+      }
+    },
+    {
+      "key": "prozorro_kep_p7s",
+      "filename": "08_Prozorro_Real_KEP_Sign.p7s",
+      "sourceOrg": "ДП «Прозорро» / КНЕДП ТОВ «ЦСК «Україна»",
+      "tenderOrRepo": "UA-2026-10-20-014954-a (sign.p7s)",
+      "sourceUrl": "https://prozorro.gov.ua/tender/UA-2026-10-20-014954-a",
+      "license": "Open Government Data Ukraine (Закон України «Про електронні довірчі послуги» / «Про публічні закупівлі»)",
+      "descriptionUk": "Реальний криптографічний підпис КЕП CMS/PKCS#7 sign.p7s з Prozorro UA-2026-10-20-014954-a (OID 1.2.840.113549.1.7.2 signedData, КНЕДП ЦСК «Україна»)",
+      "sha256": "c5ca4b53ffcf05d1428f83700a9cfb103307a152864813ed046e55325a94491a",
+      "sizeBytes": 20580,
+      "isFrameAlignedSlice": false,
+      "originalFile": {
+        "filename": "08_Prozorro_Real_KEP_Sign.p7s",
+        "sha256": "c5ca4b53ffcf05d1428f83700a9cfb103307a152864813ed046e55325a94491a",
+        "sizeBytes": 20580
+      }
+    },
+    {
+      "key": "prozorro_bom_csv",
+      "filename": "09_Real_UAV_Readiness_Matrix_BOM.csv",
+      "sourceOrg": "ДП «Прозорро» (агрегована матриця доказів готовності БпЛА)",
+      "tenderOrRepo": "UA-2026-04-09-012218-a / UA-2026-04-08-006104-a / UA-2023-03-10-010419-a",
+      "sourceUrl": "https://prozorro.gov.ua/tender/UA-2026-04-09-012218-a",
+      "license": "Open Government Data Ukraine (CC BY 4.0)",
+      "descriptionUk": "Матриця комплектності BOM та доказів готовності БпЛА (14 позицій BOM-M4T-001..014 на основі реальних тендерів Prozorro, демонструє CONFLICT_CEILING = 49)",
+      "sha256": "ff17bd97eae2905e862d34591720e44bd5f9f47dce1bb2e38ff97e9659c95dfa",
+      "sizeBytes": 3652,
+      "isFrameAlignedSlice": false,
+      "originalFile": {
+        "filename": "09_Real_UAV_Readiness_Matrix_BOM.csv",
+        "sha256": "ff17bd97eae2905e862d34591720e44bd5f9f47dce1bb2e38ff97e9659c95dfa",
+        "sizeBytes": 3652
+      }
+    }
+  ]
+}

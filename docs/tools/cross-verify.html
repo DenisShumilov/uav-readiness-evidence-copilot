@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' blob: data:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none';" />
+    <title>02. Звірка звіту ПМВ із «чорною скринькою» — shmlv systems</title>
+    <meta name="description" content="Крос-верифікація паперового звіту випробувань ПМВ (.xlsx) із реальними бінарними логами польоту дрона (.ubx, .ulg, .bin, .tlog, .nmea)." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="shmlv systems" />
+    <meta property="og:locale" content="uk_UA" />
+    <meta property="og:title" content="02. Звірка звіту ПМВ із «чорною скринькою» — shmlv systems" />
+    <meta property="og:description" content="Крос-верифікація паперового звіту випробувань ПМВ (.xlsx) із реальними бінарними логами польоту дрона (.ubx, .ulg, .bin, .tlog, .nmea)." />
+    <meta property="og:url" content="https://denisshumilov.github.io/uav-readiness-evidence-copilot/tools/cross-verify.html" />
+    <meta property="og:image" content="https://denisshumilov.github.io/uav-readiness-evidence-copilot/social-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="02. Звірка звіту ПМВ із «чорною скринькою» — shmlv systems" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="02. Звірка звіту ПМВ із «чорною скринькою» — shmlv systems" />
+    <meta name="twitter:description" content="Крос-верифікація паперового звіту випробувань ПМВ (.xlsx) із реальними бінарними логами польоту дрона (.ubx, .ulg, .bin, .tlog, .nmea)." />
+    <meta name="twitter:image" content="https://denisshumilov.github.io/uav-readiness-evidence-copilot/social-card.png" />
+    <meta name="twitter:image:alt" content="02. Звірка звіту ПМВ із «чорною скринькою» — shmlv systems" />
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+
+  <body data-page-tool="cross-verify">
+    <header class="topbar-wrap">
+      <div class="wrap topbar">
+        <a class="brand" href="../index.html">
+          <span class="brand-dot"></span>
+          <span>shmlv systems</span>
+          <span class="brand-sub">Інструмент 02 із 08</span>
+        </a>
+        <a class="header-cta" href="mailto:shmlvofficial@gmail.com">
+          Зв'язатися
+        </a>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="product-view">
+        <div class="back-bar">
+          <a class="back-btn" href="../index.html">
+            ← Назад до каталогу (усі 8 інструментів)
+          </a>
+          <a class="back-btn" href="universal-ai-cockpit.html">
+            🚀 08. Єдине вікно комплексної перевірки →
+          </a>
+        </div>
+
+        <div class="product-hero-card">
+          <div class="product-illustration">
+            <svg viewBox="0 0 280 150" xmlns="http://www.w3.org/2000/svg">
+              <rect x="14" y="22" width="96" height="106" rx="12" fill="#ffffff" stroke="#93c5fd" stroke-width="2"/>
+              <text x="62" y="52" text-anchor="middle" fill="#0022ff" font-family="sans-serif" font-size="11" font-weight="700">Звіт Excel</text>
+              <text x="62" y="80" text-anchor="middle" fill="#0f172a" font-family="sans-serif" font-size="13" font-weight="800">450 м</text>
+              <text x="62" y="104" text-anchor="middle" fill="#64748b" font-family="sans-serif" font-size="10">Записано в акті</text>
+
+              <circle cx="140" cy="75" r="17" fill="#0022ff"/>
+              <text x="140" y="80" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-size="13" font-weight="700">✓</text>
+
+              <rect x="170" y="22" width="96" height="106" rx="12" fill="#ffffff" stroke="#93c5fd" stroke-width="2"/>
+              <text x="218" y="52" text-anchor="middle" fill="#0022ff" font-family="sans-serif" font-size="11" font-weight="700">Лог дрона</text>
+              <polyline fill="none" stroke="#d92d20" stroke-width="2.5" points="184,88 204,88 218,64 236,64 252,88"/>
+              <text x="218" y="106" text-anchor="middle" fill="#d92d20" font-family="sans-serif" font-size="10" font-weight="700">Стрибок 592 м</text>
+            </svg>
+          </div>
+          <div class="product-hero-body">
+            <span class="product-badge">Інструмент 02 · Звірка паперового звіту з реальним польотом</span>
+            <h1 class="product-main-title">Звірка звіту ПМВ із «чорною скринькою» дрона</h1>
+            <div class="explain-list">
+              <div class="explain-item">
+                <strong>Що перевіряє та яку проблему знаходить</strong>
+                Інструмент зіставляє показники, записані в табличному протоколі випробувань ПМВ (<code>.xlsx</code>, <code>.docx</code>, <code>.pdf</code>), із фактичними бінарними записами бортового самописця (<code>.ubx</code>, <code>.ulg</code>, <code>.bin</code>, <code>.tlog</code>). Він миттєво виявляє випадки, коли у звіт вписано розрахункові або згенеровані на комп'ютері цифри замість реального вильоту, а також фіксує просідання батареї та вимкнені аварійні захисти (<code>Failsafe</code>).
+              </div>
+              <div class="explain-item">
+                <strong>Який результат дає інженеру</strong>
+                Формує наочну таблицю «Заявлено в акті ↔ Зафіксовано в польоті» у єдиних одиницях вимірювання SI, підтверджує фізичну справжність польотного контролера проти програмного симулятора та видає готовий перелік зауважень для приймальної комісії.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <h3>Як це працює (3 прості кроки)</h3>
+          <div class="steps-grid">
+            <div class="step-box">
+              <span class="step-num">1</span>
+              <h4>Додайте звіт ПМВ та лог польоту</h4>
+              <p>Перетягніть таблицю протоколу випробувань (<code>.xlsx</code>, <code>.docx</code>, <code>.pdf</code>) разом із файлом бортового самописця польотного контролера (<code>.ubx</code>, <code>.ulg</code>, <code>.bin</code>, <code>.tlog</code>).</p>
+            </div>
+            <div class="step-box">
+              <span class="step-num">2</span>
+              <h4>Зчитування фактичних метрик польоту</h4>
+              <p>Система витягує з бінарного логу реальну висоту, швидкість, напругу АКБ під навантаженням і перевіряє фізичні ознаки бортового заліза проти симулятора.</p>
+            </div>
+            <div class="step-box">
+              <span class="step-num">3</span>
+              <h4>Таблиця розбіжностей і перевірка Failsafe</h4>
+              <p>Ви бачите пряме порівняння обіцяних у звіті цифр із фактичною телеметрією чорної скриньки та звіт про стан аварійних захистів борту.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="tool-Try-card">
+          <div class="tool-try-head">
+            <h3>Інтерактивна перевірка: перетягніть звіт ПМВ (.xlsx) разом із логом польоту (.ubx / .ulg / .bin)</h3>
+            <span class="local-pill">🟢 Працює локально у браузері (0 байт у хмару)</span>
+          </div>
+
+          <label class="dropzone" id="dropZoneArea" for="localFileInput" tabindex="0">
+            <input type="file" id="localFileInput" multiple accept=".pdf,.zip,.docx,.xlsx,.csv,.tsv,.json,.yaml,.yml,.param,.parm,.waypoints,.plan,.hex,.elf,.bin,.ulg,.tlog,.ubx,.nmea,.p7s,.txt,.md">
+            <div class="dropzone-title">📂 Перетягніть сюди таблицю ПМВ (.xlsx) + бінарний лог польоту (.ubx / .ulg / .bin)</div>
+            <p class="dropzone-sub">Система одночасно прочитає обіцяні цифри з таблиці Excel і реальні показники висоти та швидкості з чорної скриньки:</p>
+          </label>
+
+          <div class="try-actions">
+            <button type="button" class="btn-action primary" id="btnRunCrossNow">⚡ Запустити крос-звірку: pmv_report.xlsx ⇄ flight_blackbox.ubx</button>
+            <button type="button" class="btn-action" id="btnDlSampleUbx">📥 Завантажити тестовий лог flight_blackbox.ubx</button>
+          </div>
+
+          <div class="open-data-banner">
+            <div class="open-data-head">
+              <span class="open-data-title">🏛️ Перевірка на реальних відкритих даних та польотних записах</span>
+              <span class="provenance-pill">Джерело: відкриті публічні дані Prozorro / PX4 / ArduPilot / u-blox</span>
+            </div>
+            <p class="open-data-desc">Зіставте реальні таблиці характеристик БпЛА з публічних закупівель Prozorro (<code>.xlsx/.docx</code>) із бінарними записами польотів (<code>.ubx/.ulg/.bin/.tlog</code>), перевірте фізичну справжність польоту проти програмної симуляції та перегляньте аудит аварійних захистів <code>Failsafe</code>:</p>
+            <div class="open-data-actions">
+              <button type="button" class="btn-action open-data-btn" data-real-sample="cross-prozorro-ubx">🏛️ Реальна звірка: Протокол Matrice 4T (.xlsx) ⇄ Лог приймача u-blox (.ubx)</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="cross-prozorro-ulg">🏛️ Реальна звірка: Вимоги Prozorro (.docx) ⇄ Лог польоту PX4 (.ulg)</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="dl-ublox-ubx">📥 Завантажити оригінал логу u-blox (.ubx)</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="telem-silicon-vs-sitl">🔬 Перевірка справжності польоту: реальний контролер та батарея проти симулятора</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="telem-ekf-divergence-sticks">🎛️ Перевірка команд керування, стабільності навігації та аварійних захистів Failsafe</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="sample-multiformat-zip-6in1">📦 Комплексний архів борту 6-в-1 (паспорт .pdf + налаштування .param + маршрут + прошивка + лог)</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="sample-engineering-action-plan">📋 План дій для інженера: що перевірити вручну і що виправити автоматично</button>
+            </div>
+          </div>
+
+          <div class="live-output" id="localCheckResult" aria-live="polite"></div>
+
+          <details class="tech-collapse" style="margin-top: 14px;">
+            <summary class="tech-collapse-summary">📄 Показати вхідний текстовий буфер та сирі дані перевірки ▾</summary>
+            <div class="tech-collapse-body">
+              <p style="margin: 0; font-size: 12.5px; color: var(--muted);">
+                Крос-верифікатор виконує детерміноване зіставлення табличних значень протоколу ПМВ із екстремумами висоти, швидкості, напруги під навантаженням, стабільністю фільтра Калмана (<code>EKF</code>), апаратним ідентифікатором процесора та внутрішнім опором силової батареї.
+              </p>
+            </div>
+          </details>
+        </div>
+
+        <div class="tool-pager">
+          <a class="back-btn" href="doc-auditor.html">← Попередній: 01. Перевірка таблиць ТУ та ПМВ</a>
+          <a class="back-btn" href="telemetry-analyzer.html">Наступний: 03. Аналізатор телеметрії та РЕБ →</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap footer-inner">
+        <div><b>shmlv systems</b> — Інструмент 02: Звірка звіту ПМВ із «чорною скринькою»</div>
+        <div><a href="universal-ai-cockpit.html">08. Єдине вікно</a> &nbsp;·&nbsp; <a href="../index.html">← Усі 8 інструментів каталогу</a></div>
+      </div>
+    </footer>
+    <script src="../real-samples-bundle.js"></script>
+    <script src="../browser-isolation-runtime.js"></script>
+    <script src="../encrypted-report-share.js"></script>
+    <script src="../pdf-scan-ocr-engine.js"></script>
+    <script src="../multi-file-verifier-bundle.js"></script>
+    <script src="../tools-engine.js"></script>
+  </body>
+</html>
