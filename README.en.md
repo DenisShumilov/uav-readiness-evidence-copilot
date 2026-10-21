@@ -21,7 +21,7 @@
 2. **This GitHub Repository (`uav-readiness-evidence-copilot`, release `v2.5.0`)** — the complete engineering whitepaper and reference implementation:
    - documents the mathematical formulations and parser invariants across all 6 subsystems;
    - contains the full source code for the client-side JS/WASM modules (`docs/`), standalone Python byte-level auditors (`engines/`), and the typed TypeScript readiness monorepo (`packages/`);
-   - enforces cross-surface determinism via **128** tests in Vitest (`packages/qa/`) plus standalone Python regression suites and Playwright Chromium E2E checks.
+   - enforces cross-surface determinism via **133** tests in Vitest (`packages/qa/`) plus standalone Python regression suites and Playwright Chromium E2E checks.
 
 ---
 
@@ -34,27 +34,27 @@ uav-readiness-evidence-copilot/
 │   ├── tools/                              # Standalone verification tool pages (including universal-ai-cockpit.html)
 │   ├── tools-engine.js                     # Deterministic readiness scoring, cross-check & parser engine
 │   ├── multi-file-verifier-bundle.js       # Multi-artifact cross-verifier (.docx + .xlsx + .pdf + .bin + .p7s)
-│   ├── browser-isolation-runtime.js        # Environment isolation diagnostics & capability probes
-│   ├── pdf-scan-ocr-engine.js              # Beer-Lambert chromatic stamp drop-out & local matrix OCR engine
+│   ├── browser-isolation-runtime.js        # Browser origin-isolation diagnostics & capability probes
+│   ├── pdf-scan-ocr-engine.js              # HSV/RGB chromatic stamp drop-out & local matrix OCR engine (148-B WASM)
 │   ├── encrypted-report-share.js           # Zero-server report capsule (AES-256-GCM + PBKDF2 in URL #diag=)
-│   ├── coi-airgap-enclave-sw.js            # Cross-Origin Isolated Service Worker (COOP/COEP + strict CSP)
+│   ├── coi-airgap-enclave-sw.js            # Cross-Origin Isolated Service Worker (COOP/COEP + strict CSP 'self')
 │   ├── architecture.md / .en.md            # Deep-tech architectural breakdown & dataflow specification
 │   ├── scoring.md / .en.md                 # Mathematical model of the 0–100 readiness score & caps
 │   ├── engineering-basis.md / .en.md       # Metrological basis, regulatory context & timing protocols
 │   ├── evidence-model.md / .en.md          # Evidence graph model & status derivation rules
 │   ├── safety-boundaries.md / .en.md       # Strict operational safety and isolation boundaries
-│   └── standards.md / .en.md               # Engineering documentation standards reference (DSTU GOST, STANAG)
+│   └── standards.md / .en.md               # Engineering documentation standards reference (DSTU GOST 2.104:2006, 2.114-97, STANAG)
 │
 ├── engines/                                # Standalone Python byte-level inspection engines (stdlib only)
 │   ├── defdoc_ai/                          # Byte-level OOXML document auditor & OPSEC sanitizer
 │   │   ├── defdoc_auditor.py               # Orchestrator for TU (.docx), PMV (.xlsx) & passport verification (v2.5.0)
-│   │   ├── document_intake.py              # In-memory OOXML parser, Excel formula AST evaluator & 7D SI vectors
+│   │   ├── document_intake.py              # In-memory OOXML parser, Excel formula AST evaluator & dictionary SI normalization (UNITS)
 │   │   ├── sanitize_doc.py                 # Client-side PII/OPSEC de-identifier for .docx, .xlsx, .md (v2.5.0)
-│   │   └── test_client_intake.py           # 22 client intake & security regression tests
+│   │   └── test_client_intake.py           # 24 client intake & security regression tests
 │   └── telemetry_ew/                       # Binary flight telemetry analyzer
 │       ├── telemetry_analyzer.py           # Binary parser for DataFlash (.bin), PX4 (.ulg), MAVLink, UBX, NMEA
 │       ├── sanitize_telemetry.py           # Coordinate translation scrubber for binary & text flight logs
-│       └── test_readiness.py               # 22 binary telemetry parser regression tests
+│       └── test_readiness.py               # 23 binary telemetry parser regression tests (incl. ReferenceControllerVectorsTest)
 │
 ├── packages/                               # TypeScript monorepo (deterministic 0–100 readiness core, v2.5.0)
 │   ├── core/                               # Domain types, Zod schemas & cross-document revision conflict detector
@@ -131,9 +131,9 @@ uav-readiness-evidence-copilot/
 | Reference Bundle | Scenario | Verified / Partial / Locked / Conflict | Deterministic Score |
 |---|---|---|---|
 | `examples/demo-uav-readiness` | Baseline incomplete evidence bundle (`5 locked`, `4 partial`, `7 warnings`) | `8 / 4 / 5 / 0` | **44/100** (`Blocked`) |
-| `examples/demo-maintenance-readiness` | Maintenance verification bundle (`2 partial`, `4 warnings`) | `8 / 2 / 0 / 0` | **80/100** (`Reviewable`) |
-| `examples/demo-conflict-readiness` | Cross-document revision conflict between `BOM.csv` and `qa_notes.md` (`CONFLICT_CEILING`) | `8 / 0 / 0 / 1` | **49/100** (`Blocked by Conflict Ceiling`) |
-| `examples/demo-tdp-supplier-package` | Supplier TDP bundle with connector spec conflict (`CONFLICT_CEILING`) | `7 / 1 / 0 / 1` | **49/100** (`Blocked by Conflict Ceiling`) |
+| `examples/demo-maintenance-readiness` | Maintenance verification bundle (`2 partial`, `1 locked [info]`, `4 warnings`) | `14 / 2 / 1 / 0` | **80/100** (`Reviewable`) |
+| `examples/demo-conflict-readiness` | Cross-document revision conflict between `BOM.csv` and `qa_notes.md` (`CONFLICT_CEILING`) | `11 / 0 / 0 / 1` | **49/100** (`Blocked by Conflict Ceiling`) |
+| `examples/demo-tdp-supplier-package` | Supplier TDP bundle with connector spec conflict (`CONFLICT_CEILING`) | `9 / 1 / 2 / 1` | **49/100** (`Blocked by Conflict Ceiling`) |
 
 ```bash
 npm ci

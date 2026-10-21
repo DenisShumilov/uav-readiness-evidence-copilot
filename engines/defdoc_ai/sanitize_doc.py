@@ -27,6 +27,7 @@ MAX_INPUT = 64 * 1024 * 1024
 MAX_UNZIPPED = 128 * 1024 * 1024
 MAX_XML = 32 * 1024 * 1024
 _WORD_XML_PART_RE = re.compile(r"^word/(?:document|header\d*|footer\d*|footnotes|endnotes|comments)\.xml$")
+_DOCPROPS_XML_PART_RE = re.compile(r"^docProps/(?:core|app|custom)\.xml$")
 
 
 def _has_forbidden_dtd(data: bytes) -> bool:
@@ -56,7 +57,18 @@ class DocumentSanitizer:
         ("SERIAL", re.compile(r"\b(?:SN|UA)-[A-Z0-9\-]+(?:\.\.\d+)?\b")),
         ("ADDR", re.compile(r"м\.\s*[А-ЯІЇЄҐа-яіїєґ\-]+,\s*вул\.\s*[А-ЯІЇЄҐа-яіїєґ\-]+,\s*\d+[А-Яа-я]?")),
         ("PERSON_INIT", re.compile(r"\b([А-ЯІЇЄҐ][а-яіїєґ']+\s+[А-ЯІЇЄҐ]\.\s*[А-ЯІЇЄҐ]\.)")),
-        ("PERSON_FULL", re.compile(r"\b([А-ЯІЇЄҐ][а-яіїєґ']+\s+[А-ЯІЇЄҐ][а-яіїєґ']+\s+[А-ЯІЇЄҐ][а-яіїєґ']+вич)\b")),
+        (
+            "PERSON_FULL",
+            re.compile(
+                r"\b([А-ЯІЇЄҐ][а-яіїєґ']+\s+[А-ЯІЇЄҐ][а-яіїєґ']+\s+[А-ЯІЇЄҐ][а-яіїєґ']+(?:ович|евич|йович|ич|івна|ївна|вна))\b"
+            ),
+        ),
+        (
+            "CONTACT_PII",
+            re.compile(
+                r"(?:\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,24}\b|(?:\+?380[\s\-]?\(?\d{2}\)?|\+?38[\s\-]?\(?0\d{2}\)?|\b0\d{2})[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}\b)"
+            ),
+        ),
     ]
 
     def __init__(self, salt: str = "miltech-zero-trust-2026"):
@@ -72,6 +84,7 @@ class DocumentSanitizer:
             "PERSON": 0,
             "SERIAL": 0,
             "ADDR": 0,
+            "CONTACT_PII": 0,
         }
         self.counters: Dict[str, int] = dict(self.unique_counters)
         self.total_tokens_redacted: int = 0
@@ -93,6 +106,25 @@ class DocumentSanitizer:
         for _, pat in cls._PII_PATTERNS:
             remaining += sum(1 for _ in pat.finditer(sanitized_text))
         return remaining
+
+    @classmethod
+    def count_zip_xml_leaks(cls, archive_bytes: bytes) -> int:
+        if not archive_bytes:
+            return 0
+        texts: List[str] = []
+        with zipfile.ZipFile(io.BytesIO(archive_bytes), "r") as zf:
+            for name in zf.namelist():
+                if name.endswith(".xml"):
+                    try:
+                        root = ET.fromstring(zf.read(name))
+                        for elem in root.iter():
+                            if elem.text and elem.text.strip():
+                                texts.append(elem.text.strip())
+                            if elem.tail and elem.tail.strip():
+                                texts.append(elem.tail.strip())
+                    except Exception:
+                        pass
+        return cls.count_leaked_tokens("\n".join(texts))
 
     def sanitize_text(self, text: str) -> Tuple[str, Dict[str, int]]:
         out = text
@@ -151,15 +183,22 @@ class DocumentSanitizer:
             out,
         )
 
-        # 8. Full names and Surname + Initials (Коваленко Олександр Сергійович, Коваленко О.С.)
+        # 8. Full names and Surname + Initials (Коваленко Олександр Сергійович, Петренко Олена Іванівна, Коваленко О.С.)
         out = re.sub(
             r"\b([А-ЯІЇЄҐ][а-яіїєґ']+\s+[А-ЯІЇЄҐ]\.\s*[А-ЯІЇЄҐ]\.)",
             lambda m: self._token("PERSON", m.group(1)),
             out,
         )
         out = re.sub(
-            r"\b([А-ЯІЇЄҐ][а-яіїєґ']+\s+[А-ЯІЇЄҐ][а-яіїєґ']+\s+[А-ЯІЇЄҐ][а-яіїєґ']+вич)\b",
+            r"\b([А-ЯІЇЄҐ][а-яіїєґ']+\s+[А-ЯІЇЄҐ][а-яіїєґ']+\s+[А-ЯІЇЄҐ][а-яіїєґ']+(?:ович|евич|йович|ич|івна|ївна|вна))\b",
             lambda m: self._token("PERSON", m.group(1)),
+            out,
+        )
+
+        # 9. Contact PII (emails and phone numbers)
+        out = re.sub(
+            r"(?:\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,24}\b|(?:\+?380[\s\-]?\(?\d{2}\)?|\+?38[\s\-]?\(?0\d{2}\)?|\b0\d{2})[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}\b)",
+            lambda m: self._token("CONTACT_PII", m.group(0)),
             out,
         )
 
@@ -168,7 +207,7 @@ class DocumentSanitizer:
         return out, dict(self.counters)
 
     def sanitize_docx_bytes(self, raw_docx: bytes) -> Tuple[bytes, str]:
-        """Парсить `word/document.xml` та супровідні частини (колонтитули/виноски), токенізує всі `<w:t>` (включно з розірваними runs) і повертає очищений DOCX + текст."""
+        """Парсить `word/document.xml`, супровідні частини та метадані `docProps/*.xml`, токенізує всі текстові вузли і повертає очищений DOCX + текст."""
         if len(raw_docx) > MAX_INPUT:
             raise ValueError("Розмір вхідного файла перевищує 64 MiB")
         in_buf = io.BytesIO(raw_docx)
@@ -221,12 +260,25 @@ class DocumentSanitizer:
                                         if any(cells):
                                             extracted_lines.append(" | ".join(cells))
                         data = ET.tostring(root, encoding="utf-8", xml_declaration=True)
+                    elif _DOCPROPS_XML_PART_RE.match(item.filename):
+                        root = ET.fromstring(data)
+                        for elem in root.iter():
+                            if elem.text and elem.text.strip():
+                                elem.text, _ = self.sanitize_text(elem.text)
+                                extracted_lines.append(elem.text.strip())
+                            if elem.tail and elem.tail.strip():
+                                elem.tail, _ = self.sanitize_text(elem.tail)
+                                extracted_lines.append(elem.tail.strip())
+                        data = ET.tostring(root, encoding="utf-8", xml_declaration=True)
                     zout.writestr(item, data)
 
-        return out_buf.getvalue(), "\n".join(extracted_lines)
+        out_bytes = out_buf.getvalue()
+        full_text = "\n".join(extracted_lines)
+        self.leaked_pii_tokens_remaining = max(self.count_leaked_tokens(full_text), self.count_zip_xml_leaks(out_bytes))
+        return out_bytes, full_text
 
     def sanitize_xlsx_bytes(self, raw_xlsx: bytes) -> Tuple[bytes, str]:
-        """Парсить `xl/sharedStrings.xml` та `xl/worksheets/sheet*.xml`, токенізує рядки та повертає очищений XLSX + табличний текст."""
+        """Парсить `xl/sharedStrings.xml`, `xl/worksheets/sheet*.xml` та `docProps/*.xml`, токенізує рядки та повертає очищений XLSX + табличний текст."""
         if len(raw_xlsx) > MAX_INPUT:
             raise ValueError("Розмір вхідного файла перевищує 64 MiB")
         in_buf = io.BytesIO(raw_xlsx)
@@ -293,9 +345,22 @@ class DocumentSanitizer:
                                 if row_vals:
                                     extracted_rows.append(" — ".join(row_vals))
                         data = ET.tostring(ws_root, encoding="utf-8", xml_declaration=True)
+                    elif _DOCPROPS_XML_PART_RE.match(item.filename):
+                        root = ET.fromstring(data)
+                        for elem in root.iter():
+                            if elem.text and elem.text.strip():
+                                elem.text, _ = self.sanitize_text(elem.text)
+                                extracted_rows.append(elem.text.strip())
+                            if elem.tail and elem.tail.strip():
+                                elem.tail, _ = self.sanitize_text(elem.tail)
+                                extracted_rows.append(elem.tail.strip())
+                        data = ET.tostring(root, encoding="utf-8", xml_declaration=True)
                     zout.writestr(item, data)
 
-        return out_buf.getvalue(), "\n".join(extracted_rows)
+        out_bytes = out_buf.getvalue()
+        full_text = "\n".join(extracted_rows)
+        self.leaked_pii_tokens_remaining = max(self.count_leaked_tokens(full_text), self.count_zip_xml_leaks(out_bytes))
+        return out_bytes, full_text
 
     def sanitize_file(self, path: Path, output_dir: Optional[Path] = None) -> Tuple[str, Dict[str, int], int, int]:
         ext = path.suffix.lower()
@@ -356,6 +421,16 @@ def extract_document_text(path: Path) -> str:
                                             cells.append(c_text)
                                     if any(cells):
                                         lines.append(" — ".join(cells))
+                elif _DOCPROPS_XML_PART_RE.match(name):
+                    part_bytes = zin.read(name)
+                    if _has_forbidden_dtd(part_bytes):
+                        raise ValueError("XML перевищує ліміт або містить заборонені DTD/сутності")
+                    root = ET.fromstring(part_bytes)
+                    for elem in root.iter():
+                        if elem.text and elem.text.strip():
+                            lines.append(elem.text.strip())
+                        if elem.tail and elem.tail.strip():
+                            lines.append(elem.tail.strip())
         return "\n".join(lines)
     if ext == ".xlsx":
         in_buf = io.BytesIO(raw_bytes)
@@ -399,6 +474,16 @@ def extract_document_text(path: Path) -> str:
                                     r_vals.append(val_str)
                             if r_vals:
                                 rows.append(" — ".join(r_vals))
+                elif _DOCPROPS_XML_PART_RE.match(name):
+                    part_bytes = zin.read(name)
+                    if _has_forbidden_dtd(part_bytes):
+                        raise ValueError("XML перевищує ліміт або містить заборонені DTD/сутності")
+                    root = ET.fromstring(part_bytes)
+                    for elem in root.iter():
+                        if elem.text and elem.text.strip():
+                            rows.append(elem.text.strip())
+                        if elem.tail and elem.tail.strip():
+                            rows.append(elem.tail.strip())
         return "\n".join(rows)
     return path.read_text(encoding="utf-8", errors="replace")
 

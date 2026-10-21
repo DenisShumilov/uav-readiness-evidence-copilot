@@ -74,7 +74,7 @@ Simple meaning:
 
 Evidence graph means a map of claims and proof.
 
-Graph means "things connected by lines." Here the lines show which file supports which claim.
+Graph means "things connected by lines." Here the lines show which file supports which claim. In the serialized `evidence-graph.json` file (`schemas/evidence-graph.schema.json`), the `evidenceGraph` object stores ID arrays (`artifactIds`, `evidenceSourceIds`, `evidenceClaimIds`) and directed `links` (`{ claimId, evidenceSourceId, relation }`), while the flat tabular projection is exported as `traceability-matrix.csv`.
 
 ## Evidence Lock
 

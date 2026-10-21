@@ -262,6 +262,20 @@ class Readiness(unittest.TestCase):
         self.assertAlmostEqual(obj['streams']['MAVLINK_GPS_RAW_INT']['fields']['alt_msl_m']['min'], 450.0)
         self.assertAlmostEqual(obj['streams']['MAVLINK_GPS_RAW_INT']['fields']['vel_m_s']['min'], 18.2)
 
+    def test_ulog_signed_int32_timestamp_rejected(self):
+        payload = (
+            b'ULog\x01\x12\x35\x01' + struct.pack('<Q', 0) + ulog_record('B', bytes(40))
+            + ulog_record('F', b'audit:int32_t timestamp;float value;')
+            + ulog_record('A', struct.pack('<BH', 0, 1) + b'audit')
+            + ulog_record('D', struct.pack('<Hif', 1, -1, 2.0))
+        )
+        obj, _ = self.run_file(payload, '.ulg', expected=2)
+        self.assertTrue(obj['errors'])
+        self.assertEqual(obj['records'], 0)
+
+
+from telemetry_analyzer import ReferenceControllerVectorsTest  # noqa: E402,F401
+
 
 if __name__ == '__main__':
     unittest.main()

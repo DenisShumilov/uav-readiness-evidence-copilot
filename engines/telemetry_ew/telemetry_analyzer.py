@@ -215,13 +215,13 @@ def parse_ulog(data, out):
             required = max((offset + struct.calcsize('<' + code) for _, offset, code, pad in fields if not pad), default=0)
             need(required <= len(body) <= full_size, f'Невірна довжина ULog {name}: {len(body)}, очікується {required}..{full_size}.')
             ts_codes = [code for label, _, code, pad in fields if not pad and label == 'timestamp']
-            need(not ts_codes or ts_codes[0] in ('Q', 'I', 'q', 'i', 'H', 'h', 'B', 'b'),
-                 f'ULog {name}: поле timestamp за схемою має бути цілим числом мікросекунд.')
+            need(not ts_codes or ts_codes[0] == 'Q',
+                 f'ULog {name}: поле timestamp за специфікацією PX4 ULog має бути uint64_t (Q) у мікросекундах.')
             values = {label: struct.unpack_from('<' + code, body, offset)[0]
                       for label, offset, code, pad in fields if not pad}
             timestamp = values.get('timestamp')
-            need(timestamp is None or (isinstance(timestamp, int) and not isinstance(timestamp, bool)),
-                 f'ULog {name}: timestamp повинен бути цілим числом мікросекунд.')
+            need(timestamp is None or (isinstance(timestamp, int) and not isinstance(timestamp, bool) and timestamp >= 0),
+                 f'ULog {name}: timestamp повинен бути невід\'ємним uint64_t цілим числом мікросекунд.')
             out.add(f'{name}[{instance}]', values, timestamp / 1e6 if timestamp is not None else None)
         elif kind in ('I', 'M', 'P', 'Q', 'L', 'C', 'S', 'O'):
             if kind in ('I', 'P'):
@@ -978,7 +978,6 @@ def main():
         if args.input or args.file:
             parser.error('--self-test не поєднується з вхідним файлом.')
         suite = unittest.defaultTestLoader.discover(str(Path(__file__).parent), pattern='test_readiness.py')
-        suite.addTests(unittest.defaultTestLoader.loadTestsFromModule(sys.modules[__name__]))
         return 0 if unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful() else 1
     if bool(args.input) == bool(args.file):
         parser.error('Задайте рівно один вхідний файл: позиційно або --input.')

@@ -1321,8 +1321,18 @@
             parseReasonCode = "corrupted_der";
             break;
           }
+          if (buf[pos] === 0) {
+            parseError = "ASN1_NON_MINIMAL_DER_LENGTH";
+            parseReasonCode = "corrupted_der";
+            break;
+          }
           for (var lb = 0; lb < numLenBytes; lb++) {
             valLen = (valLen * 256) + buf[pos++];
+          }
+          if (valLen < 128) {
+            parseError = "ASN1_NON_MINIMAL_DER_LENGTH";
+            parseReasonCode = "corrupted_der";
+            break;
           }
         } else {
           valLen = lenByte;
@@ -2112,7 +2122,7 @@
     };
   }
 
-  // --- Canonical Concept Clusters for Subword SVD Projection ---
+  // --- Canonical Concept Clusters & Character Trigram Hashing (64D L2-Normalized Vector, No Matrix SVD) ---
   var CONCEPT_BASIS = [
     { id: "MTOW_MASS", domain: "mass", keywords: ["злітн", "максимальна злітна", "спорядж", "mtow", "takeoff", "mass_g", "борту", "1420", "1050", "13.5", "13.9"] },
     { id: "AIRFRAME_NET_MASS", domain: "mass", keywords: ["маса планера", "без корисного навантаження", "920 г", "895 г"] },
@@ -3346,17 +3356,61 @@
         for (var csi = 0; csi < csvSlots.length; csi++) allProseSlots.push(csvSlots[csi]);
       } else if (magic.format === "ubx") {
         var ubxPackets = 0;
+        var invalidChecksumPackets = 0;
         var navStatusCount = 0;
         var navSatCount = 0;
-        for (var ui = 0; ui + 6 <= safeU8.length; ui++) {
-          if (safeU8[ui] === 0xb5 && safeU8[ui + 1] === 0x62) {
-            ubxPackets++;
-            if (safeU8[ui + 2] === 0x01 && safeU8[ui + 3] === 0x03) navStatusCount++;
-            if (safeU8[ui + 2] === 0x01 && safeU8[ui + 3] === 0x35) navSatCount++;
+        var parsedSpoofStates = [];
+        var uPos = 0;
+        while (uPos + 8 <= safeU8.length) {
+          if (safeU8[uPos] === 0xb5 && safeU8[uPos + 1] === 0x62) {
+            var uCls = safeU8[uPos + 2];
+            var uId = safeU8[uPos + 3];
+            var uLen = safeU8[uPos + 4] | (safeU8[uPos + 5] << 8);
+            if (uPos + 6 + uLen + 2 <= safeU8.length) {
+              var ckA = 0, ckB = 0;
+              for (var ci2 = uPos + 2; ci2 < uPos + 6 + uLen; ci2++) {
+                ckA = (ckA + safeU8[ci2]) & 0xff;
+                ckB = (ckB + ckA) & 0xff;
+              }
+              if (ckA === safeU8[uPos + 6 + uLen] && ckB === safeU8[uPos + 6 + uLen + 1]) {
+                ubxPackets++;
+                if (uCls === 0x01 && uId === 0x03) {
+                  navStatusCount++;
+                  if (uLen >= 8) {
+                    var flags2 = safeU8[uPos + 6 + 7];
+                    parsedSpoofStates.push((flags2 >> 3) & 0x03);
+                  }
+                }
+                if (uCls === 0x01 && uId === 0x35) navSatCount++;
+                uPos += 6 + uLen + 2;
+                continue;
+              } else {
+                invalidChecksumPackets++;
+              }
+            }
           }
+          uPos++;
         }
-        subDetails = { ubxPackets: ubxPackets, navStatusCount: navStatusCount, navSatCount: navSatCount };
-        summaryUk = "u-blox GNSS потік (.ubx) · Пакетів 0xB5 0x62: " + ubxPackets + " (NAV-STATUS: " + navStatusCount + ", NAV-SAT: " + navSatCount + ") · spoofDetState=1 [No spoofing indicated] · Тіньовий сектор: 135°–146° Пд-Сх";
+        var maxSpoofState = parsedSpoofStates.length > 0 ? Math.max.apply(null, parsedSpoofStates) : null;
+        var spoofLabels = {
+          0: "0 [Unknown / deactivated]",
+          1: "1 [No spoofing indicated]",
+          2: "2 [Spoofing indicated]",
+          3: "3 [Multiple spoofing indications]"
+        };
+        subDetails = {
+          ubxPackets: ubxPackets,
+          invalidChecksumPackets: invalidChecksumPackets,
+          navStatusCount: navStatusCount,
+          navSatCount: navSatCount,
+          spoofDetState: maxSpoofState
+        };
+        if (ubxPackets === 0) {
+          summaryUk = "u-blox GNSS потік (.ubx) · Валідних пакетів 0xB5 0x62 не виявлено (UNVERIFIED" + (invalidChecksumPackets > 0 ? ", пошкоджена контрольна сума Флетчера: " + invalidChecksumPackets : "") + ")";
+        } else {
+          summaryUk = "u-blox GNSS потік (.ubx) · Пакетів 0xB5 0x62: " + ubxPackets + " (NAV-STATUS: " + navStatusCount + ", NAV-SAT: " + navSatCount + ")" +
+            (maxSpoofState !== null ? (" · spoofDetState=" + (spoofLabels[maxSpoofState] || maxSpoofState)) : " · spoofDetState: не визначено (немає NAV-STATUS)");
+        }
       } else if (magic.format === "bin" || magic.format === "ulg" || magic.format === "tlog") {
         summaryUk = magic.labelUk + " · Бінарний дамп " + safeU8.length.toLocaleString("uk-UA") + " байтів · Magic: " + magic.magicHex;
       } else {

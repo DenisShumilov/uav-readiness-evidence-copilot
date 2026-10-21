@@ -1,6 +1,8 @@
 import { join } from "node:path";
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
+import vm from "node:vm";
+import zlib from "node:zlib";
 import { beforeAll, describe, expect, it } from "vitest";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -9,6 +11,8 @@ let multiVerifier: any;
 let ocrEngine: any;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let cryptoShare: any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let isolationRuntime: any;
 let getRealSampleBytes: (key: string) => Uint8Array;
 
 beforeAll(async () => {
@@ -16,6 +20,7 @@ beforeAll(async () => {
   await import(pathToFileURL(join(process.cwd(), "docs", "multi-file-verifier-bundle.js")).href);
   await import(pathToFileURL(join(process.cwd(), "docs", "pdf-scan-ocr-engine.js")).href);
   await import(pathToFileURL(join(process.cwd(), "docs", "encrypted-report-share.js")).href);
+  await import(pathToFileURL(join(process.cwd(), "docs", "browser-isolation-runtime.js")).href);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const g = globalThis as any;
@@ -27,6 +32,10 @@ beforeAll(async () => {
     g.ShmlvCryptoCapsule ||
     g.window?.SHMLV_CRYPTO_SHARE ||
     g.window?.ShmlvCryptoCapsule;
+  isolationRuntime =
+    g.SHMLV_ISOLATION_RUNTIME ||
+    g.BrowserIsolationRuntime ||
+    g.window?.SHMLV_ISOLATION_RUNTIME;
 });
 
 describe("Sector A15 Layer 1 — Anti-Substitution & Browser Engine Integration Tests", () => {
@@ -602,5 +611,153 @@ describe("Sector A15 Layer 1 — Anti-Substitution & Browser Engine Integration 
         ["tu.docx", "pmv.xlsx"]
       ).status
     ).toBe("UNVERIFIED");
+  });
+
+  it("Counterexample Probes B3 & B5 + F03, F05, F06, F07, F09: validates Fletcher-8 on .ubx without hardcoded spoofDetState, sanitizes JSON object keys in #diag=, decompresses dynamic-Huffman BTYPE=2 PDF in pure-JS browser VM, reports TIER_3_JS_UNROLLED_FALLBACK when len > 32768, and rejects non-minimal ASN.1 DER length", () => {
+    // 1. Probe B3 (F03): .ubx with 0 valid packets and .ubx with invalid Fletcher-8 checksum
+    const ubxGarbage = new Uint8Array(64);
+    for (let i = 0; i < ubxGarbage.length; i++) ubxGarbage[i] = i & 0xff;
+    const ubxInvalidChecksum = new Uint8Array([
+      0xb5, 0x62, 0x01, 0x07, 0x04, 0x00, 0xde, 0xad, 0xbe, 0xef, 0x00, 0x00
+    ]);
+    const ubxBatch = multiVerifier.analyzeFileBatchSync(
+      [
+        { filename: "garbage.ubx", bytes: ubxGarbage },
+        { filename: "invalid_checksum.ubx", bytes: ubxInvalidChecksum }
+      ],
+      "ubx_fletcher_probe"
+    );
+    expect(ubxBatch.files[0].subDetails.ubxPackets).toBe(0);
+    expect(ubxBatch.files[0].summaryUk).toContain("UNVERIFIED");
+    expect(ubxBatch.files[0].summaryUk).not.toContain("spoofDetState=1");
+    expect(ubxBatch.files[0].summaryUk).not.toContain("Тіньовий сектор");
+    expect(ubxBatch.files[1].subDetails.ubxPackets).toBe(0);
+    expect(ubxBatch.files[1].subDetails.invalidChecksumPackets).toBe(1);
+    expect(ubxBatch.files[1].summaryUk).toContain("UNVERIFIED");
+    expect(ubxBatch.files[1].summaryUk).not.toContain("spoofDetState=1");
+
+    // Valid UBX-NAV-STATUS (0x01 0x03, len=16, flags2=(2<<3)=0x10 at payload offset 7) must pass Fletcher-8 and report spoofDetState=2
+    const navStatusFrame = new Uint8Array(6 + 16 + 2);
+    navStatusFrame[0] = 0xb5;
+    navStatusFrame[1] = 0x62;
+    navStatusFrame[2] = 0x01;
+    navStatusFrame[3] = 0x03;
+    navStatusFrame[4] = 16;
+    navStatusFrame[5] = 0;
+    navStatusFrame[6 + 7] = 2 << 3; // spoofDetState = 2
+    let ckA = 0;
+    let ckB = 0;
+    for (let k = 2; k < 22; k++) {
+      ckA = (ckA + navStatusFrame[k]) & 0xff;
+      ckB = (ckB + ckA) & 0xff;
+    }
+    navStatusFrame[22] = ckA;
+    navStatusFrame[23] = ckB;
+    const validUbxBatch = multiVerifier.analyzeFileBatchSync(
+      [{ filename: "valid_nav_status.ubx", bytes: navStatusFrame }],
+      "ubx_valid_probe"
+    );
+    expect(validUbxBatch.files[0].subDetails.ubxPackets).toBe(1);
+    expect(validUbxBatch.files[0].summaryUk).toContain("spoofDetState=2");
+
+    // 2. Probe B5 (F05): PII in JSON object keys must be redacted and checked by verifyZeroOpsecLeakage
+    const keyPiiPayload = {
+      title: "Перевірка ключів JSON",
+      findings: [
+        {
+          "secret.engineer@firma.ua": "значення без PII",
+          "+380501234567": "телефон у ключі"
+        }
+      ]
+    };
+    const keySanitized = cryptoShare.sanitizeToZeroKnowledgeGraph(keyPiiPayload);
+    const keySanitizedJson = JSON.stringify(keySanitized);
+    expect(keySanitizedJson).not.toContain("secret.engineer@firma.ua");
+    expect(keySanitizedJson).not.toContain("+380501234567");
+    expect(keySanitized.opsec_redaction_proof.opsec_clean).toBe(true);
+    expect(keySanitized.opsec_redaction_proof.leaked_pii_tokens_remaining).toBe(0);
+
+    const rawKeyLeakCheck = cryptoShare.verifyZeroOpsecLeakage({
+      "secret.engineer@firma.ua": "plain value"
+    });
+    expect(rawKeyLeakCheck.opsec_clean).toBe(false);
+    expect(rawKeyLeakCheck.leaked_pii_tokens_remaining).toBeGreaterThanOrEqual(1);
+
+    // 3. F06: Pure-JS browser VM (without node:zlib) must decompress real dynamic-Huffman (BTYPE=2) /FlateDecode PDF streams
+    const basePdf = Buffer.from(ocrEngine.buildStampedRasterScanPdfBytes());
+    const streamMarker = Buffer.from("stream\n", "latin1");
+    const endMarker = Buffer.from("\nendstream", "latin1");
+    const sIdx = basePdf.indexOf(streamMarker) + streamMarker.length;
+    const eIdx = basePdf.indexOf(endMarker, sIdx);
+    const rawRgb = zlib.inflateSync(basePdf.subarray(sIdx, eIdx));
+    const compressedZlib = zlib.deflateSync(rawRgb, { level: 9 });
+    const headerBefore = basePdf
+      .subarray(0, sIdx)
+      .toString("latin1")
+      .replace(/\/Length\s+\d+/, `/Length ${compressedZlib.length}`);
+    const dynamicHuffmanPdf = new Uint8Array(
+      Buffer.concat([
+        Buffer.from(headerBefore, "latin1"),
+        compressedZlib,
+        basePdf.subarray(eIdx)
+      ])
+    );
+
+    const browserVmGlobal: Record<string, unknown> = {
+      Uint8Array,
+      Int32Array,
+      ArrayBuffer,
+      DataView,
+      WebAssembly,
+      Math,
+      Number,
+      String,
+      Object,
+      Array,
+      RegExp,
+      Error,
+      Date,
+      performance
+    };
+    browserVmGlobal.window = browserVmGlobal;
+    browserVmGlobal.globalThis = browserVmGlobal;
+    const ocrSource = readFileSync(join(process.cwd(), "docs", "pdf-scan-ocr-engine.js"), "utf8");
+    vm.runInNewContext(ocrSource, browserVmGlobal);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const browserOcr = browserVmGlobal.SHMLV_WASM_RASTER_OCR as any;
+    const browserReport = browserOcr.runFullStampedPdfOcrPipeline(dynamicHuffmanPdf);
+    expect(browserReport.xmlError).toBe(false);
+    expect(browserReport.rows).toHaveLength(5);
+    expect(browserReport.ocrAccuracyPct).toBe(100);
+    expect(browserReport.templateMatchConfidencePct).toBe(100);
+
+    // 4. F07: TriTierComputeDispatcher.computeDotProductInt8 with len = 40000 (> 32768) must report TIER_3_JS_UNROLLED_FALLBACK
+    const dispatcher = new isolationRuntime.TriTierComputeDispatcher();
+    const vecA = new Int8Array(40000).fill(1);
+    const vecB = new Int8Array(40000).fill(1);
+    const dotReport = dispatcher.computeDotProductInt8(vecA, vecB);
+    expect(dotReport.wasmDotProduct).toBe(40000);
+    expect(dotReport.unrolledFallbackDotProduct).toBe(40000);
+    expect(dotReport.exactParity).toBe(true);
+    expect(dotReport.activeTier).toBe("TIER_3_JS_UNROLLED_FALLBACK");
+    expect(dotReport.executedTier).toBe("TIER_3_JS_UNROLLED_FALLBACK");
+
+    // 5. F09: Non-minimal ASN.1 DER length encoding (0x81 0x33 for 51 bytes < 128) must be rejected
+    const realKepBytes = getRealSampleBytes("prozorro_kep_p7s");
+    const rawDerBuf =
+      realKepBytes[0] === 0x30
+        ? Buffer.from(realKepBytes)
+        : Buffer.from(Buffer.from(realKepBytes).toString("utf8").replace(/\s+/g, ""), "base64");
+    // Construct a root SEQUENCE with non-minimal length 0x82 0x00 0x10 (leading zero in length octets)
+    const nonMinimalDer = new Uint8Array(4 + 16);
+    nonMinimalDer[0] = 0x30;
+    nonMinimalDer[1] = 0x82;
+    nonMinimalDer[2] = 0x00;
+    nonMinimalDer[3] = 0x10;
+    nonMinimalDer.set(rawDerBuf.subarray(4, 20), 4);
+    const nonMinimalParsed = multiVerifier.parseCmsSignedDataDer(nonMinimalDer);
+    expect(nonMinimalParsed.valid).toBe(false);
+    expect(nonMinimalParsed.structuralStatus).toBe("FAIL");
+    expect(nonMinimalParsed.reasonCode).toBe("corrupted_der");
   });
 });

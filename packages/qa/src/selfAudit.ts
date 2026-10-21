@@ -202,21 +202,29 @@ export function gatherSelfAuditChecks(repoRoot = process.cwd()): SelfAuditCheck[
   for (const demo of demos) {
     const demoPath = join(repoRoot, demo.dir);
     let score: number | undefined;
+    let countsStr: string | undefined;
     try {
-      score = evaluateReadiness(parseDemoBundle(demoPath)).readinessScore;
+      const assessment = evaluateReadiness(parseDemoBundle(demoPath));
+      score = assessment.readinessScore;
+      countsStr = `${assessment.summary.verifiedCount} / ${assessment.summary.partialCount} / ${assessment.summary.lockedCount} / ${assessment.summary.conflictCount}`;
     } catch {
       score = undefined;
+      countsStr = undefined;
     }
     const docText = read(demo.doc);
+    const readmeText = read("README.md");
     const stated =
-      score !== undefined && statesDemoScore(docText, demo.doc, demo.marker, score);
+      score !== undefined &&
+      statesDemoScore(docText, demo.doc, demo.marker, score, countsStr) &&
+      (countsStr === undefined ||
+        statesDemoScore(readmeText, "README.md", demo.dir, score, countsStr));
     checks.push({
       id: demo.id,
-      description: `${demo.dir} score ${score ?? "unparseable"}/100 is stated in ${demo.doc}`,
+      description: `${demo.dir} score ${score ?? "unparseable"}/100 and counts (${countsStr ?? "n/a"}) are stated in ${demo.doc} & README.md`,
       outcome: stated ? "pass" : "fail",
       detail: stated
-        ? `engine computes ${score}/100 and ${demo.doc} states it for ${demo.marker}`
-        : `engine computes ${score ?? "unparseable"}/100 but ${demo.doc} does not state it for ${demo.marker} (stale docs)`
+        ? `engine computes ${score}/100 (${countsStr}) and ${demo.doc} / README.md state it for ${demo.marker}`
+        : `engine computes ${score ?? "unparseable"}/100 (${countsStr ?? "n/a"}) but ${demo.doc} or README.md does not match for ${demo.marker} (stale docs)`
     });
   }
 
@@ -442,7 +450,8 @@ function statesDemoScore(
   docText: string,
   docName: string,
   marker: string,
-  score: number
+  score: number,
+  countsStr?: string
 ): boolean {
   if (!docText || !docText.includes(marker)) {
     return false;
@@ -451,7 +460,10 @@ function statesDemoScore(
   const lines = docText.split(/\r?\n/);
   if (docName === "README.md") {
     return lines.some(
-      (line) => line.includes(marker) && scorePattern.test(line)
+      (line) =>
+        line.includes(marker) &&
+        scorePattern.test(line) &&
+        (!countsStr || line.includes(`\`${countsStr}\``))
     );
   }
   return lines.some((line) => scorePattern.test(line));

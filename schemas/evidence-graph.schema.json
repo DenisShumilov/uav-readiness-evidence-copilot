@@ -26,18 +26,18 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "id": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "id": { "type": "string", "minLength": 1, "maxLength": 120, "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]*$" },
         "artifactIds": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+          "items": { "type": "string", "minLength": 1, "maxLength": 120, "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]*$" }
         },
         "evidenceSourceIds": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+          "items": { "type": "string", "minLength": 1, "maxLength": 120, "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]*$" }
         },
         "evidenceClaimIds": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+          "items": { "type": "string", "minLength": 1, "maxLength": 120, "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]*$" }
         },
         "links": {
           "type": "array",
@@ -46,11 +46,12 @@
             "required": ["claimId", "evidenceSourceId", "relation"],
             "additionalProperties": false,
             "properties": {
-              "claimId": { "type": "string", "minLength": 1, "maxLength": 120 },
+              "claimId": { "type": "string", "minLength": 1, "maxLength": 120, "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]*$" },
               "evidenceSourceId": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 120
+                "maxLength": 120,
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]*$"
               },
               "relation": {
                 "type": "string",
@@ -78,8 +79,8 @@
         ],
         "additionalProperties": false,
         "properties": {
-          "id": { "type": "string", "minLength": 1, "maxLength": 120 },
-          "artifactId": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "id": { "type": "string", "minLength": 1, "maxLength": 120, "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]*$" },
+          "artifactId": { "type": "string", "minLength": 1, "maxLength": 120, "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]*$" },
           "label": { "type": "string", "minLength": 1, "maxLength": 160 },
           "sourceType": {
             "type": "string",
@@ -114,7 +115,7 @@
         ],
         "additionalProperties": false,
         "properties": {
-          "id": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "id": { "type": "string", "minLength": 1, "maxLength": 120, "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]*$" },
           "statement": { "type": "string", "minLength": 1, "maxLength": 2000 },
           "claimType": {
             "type": "string",
@@ -136,10 +137,35 @@
           },
           "evidenceSourceIds": {
             "type": "array",
-            "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+            "items": { "type": "string", "minLength": 1, "maxLength": 120, "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]*$" }
           },
           "lockReason": { "type": "string", "minLength": 1, "maxLength": 2000 }
-        }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": { "status": { "const": "verified" } },
+              "required": ["status"]
+            },
+            "then": {
+              "properties": {
+                "evidenceSourceIds": { "minItems": 1 }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": { "status": { "const": "locked" } },
+              "required": ["status"]
+            },
+            "then": {
+              "required": ["lockReason"],
+              "properties": {
+                "lockReason": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        ]
       }
     },
     "evidenceLocks": {
@@ -156,8 +182,8 @@
         ],
         "additionalProperties": false,
         "properties": {
-          "id": { "type": "string", "minLength": 1, "maxLength": 120 },
-          "claimId": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "id": { "type": "string", "minLength": 1, "maxLength": 120, "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]*$" },
+          "claimId": { "type": "string", "minLength": 1, "maxLength": 120, "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]*$" },
           "reason": { "type": "string", "minLength": 1, "maxLength": 2000 },
           "missingEvidence": {
             "type": "array",

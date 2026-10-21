@@ -29,27 +29,27 @@ uav-readiness-evidence-copilot/
 │   ├── tools/                              # Standalone verification tool pages (including universal-ai-cockpit.html)
 │   ├── tools-engine.js                     # Deterministic readiness scoring, cross-check & parser engine
 │   ├── multi-file-verifier-bundle.js       # Multi-artifact cross-verifier (.docx + .xlsx + .pdf + .bin + .p7s)
-│   ├── browser-isolation-runtime.js        # Environment isolation diagnostics & capability probes
-│   ├── pdf-scan-ocr-engine.js              # Beer-Lambert chromatic stamp drop-out & local matrix OCR engine
+│   ├── browser-isolation-runtime.js        # Browser origin-isolation diagnostics & capability probes
+│   ├── pdf-scan-ocr-engine.js              # HSV/RGB chromatic stamp drop-out & local matrix OCR engine (148-B WASM)
 │   ├── encrypted-report-share.js           # Zero-server report capsule (AES-256-GCM + PBKDF2 in URL #diag=)
-│   ├── coi-airgap-enclave-sw.js            # Cross-Origin Isolated Service Worker (COOP/COEP + strict CSP)
+│   ├── coi-airgap-enclave-sw.js            # Cross-Origin Isolated Service Worker (COOP/COEP + strict CSP 'self')
 │   ├── architecture.md / .en.md            # Deep-tech architectural breakdown & dataflow specification
 │   ├── scoring.md / .en.md                 # Mathematical model of the 0–100 readiness score & caps
 │   ├── engineering-basis.md / .en.md       # Metrological basis, regulatory context & timing protocols
 │   ├── evidence-model.md / .en.md          # Evidence graph model & status derivation rules
 │   ├── safety-boundaries.md / .en.md       # Strict operational safety and isolation boundaries
-│   └── standards.md / .en.md               # Engineering documentation standards reference (DSTU GOST, STANAG)
+│   └── standards.md / .en.md               # Engineering documentation standards reference (DSTU GOST 2.104:2006, 2.114-97, STANAG)
 │
 ├── engines/                                # Standalone Python byte-level inspection engines (stdlib only)
 │   ├── defdoc_ai/                          # Byte-level OOXML document auditor & OPSEC sanitizer
 │   │   ├── defdoc_auditor.py               # Orchestrator for TU (.docx), PMV (.xlsx) & passport verification (v2.5.0)
-│   │   ├── document_intake.py              # In-memory OOXML parser, Excel formula AST evaluator & 7D SI vectors
+│   │   ├── document_intake.py              # In-memory OOXML parser, Excel formula AST evaluator & dictionary SI normalization (UNITS)
 │   │   ├── sanitize_doc.py                 # Client-side PII/OPSEC de-identifier for .docx, .xlsx, .md (v2.5.0)
-│   │   └── test_client_intake.py           # 22 client intake & security regression tests
+│   │   └── test_client_intake.py           # 24 client intake & security regression tests
 │   └── telemetry_ew/                       # Binary flight telemetry analyzer
 │       ├── telemetry_analyzer.py           # Binary parser for DataFlash (.bin), PX4 (.ulg), MAVLink, UBX, NMEA
 │       ├── sanitize_telemetry.py           # Coordinate translation scrubber for binary & text flight logs
-│       └── test_readiness.py               # 22 binary telemetry parser regression tests
+│       └── test_readiness.py               # 23 binary telemetry parser regression tests (incl. ReferenceControllerVectorsTest)
 │
 ├── packages/                               # TypeScript monorepo (deterministic 0–100 readiness core, v2.5.0)
 │   ├── core/                               # Domain types, Zod schemas & cross-document revision conflict detector
@@ -87,11 +87,11 @@ uav-readiness-evidence-copilot/
 
 ### Subsystem 1: Byte-Level OOXML Parsing (`.docx`/`.xlsx`), 7D SI Dimensional Vectors & Excel Formula Cache Verification
 - Reconstructs `<w:tbl>` grids with `<w:gridSpan>` and `<w:vMerge>` and inspects `w:rsidR` editing sessions.
-- Independently evaluates supported Excel formula ASTs (`SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT`, and arithmetic operators `+`, `-`, `*`, `/`) against cached `<v>` values.
-- Normalizes physical quantities to 7D SI dimension vectors $\vec{d} = [M, L, T, I, \Theta, N, J] \in \mathbb{Z}^7$.
+- Independently evaluates supported Excel formula ASTs (`SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT`, and arithmetic operators `+`, `-`, `*`, `/`) against cached `<v>` values, rejecting direct or range circular references (`UNVERIFIED`).
+- Normalizes physical quantities in `docs/multi-file-verifier-bundle.js` to 7D SI dimension vectors $\vec{d} = [L, M, T, I, \Theta, N, J] \in \mathbb{Z}^7$ (while `engines/defdoc_ai/document_intake.py` uses dictionary-based SI unit normalization `UNITS`), and performs semantic row matching via deterministic 64D character trigram hashing with concept weights (`computeSubwordSvdEmbedding`, without matrix SVD).
 
-### Subsystem 2: Beer-Lambert Chromatic Stamp Drop-Out & Local Scanned PDF Recognition
-- Computes optical density $OD_c = -\log_{10}(\max(I_c, 1)/I_{0,c})$, projects out blue/violet wet stamp ink, and performs dynamic glyph matrix OCR with row `bbox` coordinates and dynamic delta calculation.
+### Subsystem 2: HSV/RGB Chromatic Stamp Drop-Out & Local Scanned PDF Recognition
+- Isolates blue/violet wet-stamp ink via HSV/RGB thresholds (`isBlueWetStampPixel`) while preserving overlapping dark laser toner glyph cores (`r < 22 && g < 55`), decompresses RFC 1950/1951 `/FlateDecode` streams (`BTYPE=00/01/10`), binarizes via the embedded 148-byte WASM kernel (`otsuThresholdSum`), and performs 64-bit Hamming glyph matching (`hammingDistance64`, `templateMatchConfidencePct`) with row `bbox` coordinates and dynamic delta calculation.
 
 ### Subsystem 3: Binary Flight Log Parsers (`.bin`, `.ulg`, `.tlog`, `.ubx`, `.nmea`)
 - Validates binary headers and checksums (`Fletcher-8`, `CRC-16/MCRF4XX`, `XOR`) and flags empty/corrupted streams with zero valid frames as `WARN / UNVERIFIED`.

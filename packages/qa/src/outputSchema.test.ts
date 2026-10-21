@@ -245,5 +245,42 @@ describe("generated output JSON Schemas (Zod <-> Ajv 2020-12 parity + 12 negativ
         "minimum"
       );
     });
+
+    it("7. F11: rejects whitespace in identifier fields (evidenceGraph.id = 'bad id')", () => {
+      const clone = deepClone(validGraph);
+      const graphObj = clone.evidenceGraph as Record<string, unknown>;
+      graphObj.id = "bad id";
+      expect(EvidenceGraphSchema.safeParse(clone).success).toBe(false);
+      expect(validateGraph(clone)).toBe(false);
+      expect((validateGraph.errors ?? []).map((e) => e.keyword)).toContain(
+        "pattern"
+      );
+    });
+
+    it("8. F11: rejects verified claim with empty evidenceSourceIds", () => {
+      const clone = deepClone(validGraph);
+      const claims = clone.evidenceClaims as Array<Record<string, unknown>>;
+      const verifiedClaim = claims.find((c) => c.status === "verified") ?? claims[0];
+      verifiedClaim.status = "verified";
+      verifiedClaim.evidenceSourceIds = [];
+      expect(EvidenceGraphSchema.safeParse(clone).success).toBe(false);
+      expect(validateGraph(clone)).toBe(false);
+      expect((validateGraph.errors ?? []).map((e) => e.keyword)).toContain(
+        "minItems"
+      );
+    });
+
+    it("9. F11: rejects locked claim without lockReason", () => {
+      const clone = deepClone(validGraph);
+      const claims = clone.evidenceClaims as Array<Record<string, unknown>>;
+      const lockedClaim = claims.find((c) => c.status === "locked") ?? claims[0];
+      lockedClaim.status = "locked";
+      delete lockedClaim.lockReason;
+      expect(EvidenceGraphSchema.safeParse(clone).success).toBe(false);
+      expect(validateGraph(clone)).toBe(false);
+      expect((validateGraph.errors ?? []).map((e) => e.keyword)).toContain(
+        "required"
+      );
+    });
   });
 });

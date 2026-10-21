@@ -290,4 +290,50 @@ class ClientIntakeTests(unittest.TestCase):
         self.assertGreaterEqual(summary['true_positives_caught'], 11)
         self.assertEqual(summary['honest_unverified_blind_spots'], 2)
 
+    def test_circular_xlsx_formula_and_count_aggregate(self):
+        src = self.root / 'circular_and_count.xlsx'
+        def inline_cell(ref, text):
+            return f'<c r="{ref}" t="inlineStr"><is><t>{text}</t></is></c>'
+        with zipfile.ZipFile(src, 'w') as z:
+            z.writestr('xl/workbook.xml', f'<workbook xmlns="{X}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Audit" sheetId="1" r:id="a"/></sheets><calcPr iterate="0"/></workbook>')
+            z.writestr('xl/_rels/workbook.xml.rels', '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="a" Target="worksheets/sheet1.xml"/></Relationships>')
+            rows = '<row r="1">' + inline_cell('A1', 'Параметр') + inline_cell('B1', 'Норма') + inline_cell('C1', 'Факт') + inline_cell('D1', 'Одиниця') + '</row>'
+            rows += '<row r="2">' + inline_cell('A2', 'Маса') + inline_cell('B2', '≤ 10') + '<c r="C2"><f>SUM(C2:C3)</f><v>9</v></c>' + inline_cell('D2', 'кг') + '</row>'
+            rows += '<row r="3"><c r="C3"><v>9</v></c></row>'
+            rows += '<row r="4"><c r="C4"><v>5</v></c></row>'
+            rows += '<row r="5">' + inline_cell('A5', 'Кількість вимірів') + '<c r="B5"><v>2</v></c><c r="C5"><f>COUNT(C3:C4)</f></c>' + inline_cell('D5', 'шт') + '</row>'
+            z.writestr('xl/worksheets/sheet1.xml', f'<worksheet xmlns="{X}"><sheetData>{rows}</sheetData></worksheet>')
+        _, data = self.run_cli(src)
+        statuses = {f['parameter']: f['status'] for f in data['findings']}
+        self.assertEqual(statuses['Маса'], 'UNVERIFIED')
+        self.assertEqual(statuses['Кількість вимірів'], 'PASS')
+
+    def test_sanitizer_contact_pii_feminine_patronymic_and_docprops_core_xml(self):
+        from sanitize_doc import DocumentSanitizer
+        san = DocumentSanitizer()
+        contact = 'Email: example@example.invalid; телефон: +380 00 000 00 00; Петренко Олена Іванівна.'
+        san_text, counts = san.sanitize_text(contact)
+        self.assertNotIn('example@example.invalid', san_text)
+        self.assertNotIn('+380 00 000 00 00', san_text)
+        self.assertNotIn('Петренко Олена Іванівна', san_text)
+        self.assertEqual(counts['CONTACT_PII'], 2)
+        self.assertEqual(counts['PERSON'], 1)
+        self.assertEqual(san.count_leaked_tokens(san_text), 0)
+
+        person = 'Коваленко О.С.'
+        docx = self.root / 'core-property.docx'
+        with zipfile.ZipFile(docx, 'w') as z:
+            z.writestr('[Content_Types].xml', '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>')
+            z.writestr('_rels/.rels', '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="a" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="b" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>')
+            z.writestr('word/document.xml', f'<w:document xmlns:w="{W}"><w:body><w:p><w:r><w:t>{person}</w:t></w:r></w:p></w:body></w:document>')
+            z.writestr('docProps/core.xml', f'<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:creator>{person}</dc:creator></cp:coreProperties>')
+        san2 = DocumentSanitizer()
+        san2.sanitize_file(docx, output_dir=self.root)
+        with zipfile.ZipFile(self.root / 'core-property.sanitized.docx') as z:
+            core = z.read('docProps/core.xml').decode('utf-8')
+            body = z.read('word/document.xml').decode('utf-8')
+        self.assertNotIn(person, core)
+        self.assertNotIn(person, body)
+        self.assertEqual(san2.leaked_pii_tokens_remaining, 0)
+
 if __name__ == '__main__': unittest.main()

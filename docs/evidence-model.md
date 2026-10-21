@@ -75,7 +75,7 @@
 
 Граф доказів (evidence graph) — це карта тверджень і підтверджень.
 
-Граф (graph) означає «об'єкти, з'єднані лініями». Тут лінії показують, який файл підтверджує яке твердження.
+Граф (graph) означає «об'єкти, з'єднані лініями». Тут лінії показують, який файл підтверджує яке твердження. У серіалізованому файлі `evidence-graph.json` (`schemas/evidence-graph.schema.json`) вузол `evidenceGraph` зберігає масиви ідентифікаторів `artifactIds`, `evidenceSourceIds`, `evidenceClaimIds` та орієнтовані ребра `links` (`{ claimId, evidenceSourceId, relation }`), а плоский табличний розріз трасованості експортується у `traceability-matrix.csv`.
 
 ## Блокування доказу (Evidence Lock)
 

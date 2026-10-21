@@ -11,7 +11,7 @@
  *   3. Chromatic Wet-Stamp (`Мокра Печатка / М.П. / ВП МОУ`) & Signature Forensics
  *      - Separates HSV blue/violet wet-stamp & ballpoint ink from neutral laser toner
  *      - Computes circular seal ring adherence (`circularityScore`) and cursive stroke transitions
- *      - Applies Chromatic Stamp-Drop-Out preserving overlapping dark toner glyphs `[R < 75, G < 95]`
+ *      - Applies Chromatic Stamp-Drop-Out preserving overlapping dark toner glyphs `[R < 22, G < 55]`
  *   4. Morphological Connected-Component & 8x8 Glyph Matrix OCR (`recognizeRasterSpecBitmap`)
  *      - Binarizes via WASM `otsuThresholdSum`, segments 3 table columns & 8x8 glyph cells, matches
  *        64-bit `(lo32, hi32)` glyph bitmaps via WASM `hammingDistance64` with 100% recovery (5/5 rows)
@@ -320,41 +320,217 @@
     return out;
   }
 
-  function inflateStoredBlocksPureJs(buf, startOffset, verifyAdler) {
-    var pos = startOffset;
-    var chunks = [];
-    var totalLen = 0;
+  var FIXED_LIT_TABLE = null;
+  var FIXED_DIST_TABLE = null;
+  var LEN_BASE = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258];
+  var LEN_EXTRA = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0];
+  var DIST_BASE = [1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577];
+  var DIST_EXTRA = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13];
+  var CLEN_ORDER = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
+  var MAX_PDF_INFLATE_BYTES = 16 * 1024 * 1024;
+
+  function buildHuffmanTable(lengths) {
+    var maxBits = 0;
+    for (var i = 0; i < lengths.length; i++) {
+      if (lengths[i] > maxBits) maxBits = lengths[i];
+    }
+    if (maxBits === 0) return { maxBits: 1, map: {} };
+    var blCount = new Int32Array(maxBits + 1);
+    for (var j = 0; j < lengths.length; j++) {
+      if (lengths[j] > 0) blCount[lengths[j]]++;
+    }
+    var nextCode = new Int32Array(maxBits + 1);
+    var code = 0;
+    for (var bits = 1; bits <= maxBits; bits++) {
+      code = (code + blCount[bits - 1]) << 1;
+      nextCode[bits] = code;
+    }
+    var map = {};
+    for (var sym = 0; sym < lengths.length; sym++) {
+      var len = lengths[sym];
+      if (len > 0) {
+        var c = nextCode[len]++;
+        var rev = 0;
+        for (var b = 0; b < len; b++) {
+          rev = (rev << 1) | ((c >>> b) & 1);
+        }
+        map[(len << 16) | rev] = sym;
+      }
+    }
+    return { maxBits: maxBits, map: map };
+  }
+
+  function ensureFixedTables() {
+    if (FIXED_LIT_TABLE) return;
+    var litLens = new Int32Array(288);
+    for (var i = 0; i <= 143; i++) litLens[i] = 8;
+    for (var j = 144; j <= 255; j++) litLens[j] = 9;
+    for (var k = 256; k <= 279; k++) litLens[k] = 7;
+    for (var m = 280; m <= 287; m++) litLens[m] = 8;
+    var distLens = new Int32Array(32);
+    for (var d = 0; d < 32; d++) distLens[d] = 5;
+    FIXED_LIT_TABLE = buildHuffmanTable(litLens);
+    FIXED_DIST_TABLE = buildHuffmanTable(distLens);
+  }
+
+  function inflateDeflatePureJs(buf, startOffset, verifyAdler) {
+    ensureFixedTables();
+    var pos = startOffset | 0;
+    if (pos < 0 || pos >= buf.length) return null;
+    var bitBuf = 0;
+    var bitCnt = 0;
+    var corrupted = false;
+    var initCap = Math.min(MAX_PDF_INFLATE_BYTES, Math.max((buf.length - pos) * 4, 4096));
+    var out = new Uint8Array(initCap);
+    var outPos = 0;
+
+    function ensureCap(extra) {
+      if (outPos + extra > MAX_PDF_INFLATE_BYTES) {
+        corrupted = true;
+        return false;
+      }
+      if (outPos + extra <= out.length) return true;
+      var nextCap = Math.min(MAX_PDF_INFLATE_BYTES, Math.max(out.length * 2, outPos + extra + 4096));
+      var next = new Uint8Array(nextCap);
+      next.set(out.subarray(0, outPos));
+      out = next;
+      return true;
+    }
+
+    function bits(n) {
+      while (bitCnt < n) {
+        if (pos >= buf.length) {
+          corrupted = true;
+          return 0;
+        }
+        bitBuf |= buf[pos++] << bitCnt;
+        bitCnt += 8;
+      }
+      var val = bitBuf & ((1 << n) - 1);
+      bitBuf >>>= n;
+      bitCnt -= n;
+      return val;
+    }
+
+    function decodeSym(table) {
+      var code = 0;
+      for (var len = 1; len <= table.maxBits; len++) {
+        while (bitCnt < 1) {
+          if (pos >= buf.length) {
+            corrupted = true;
+            return -1;
+          }
+          bitBuf |= buf[pos++] << bitCnt;
+          bitCnt += 8;
+        }
+        code |= (bitBuf & 1) << (len - 1);
+        bitBuf >>>= 1;
+        bitCnt -= 1;
+        var key = (len << 16) | code;
+        if (table.map[key] !== undefined) {
+          return table.map[key];
+        }
+      }
+      corrupted = true;
+      return -1;
+    }
+
     var sawFinal = false;
-    while (pos < buf.length) {
-      var header = buf[pos++];
-      var bfinal = header & 0x01;
-      var btype = (header >>> 1) & 0x03;
-      if (btype !== 0) {
+    while (!sawFinal && !corrupted) {
+      var bfinal = bits(1);
+      var btype = bits(2);
+      if (corrupted) return null;
+
+      if (btype === 0) {
+        bitBuf = 0;
+        bitCnt = 0;
+        if (pos + 4 > buf.length) return null;
+        var len = buf[pos] | (buf[pos + 1] << 8);
+        var nlen = buf[pos + 2] | (buf[pos + 3] << 8);
+        pos += 4;
+        if (((len ^ nlen) & 0xffff) !== 0xffff) {
+          return null;
+        }
+        if (pos + len > buf.length) return null;
+        if (!ensureCap(len)) return null;
+        out.set(buf.subarray(pos, pos + len), outPos);
+        outPos += len;
+        pos += len;
+      } else if (btype === 1 || btype === 2) {
+        var litTable = FIXED_LIT_TABLE;
+        var distTable = FIXED_DIST_TABLE;
+        if (btype === 2) {
+          var hlit = bits(5) + 257;
+          var hdist = bits(5) + 1;
+          var hclen = bits(4) + 4;
+          if (corrupted) return null;
+          var clenLengths = new Int32Array(19);
+          for (var ci = 0; ci < hclen; ci++) {
+            clenLengths[CLEN_ORDER[ci]] = bits(3);
+          }
+          if (corrupted) return null;
+          var clenTable = buildHuffmanTable(clenLengths);
+          var allLens = new Int32Array(hlit + hdist);
+          var idx = 0;
+          while (idx < hlit + hdist) {
+            var csym = decodeSym(clenTable);
+            if (corrupted || csym < 0) return null;
+            if (csym < 16) {
+              allLens[idx++] = csym;
+            } else if (csym === 16) {
+              if (idx === 0) return null;
+              var rep16 = bits(2) + 3;
+              var prevVal = allLens[idx - 1];
+              while (rep16-- > 0 && idx < allLens.length) allLens[idx++] = prevVal;
+            } else if (csym === 17) {
+              var rep17 = bits(3) + 3;
+              while (rep17-- > 0 && idx < allLens.length) allLens[idx++] = 0;
+            } else if (csym === 18) {
+              var rep18 = bits(7) + 11;
+              while (rep18-- > 0 && idx < allLens.length) allLens[idx++] = 0;
+            } else {
+              return null;
+            }
+          }
+          if (corrupted) return null;
+          litTable = buildHuffmanTable(allLens.subarray(0, hlit));
+          distTable = buildHuffmanTable(allLens.subarray(hlit, hlit + hdist));
+        }
+
+        while (true) {
+          var sym = decodeSym(litTable);
+          if (corrupted || sym < 0) return null;
+          if (sym === 256) break;
+          if (sym < 256) {
+            if (!ensureCap(1)) return null;
+            out[outPos++] = sym;
+          } else {
+            var lenIdx = sym - 257;
+            if (lenIdx < 0 || lenIdx >= LEN_BASE.length) return null;
+            var copyLen = LEN_BASE[lenIdx] + (LEN_EXTRA[lenIdx] ? bits(LEN_EXTRA[lenIdx]) : 0);
+            var dSym = decodeSym(distTable);
+            if (corrupted || dSym < 0 || dSym >= DIST_BASE.length) return null;
+            var copyDist = DIST_BASE[dSym] + (DIST_EXTRA[dSym] ? bits(DIST_EXTRA[dSym]) : 0);
+            if (corrupted || copyDist <= 0 || outPos - copyDist < 0) return null;
+            if (!ensureCap(copyLen)) return null;
+            for (var cp = 0; cp < copyLen; cp++) {
+              out[outPos] = out[outPos - copyDist];
+              outPos++;
+            }
+          }
+        }
+      } else {
         return null;
       }
-      if (pos + 4 > buf.length) return null;
-      var len = buf[pos] | (buf[pos + 1] << 8);
-      var nlen = buf[pos + 2] | (buf[pos + 3] << 8);
-      pos += 4;
-      if (((len ^ nlen) & 0xffff) !== 0xffff) {
-        return null;
-      }
-      if (pos + len > buf.length) return null;
-      chunks.push(buf.subarray(pos, pos + len));
-      totalLen += len;
-      pos += len;
+
       if (bfinal === 1) {
         sawFinal = true;
         break;
       }
     }
-    if (!sawFinal) return null;
-    var result = new Uint8Array(totalLen);
-    var outOffset = 0;
-    for (var i = 0; i < chunks.length; i++) {
-      result.set(chunks[i], outOffset);
-      outOffset += chunks[i].length;
-    }
+
+    if (!sawFinal || corrupted) return null;
+    var result = out.subarray(0, outPos);
     if (verifyAdler) {
       if (pos + 4 > buf.length) return null;
       var expectedAdler =
@@ -364,7 +540,7 @@
         return null;
       }
     }
-    return result;
+    return new Uint8Array(result);
   }
 
   function decompressFlateStreamSync(compressedBytes) {
@@ -387,10 +563,10 @@
       }
     }
     if ((buf[0] & 0x0f) === 8 && ((buf[0] << 8) + buf[1]) % 31 === 0) {
-      var parsedZlib = inflateStoredBlocksPureJs(buf, 2, true);
+      var parsedZlib = inflateDeflatePureJs(buf, 2, true);
       if (parsedZlib) return parsedZlib;
     }
-    var parsedRaw = inflateStoredBlocksPureJs(buf, 0, false);
+    var parsedRaw = inflateDeflatePureJs(buf, 0, false);
     if (parsedRaw) return parsedRaw;
 
     throw new Error("Unable to decompress /FlateDecode stream synchronously.");
@@ -1619,6 +1795,7 @@
         deltaPct: dynamicEval.deltaPct,
         overlappedByWetStamp: overlappedByWetStamp,
         ocrAccuracyPct: rowAccuracyPct,
+        templateMatchConfidencePct: rowAccuracyPct,
         glyphConfidence: rowGlyphConfidence,
         wasmHammingCalls: rowHammingCalls,
         bbox: rowBbox
@@ -1640,6 +1817,7 @@
       recognizedText: allLines.join("\n"),
       rows: rows,
       ocrAccuracyPct: ocrAccuracyPct,
+      templateMatchConfidencePct: ocrAccuracyPct,
       ocrConfidenceBeforePct: ocrConfidenceBeforePct,
       ocrConfidenceAfterPct: ocrAccuracyPct,
       naiveWithoutDropOutCorruptedRows: naiveWithoutDropOutCorruptedRows,
@@ -1827,6 +2005,7 @@
       chromaticDropOutApplied: stampAnalysis.chromaticDropOutApplied,
       overlappedTonerPixelsRecovered: stampAnalysis.overlappedTonerPixelsRecovered,
       ocrAccuracyPct: ocrResult.ocrAccuracyPct,
+      templateMatchConfidencePct: ocrResult.ocrAccuracyPct,
       naiveWithoutDropOutCorruptedRows: ocrResult.naiveWithoutDropOutCorruptedRows,
       headerText: ocrResult.headerText,
       footerText: ocrResult.footerText,
@@ -1857,6 +2036,7 @@
     rgbToHsv: rgbToHsv,
     connectedComponentsBfs: connectedComponentsBfs,
     extractPdfRasterXObjects: extractPdfRasterXObjects,
+    inflateDeflatePureJs: inflateDeflatePureJs,
     analyzeWetStampAndSignature: analyzeWetStampAndSignature,
     recognizeRasterSpecBitmap: recognizeRasterSpecBitmap,
     renderStampedProtocolRgbBitmap: renderStampedProtocolRgbBitmap,

@@ -160,4 +160,68 @@ describe("docs/ multi-page catalog score parity with the engine", () => {
     const docsResult = runExtractedCompute(toolsEngineJs, "docs/tools-engine.js");
     expect(docsResult).toMatchObject({ v: 8, p: 4, l: 5, score: 44 });
   });
+
+  it("enforces F02 (empty Source -> lockedCritical, 0/100 UNVERIFIED) and F13 (warning deduction parity on 2 partial rows -> 90/100)", () => {
+    const extractBalanced = (start: RegExp, open: string, close: string): string => {
+      const m = toolsEngineJs.match(start);
+      if (!m || m.index === undefined) {
+        throw new Error(`tools-engine.js piece not found: ${start}`);
+      }
+      let depth = 0;
+      let i = toolsEngineJs.indexOf(open, m.index);
+      for (; i < toolsEngineJs.length; i++) {
+        if (toolsEngineJs[i] === open) depth++;
+        else if (toolsEngineJs[i] === close && --depth === 0) {
+          return toolsEngineJs.slice(m.index, i + 1);
+        }
+      }
+      throw new Error(`unbalanced ${open} in tools-engine.js for ${start}`);
+    };
+
+    const ceiling = toolsEngineJs.match(/var CONFLICT_CEILING\s*=\s*\d+;/);
+    const runRenderReadiness = new Function(
+      "customText",
+      "customName",
+      [
+        "var box = { innerHTML: '' };",
+        "var document = { getElementById: function () { return box; } };",
+        "function escHtml(s) { return String(s || ''); }",
+        "function isExactMatrixHeaderRow(cells) { return String(cells[0] || '').toLowerCase() === 'id'; }",
+        "function parseCsvLine(ln, sep) { return { cells: String(ln || '').split(sep || ',') }; }",
+        "function wrapWithTwoLevelDisclosure(meta, body) { return JSON.stringify(meta) + '\\n' + body; }",
+        extractBalanced(/var DEDUCTIONS\s*=\s*\{/, "{", "}"),
+        ceiling![0],
+        extractBalanced(/function cappedDeduction\(/, "{", "}"),
+        extractBalanced(/function renderReadinessMatrixResult\(/, "{", "}"),
+        "renderReadinessMatrixResult('custom', customText, customName);",
+        "return box.innerHTML;"
+      ].join("\n")
+    ) as (customText: string, customName: string) => string;
+
+    // Probe B2 (F02): 10 rows claiming "verified" with empty Source column must downgrade to locked -> 0/100 UNVERIFIED
+    const emptySourceCsv = [
+      "ID | Категорія | Вимога | Джерело | Статус",
+      ...Array.from({ length: 10 }, (_, idx) => `CLM-${idx + 1} | BOM | Claim ${idx + 1} | | verified`)
+    ].join("\n");
+    const b2Html = runRenderReadiness(emptySourceCsv, "no_source_claims.csv");
+    expect(b2Html).toContain("0 / 100 (UNVERIFIED)");
+    expect(b2Html).toContain("Підтверджено (VERIFIED): 0 · Частково (PARTIAL): 0");
+    expect(b2Html).toContain("Заблоковано критичних (LOCKED): 10");
+    expect(b2Html).toContain("no evidence -> locked");
+
+    // F13 parity: 8 verified + 2 partial rows with valid Sources must deduct 2*3 (partial) + 2*2 (warning) = 10 -> 90/100
+    const partialCsv = [
+      "ID | Категорія | Вимога | Джерело | Статус",
+      ...Array.from(
+        { length: 8 },
+        (_, idx) => `CLM-${idx + 1} | BOM | Verified Claim ${idx + 1} | BOM.csv#L${idx + 2} | verified`
+      ),
+      "CLM-9 | QA | Partial Claim 1 | qa_notes.md#L10 | partial",
+      "CLM-10 | QA | Partial Claim 2 | qa_notes.md#L11 | partial"
+    ].join("\n");
+    const f13Html = runRenderReadiness(partialCsv, "two_partials.csv");
+    expect(f13Html).toContain("ІНДЕКС ГОТОВНОСТІ: 90 / 100");
+    expect(f13Html).toContain("Підтверджено (VERIFIED): 8 · Частково (PARTIAL): 2 (−10 балів)");
+    expect(f13Html).toContain("Заблоковано критичних (LOCKED): 0");
+  });
 });

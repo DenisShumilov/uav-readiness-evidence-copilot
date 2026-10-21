@@ -102,9 +102,11 @@ def _eval_safe_xlsx_formula(
     depth: int = 0,
     pending_formulas: set = None,
     non_numeric_cells: set = None,
+    self_coord: tuple = None,
 ):
     """Deterministically evaluates bounded Excel arithmetic & aggregate formulas
-    (SUM, MIN, MAX, AVERAGE, +, -, *, /, parentheses, and same-sheet cell refs).
+    (SUM, MIN, MAX, AVERAGE, COUNT, +, -, *, /, parentheses, and same-sheet cell refs).
+    Rejects direct, range, and multi-cell circular references.
     Returns Decimal or None if unsupported/unresolvable.
     """
     if depth > 8 or not expr:
@@ -129,6 +131,8 @@ def _eval_safe_xlsx_formula(
                     raise ValueError('range')
                 for rr in range(r1, r2 + 1):
                     for cc in range(c1, c2 + 1):
+                        if self_coord and (cc, rr) == self_coord:
+                            raise ValueError('circular reference in range')
                         if pending_formulas and (cc, rr) in pending_formulas:
                             raise ValueError('unresolved formula in range')
                         if non_numeric_cells and (cc, rr) in non_numeric_cells:
@@ -139,6 +143,8 @@ def _eval_safe_xlsx_formula(
             cm = re.fullmatch(r'([A-Z]{1,3})([1-9][0-9]*)', part, flags=re.IGNORECASE)
             if cm:
                 coord = (_col_index(cm.group(1).upper()), int(cm.group(2)))
+                if self_coord and coord == self_coord:
+                    raise ValueError('circular reference')
                 if pending_formulas and coord in pending_formulas:
                     raise ValueError('unresolved formula ref')
                 if coord not in numeric_cells:
@@ -149,7 +155,7 @@ def _eval_safe_xlsx_formula(
                 vals.append(Decimal(part))
                 continue
             raise ValueError('unsupported arg')
-        if not vals:
+        if not vals and fn != 'COUNT':
             raise ValueError('empty agg')
         if fn == 'SUM':
             res = sum(vals, Decimal(0))
@@ -159,6 +165,8 @@ def _eval_safe_xlsx_formula(
             res = max(vals)
         elif fn in ('AVERAGE', 'AVG'):
             res = sum(vals, Decimal(0)) / Decimal(len(vals))
+        elif fn == 'COUNT':
+            res = Decimal(len(vals))
         else:
             raise ValueError('fn')
         return _format_dec(res)
@@ -166,7 +174,7 @@ def _eval_safe_xlsx_formula(
     try:
         while True:
             new_s, count = re.subn(
-                r'\b(SUM|MIN|MAX|AVERAGE|AVG)\s*\(([^()]*)\)',
+                r'\b(SUM|MIN|MAX|AVERAGE|AVG|COUNT)\s*\(([^()]*)\)',
                 replace_agg,
                 s,
                 flags=re.IGNORECASE,
@@ -177,6 +185,8 @@ def _eval_safe_xlsx_formula(
 
         def replace_ref(m):
             coord = (_col_index(m.group(1).upper()), int(m.group(2)))
+            if self_coord and coord == self_coord:
+                raise ValueError('circular reference')
             if pending_formulas and coord in pending_formulas:
                 raise ValueError('unresolved formula cell')
             if coord not in numeric_cells:
@@ -434,8 +444,9 @@ def extract(path, role):
                             res_val = _eval_safe_xlsx_formula(
                                 formula_cells[coord],
                                 numeric_cells,
-                                pending_formulas=pending - {coord},
+                                pending_formulas=pending,
                                 non_numeric_cells=non_numeric_cells,
+                                self_coord=coord,
                             )
                             if res_val is not None:
                                 numeric_cells[coord] = res_val
@@ -491,8 +502,9 @@ def extract(path, role):
                                 calc_val = numeric_cells.get(coord) if coord not in unresolved_formulas else _eval_safe_xlsx_formula(
                                     f_expr,
                                     numeric_cells,
-                                    pending_formulas=unresolved_formulas - {coord},
+                                    pending_formulas=unresolved_formulas,
                                     non_numeric_cells=non_numeric_cells,
+                                    self_coord=coord,
                                 )
                                 if calc_val is not None:
                                     numeric_cells[coord] = calc_val
@@ -516,7 +528,7 @@ def extract(path, role):
                                         warnings.append(f'{name}!{ref}: формула ({f_expr}); кеш відсутній, обчислено детерміновано = {value}.')
                                 else:
                                     uncertain = True
-                                    warnings.append(f'{name}!{ref}: формула; кеш {"наявний, може бути застарілим" if value else "відсутній"}; обчислення не виконувалось.')
+                                    warnings.append(f'{name}!{ref}: формула ({f_expr}) містить нерозв\'язане або циклічне посилання; кеш {"наявний, може бути застарілим" if value else "відсутній"}; обчислення не виконувалось.')
                             if (col, r_idx) in vert_merged_cells:
                                 row_merged_cols.append(col - 1)
                                 origin = vert_merged_cells[(col, r_idx)]
