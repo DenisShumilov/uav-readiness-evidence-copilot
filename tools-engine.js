@@ -4681,10 +4681,19 @@ function renderReadinessMatrixResult(mode, customText, customName) {
         : parseCsvLine(ln, ln.indexOf(";") !== -1 ? ";" : ",").cells.map(function (c) { return String(c || "").replace(/^\uFEFF/, "").trim(); });
       if (idx === 0 && isExactMatrixHeaderRow(cells)) return;
       var statusCol = String(cells[4] !== undefined ? cells[4] : (cells.length >= 2 ? cells[cells.length - 1] : "")).trim();
+      var srcCol = String(cells[3] || "").trim();
+      var hasValidSource = srcCol !== "" && !/^(—|-|none|n\/a|відсутнє|немає|null|невідомо|unknown)$/i.test(srcCol);
       var rowSt;
+      var noteCol = cells[5] || "";
       if (/^(conflict|конфлікт|колізія|fail|невідповідність)$/i.test(statusCol) || /конфлікт|колізія|\bconflict\b|\bfail\b/i.test(statusCol)) {
         conf++;
         rowSt = "conflict";
+      } else if (!hasValidSource) {
+        lck++;
+        rowSt = "lockedCritical";
+        if (!/відсутнє джерело|no evidence/i.test(noteCol)) {
+          noteCol = (noteCol ? noteCol + " · " : "") + "Заблоковано: відсутнє прив'язане джерело доказів (no evidence -> locked)";
+        }
       } else if (/^(partial|частково|часткове\s*покриття|warn|warning)$/i.test(statusCol) || /частков|\bpartial\b/i.test(statusCol)) {
         part++;
         rowSt = "partial";
@@ -4702,15 +4711,15 @@ function renderReadinessMatrixResult(mode, customText, customName) {
         id: cells[0] || ("ROW-" + (idx + 1)),
         cat: cells[1] || "—",
         title: cells[2] || ln.slice(0, 60),
-        ev: cells[3] || "—",
+        ev: hasValidSource ? srcCol : "—",
         status: rowSt,
-        note: cells[5] || ""
+        note: noteCol
       });
     });
     var dedLck = cappedDeduction(lck, DEDUCTIONS.lockedCritical);
     var dedConf = cappedDeduction(conf, DEDUCTIONS.conflict);
     var dedPart = cappedDeduction(part, DEDUCTIONS.partial);
-    var dedWarn = part > 0 ? cappedDeduction(1, DEDUCTIONS.warning) : 0;
+    var dedWarn = cappedDeduction(part, DEDUCTIONS.warning);
     var ded = dedLck + dedConf + dedPart + dedWarn;
     var rawScore = Math.max(0, 100 - ded);
     var ceil = conf > 0 ? CONFLICT_CEILING : 100;

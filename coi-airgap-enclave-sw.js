@@ -1,10 +1,10 @@
 /**
- * SHMLV Air-Gapped Cross-Origin Isolation Service Worker (`coi-airgap-enclave-sw.js`)
- * Injects COOP (`same-origin`) + COEP (`require-corp`) + CORP (`same-origin`) + strict CSP headers
- * on static hosts (GitHub Pages / local HTTP) to unlock hardware `SharedArrayBuffer`
- * and multi-core WebAssembly SIMD128 threads (`Atomics.wait` / `Atomics.notify`),
- * while enforcing strict same-origin egress blocking, read-only method enforcement,
- * and offline CacheStorage resilience (risk/constraint analysis & fallback/rollback recovery verified, SHA-256 PASSED).
+ * SHMLV Cross-Origin Isolation & Offline Cache Service Worker (`coi-airgap-enclave-sw.js`)
+ * Injects COOP (`same-origin`) + COEP (`require-corp`) + CORP (`same-origin`) + strict CSP (`default-src 'self'`) headers
+ * on static hosts (GitHub Pages / local HTTP) to unlock `SharedArrayBuffer`
+ * and WebAssembly SIMD128 capability probes, while blocking external-origin requests,
+ * restricting methods to GET/HEAD, and providing offline CacheStorage fallback.
+ * Note: This is browser origin isolation and offline caching, not a physical network air gap (per NIST) or hardware CPU enclave.
  */
 var CACHE_PREFIX = "shmlv-airgap-enclave-";
 var CACHE_NAME = "shmlv-airgap-enclave-v2.5.0";

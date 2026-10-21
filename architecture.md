@@ -24,16 +24,16 @@
 | `docs/index.html`, `docs/tools/*.html` | HTML5 / CSS / JS | Клієнтський веб-стенд (`8 interactive local browser tools`) із дворівневим інтерфейсом результатів |
 | `docs/tools-engine.js` | Vanilla JS (ES2022) | Браузерний рушій оцінки готовності, синхронізований за вагами штрафів із `@uav-readiness/rules` (перевіряється у `siteParity.test.ts`) |
 | `docs/multi-file-verifier-bundle.js` | Vanilla JS | Пакетний крос-верифікатор комплектів документів (`ТУ ⇄ ПМВ ⇄ Паспорт ⇄ Лог ⇄ КЕП`), дедуплікація за `SHA-256` |
-| `docs/pdf-scan-ocr-engine.js` | JS / WASM / Matrix OCR | Колірна деконволюція Беєра-Ламберта для видалення синіх мокрих печаток та динамічне розпізнавання значень із `bbox` |
+| `docs/pdf-scan-ocr-engine.js` | JS / WASM / Matrix OCR | HSV/RGB-фільтрація мокрої печатки (`Chromatic Stamp Drop-Out`, `r < 22 && g < 55`), 148-байтне WASM-ядро та динамічне розпізнавання значень із `bbox` |
 | `docs/encrypted-report-share.js` | WebCrypto API | Шифрування звітів за `AES-256-GCM` (`PBKDF2`, `100 000` ітерацій, 128-бітний CSPRNG ключ) у клієнтський якір `#diag=` за `RFC 3986` |
-| `docs/coi-airgap-enclave-sw.js` | Service Worker | Ізоляція кешу `shmlv-airgap-enclave-v2.5.0`, блокування зовнішніх origin та мутуючих методів |
+| `docs/coi-airgap-enclave-sw.js` | Service Worker | Браузерна origin-ізоляція (`COOP`/`COEP` + `CSP default-src 'self'`), кешування статичних ресурсів та блокування сторонніх origin (не замінює фізичний air-gap) |
 | `engines/defdoc_ai/defdoc_auditor.py` | Python 3.10+ (stdlib) | Консольний аудитор пакетів конструкторської документації, звірка допусків і регресійний бенчмарк |
-| `engines/defdoc_ai/document_intake.py` | Python 3.10+ (`zipfile`, `xml`) | Побайтова декомпресія OOXML, перерахунок дерева формул Excel, реконструкція `gridSpan`/`vMerge` та 7D SI-вектори |
+| `engines/defdoc_ai/document_intake.py` | Python 3.10+ (`zipfile`, `xml`) | Побайтова декомпресія OOXML, перерахунок дерева формул Excel, реконструкція `gridSpan`/`vMerge` та словникова SI-нормалізація (`UNITS`) |
 | `engines/defdoc_ai/sanitize_doc.py` | Python 3.10+ | Токенізація PII/чутливих сутностей у `.docx`, `.xlsx`, `.md` із перевіркою `leaked_pii_tokens_remaining = 0` |
-| `engines/defdoc_ai/test_client_intake.py` | Python `unittest` | Набір із 22 регресійних тестів клієнтського парсингу, формул Excel та захисту від XXE/Zip-Slip |
+| `engines/defdoc_ai/test_client_intake.py` | Python `unittest` | Набір із 24 регресійних тестів клієнтського парсингу, формул Excel та захисту від XXE/Zip-Slip |
 | `engines/telemetry_ew/telemetry_analyzer.py` | Python 3.10+ (`struct`, `zlib`) | Бінарний аналізатор логів `DataFlash`, `ULog`, `MAVLink v1/v2`, `UBX`, `NMEA 0183` та `GZIP` |
 | `engines/telemetry_ew/sanitize_telemetry.py` | Python 3.10+ | Узгоджене OPSEC-знеособлення координат геолокації у польотних логах |
-| `engines/telemetry_ew/test_readiness.py` | Python `unittest` | Набір із 22 регресійних тестів бінарних парсерів телеметрії |
+| `engines/telemetry_ew/test_readiness.py` | Python `unittest` | Набір із 23 регресійних тестів бінарних парсерів телеметрії (включно з `ReferenceControllerVectorsTest`) |
 | `packages/core` | TypeScript / Zod | Схеми даних артефактів, тверджень (`EvidenceClaim`) та алгоритм виявлення міждокументних конфліктів ревізій |
 | `packages/parsers` | TypeScript | Детерміновані парсери комплектів (`BOM.csv`, `demo_manual.md`, `test_log.csv`, `qa_notes.md`) та дизамбігуація дубльованих ID |
 | `packages/evidence` | TypeScript | Побудова незмінного графа доказів (`BuiltEvidenceGraph`) і агрегація лічильників |
@@ -58,12 +58,12 @@
 
 ### 4.1. Підсистема 1: Побайтовий розбір OOXML (`.docx`/`.xlsx`), кеш формул Excel та 7D SI-вектори
 - Реконструкція таблиць `<w:tbl>` із підтримкою `<w:gridSpan>` та `<w:vMerge>` і форензик ревізій `w:rsidR`.
-- Незалежний перерахунок формул Excel (`SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT` та арифметичних операторів `+`, `-`, `*`, `/`) проти закешованого значення `<v>`.
-- Приведення фізичних величин до 7-вимірного вектора розмірностей SI $\vec{d} = [M, L, T, I, \Theta, N, J] \in \mathbb{Z}^7$.
+- Незалежний перерахунок формул Excel (`SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT` та арифметичних операторів `+`, `-`, `*`, `/`) проти закешованого значення `<v>` із відхиленням прямих чи діапазонних циклічних посилань (`UNVERIFIED`).
+- Приведення фізичних величин у клієнтському рушії (`docs/multi-file-verifier-bundle.js`) до 7-вимірного вектора розмірностей SI $\vec{d} = [L, M, T, I, \Theta, N, J] \in \mathbb{Z}^7$ (у Python-рушії `engines/defdoc_ai/document_intake.py` використовується словникова SI-нормалізація `UNITS`), а семантичне вирівнювання рядків виконується через 64-вимірне хешування символьних триграм із вагами концептів (`computeSubwordSvdEmbedding`, без матричного SVD-розкладу).
 
-### 4.2. Підсистема 2: Колірна деконволюція Беєра-Ламберта (`Chromatic Stamp Drop-Out`) та локальне OCR
-- Перехід у простір оптичної густини $OD_c = -\log_{10}(\max(I_c, 1)/I_{0,c})$ та придушення синьої/фіолетової мокрої печатки.
-- По-гліфове розпізнавання значень із геометричними координатами `bbox` та динамічним обчисленням дельти між «Норма ТУ» і «Факт ПМВ».
+### 4.2. Підсистема 2: HSV/RGB-фільтрація мокрої печатки (`Chromatic Stamp Drop-Out`) та локальне OCR
+- Спектральне виділення синьої/фіолетової мокрої печатки у просторі HSV/RGB (`isBlueWetStampPixel`) зі збереженням перекритих темних ядер лазерного тонера (`r < 22 && g < 55`, де `cleanGrayBytes` приймає `24` для тонера або `250` для відсіяного чорнила).
+- Повна підтримка RFC 1950/1951 DEFLATE (`BTYPE=00/01/10`), бінаризація Оцу через 148-байтне WASM-ядро (`otsuThresholdSum`), по-гліфове розпізнавання (`hammingDistance64`, `templateMatchConfidencePct`) із геометричними координатами `bbox` та динамічним обчисленням дельти між «Норма ТУ» і «Факт ПМВ».
 
 ### 4.3. Підсистема 3: Бінарні парсери польотних логів
 - Структурний розбір `ArduPilot DataFlash (.bin)`, `PX4 ULog (.ulg)`, `MAVLink v1/v2 (.tlog)`, `u-blox UBX (.ubx)` та `NMEA 0183 (.nmea)`.

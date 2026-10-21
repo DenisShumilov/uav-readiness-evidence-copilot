@@ -1000,18 +1000,23 @@
 
     var wasmDot = unrolledDot;
     var wasmMs = fallbackMs;
-    if (this.wasmInstance && len * 2 <= this.wasmMemoryView.length) {
+    var ptrB = (len + 63) & ~63;
+    var executedViaWasm = false;
+    if (this.wasmInstance && ptrB + len <= this.wasmMemoryView.length) {
       var wasmStart = nowMs();
       var ptrA = 0;
-      var ptrB = (len + 63) & ~63;
       this.wasmMemoryView.set(a.subarray(0, len), ptrA);
       this.wasmMemoryView.set(b.subarray(0, len), ptrB);
       wasmDot = this.wasmInstance.exports.dotProductInt8(ptrA, ptrB, len);
       wasmMs = nowMs() - wasmStart;
+      executedViaWasm = true;
     }
+    var executedTier = executedViaWasm ? this.activeTier : "TIER_3_JS_UNROLLED_FALLBACK";
 
     return {
-      activeTier: this.activeTier,
+      activeTier: executedTier,
+      executedTier: executedTier,
+      configuredTier: this.activeTier,
       webGpuProbe: WEBGPU_CAPABILITY_PROBE_LABEL,
       webGpuApiPresent: this.webGpuSupported,
       vectorLength: len,

@@ -449,7 +449,8 @@
       var keys = Object.keys(value);
       for (var k = 0; k < keys.length; k++) {
         var prop = keys[k];
-        sanitizedObj[prop] = deepSanitizeValue(value[prop], saltHex, statsCounter, currentDepth + 1);
+        var sanitizedKey = redactSensitiveText(prop, saltHex, statsCounter);
+        sanitizedObj[sanitizedKey] = deepSanitizeValue(value[prop], saltHex, statsCounter, currentDepth + 1);
       }
       return sanitizedObj;
     }
@@ -457,7 +458,10 @@
   }
 
   function verifyZeroOpsecLeakage(serializedString) {
-    var rawStr = String(serializedString || "");
+    var rawStr =
+      typeof serializedString === "object" && serializedString !== null
+        ? JSON.stringify(serializedString)
+        : String(serializedString || "");
     var scanTarget = rawStr;
     try {
       var parsedObj = JSON.parse(rawStr);
@@ -488,6 +492,7 @@
             for (var ki = 0; ki < ks.length; ki++) {
               var k = ks[ki];
               if (k === "trusted_commitments") continue;
+              textChunks.push(k);
               collectStrings(node[k], depth + 1);
             }
           }

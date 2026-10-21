@@ -44,3 +44,10 @@ This tool demonstrates a narrower question: how the presence, traceability, and 
 artifact categories could be machine-checked in a synthetic folder. It does **not** decide whether a
 real evidence package satisfies any standard, and it does not claim STANAG 4671, MIL-STD-31000, or
 DO-178C compliance.
+
+## Ukrainian Engineering Documentation Standards Context (ESKD / DSTU)
+
+In the local document auditor rules (`engines/defdoc_ai/defdoc_auditor.py`), Ukrainian ESKD standards serve as reference guidelines for title-block metadata and Technical Specifications (TU) section structure:
+
+- **ДСТУ ГОСТ 2.104:2006** (*Unified system for design documentation. Basic inscriptions*, enacted in Ukraine by Derzhspozhyvstandart Order No. 373 dated 26.12.2006) — referenced for checking completeness of product passport metadata and revision tables;
+- **ДСТУ ГОСТ 2.114-97 (ГОСТ 2.114-95)** (*Unified system for design documentation. Technical specifications*, validity in Ukraine renewed by SE "UkrNDNC" Order No. 22 dated 26.02.2026 for the period `01.03.2026` to `25.11.2027`) — referenced for Technical Specifications (TU) section structure and tabular cross-checks against acceptance test protocols (PMV).
