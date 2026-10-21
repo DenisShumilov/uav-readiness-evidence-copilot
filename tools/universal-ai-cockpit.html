@@ -242,8 +242,17 @@
             <span class="product-badge">Інструмент 08 · Комплексна звірка документів, таблиць, сканів і логів · v2.5.0</span>
             <h1 class="product-main-title">Єдине вікно комплексної перевірки файлів БпЛА</h1>
             <blockquote style="margin: 0 0 12px; padding: 12px 16px; background: var(--surface-soft); border-left: 4px solid var(--blue); border-radius: 10px; font-size: 14px; line-height: 1.55; color: var(--ink);">
+              <strong>Автоматизую перевірку комплектів технічної документації під процеси вашої компанії.</strong><br />
               Розробляю локальні інструменти для звірки технічних документів і таблиць. Вони знаходять розбіжності, показують джерела висновків та окремо позначають те, що не вдалося перевірити. Починаємо з одного вашого процесу й узгодженого набору файлів.
             </blockquote>
+            <div style="margin: 0 0 14px; padding: 10px 14px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;">
+              <div style="font-size: 13px; line-height: 1.48; color: #1e293b; flex: 1 1 320px;">
+                <strong>Швидкий перегляд результату:</strong> порівняння відкритих вимог <code>06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx</code> (Prozorro 1:1) із контрольним прикладом протоколу <code>07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx</code> (містить 2 внесені розбіжності згідно з <code>PROVENANCE.json</code>).
+              </div>
+              <button type="button" class="btn-action primary" id="btnShowTwoConflictsFastPath">
+                🔍 Показати дві розбіжності між вимогами й протоколом
+              </button>
+            </div>
             <div class="explain-list">
               <div class="explain-item">
                 <strong>Що перевіряє та яку проблему знаходить</strong>
@@ -287,12 +296,12 @@
 
           <div class="preset-grid-4">
             <button type="button" class="preset-card-btn" id="btnWow11Preset1">
-              <strong>⚡ Приклад 1: Звірка технічних вимог (.docx) із табличним протоколом випробувань (.xlsx)</strong>
-              <span>Порівнює реальні тендерні вимоги та протокол випробувань DJI Matrice 4T: знаходить розбіжність напруги (14.76 В проти 15.4 В у комірці C31), температури (-20..+50 °C проти -10..+40 °C у C48) та показує історію правок у файлі Word.</span>
+              <strong>⚡ Приклад 1: Звірка технічних вимог (.docx) із контрольним протоколом випробувань (.xlsx)</strong>
+              <span>Порівнює реальні тендерні вимоги (Prozorro 1:1) та контрольний приклад протоколу DJI Matrice 4T із внесеними розбіжностями: напруга (14.76 В проти 15.4 В у комірці C31), температура (-20..+50 °C проти -10..+40 °C у C48) та історія сесій Word.</span>
             </button>
             <button type="button" class="preset-card-btn" id="btnWow11Preset2">
-              <strong>⚡ Приклад 2: Вимоги суцільним текстом (.docx) + Цифровий підпис КЕП (.p7s) + Комплектація (.csv)</strong>
-              <span>Витягує характеристики із суцільного тексту технічного завдання (361 абзац без таблиць), перевіряє цифровий підпис за ДСТУ 4145-2002 та відомість комплектації (оцінка 49/100 через конфлікт).</span>
+              <strong>⚡ Приклад 2: Вимоги суцільним текстом (.docx) + Контейнер КЕП (.p7s) + Комплектація (.csv)</strong>
+              <span>Витягує характеристики із суцільного тексту технічного завдання, читає поля контейнера підпису .p7s за SignerInfo.sid (криптографічний підпис не перевіряється — UNVERIFIED) та відомість комплектації (оцінка 49/100 через конфлікт).</span>
             </button>
             <button type="button" class="preset-card-btn" id="btnWow11Preset3">
               <strong>⚡ Приклад 3: Комплексний пакет із 7 різних файлів (.docx + .pdf + .param + .hex + .elf + .zip + .bin)</strong>
@@ -303,8 +312,8 @@
               <span>Показує, як система автоматично зводить 1.42 кг = 1420 г, 75.6 км/год = 21 м/с, 2940 с = 49 хв і водночас не дає переплутати різні фізичні величини (наприклад, 1420 м висоти з 1420 г маси).</span>
             </button>
             <button type="button" class="preset-card-btn preset-span-full" id="btnWow11Preset5">
-              <strong>🖨️ Приклад 5: Сканований PDF-протокол із синьою мокрою печаткою поверх цифр</strong>
-              <span>Демонструє читання сканованого документа без текстового шару: система програмно прибирає синій відбиток печатки та підпису і відновлює перекриті цифри таблиці (масу 13.9 кг, напругу 15.4 В, температуру -10..+40 °C).</span>
+              <strong>🖨️ Приклад 5: Сканований PDF-протокол із синьою печаткою (демо-шаблон 560 × 220 px)</strong>
+              <span>У демо підтримується конкретний табличний шаблон (560 × 220 px): модуль відділяє синій відбиток печатки й читає 5 рядків таблиці (масу 13.9 кг, напругу 15.4 В, температуру -10..+40 °C). Адаптацію до ваших бланків перевіряємо в межах пілоту.</span>
             </button>
           </div>
 
@@ -581,10 +590,10 @@
             </div>
             <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; padding: 15px 17px;">
               <div style="font-size: 13.8px; font-weight: 700; color: var(--ink); margin-bottom: 6px;">
-                2. Скани з мокрою печаткою vs польові фото з телефона
+                2. Скани з мокрою печаткою vs адаптація під бланки КБ
               </div>
               <p style="font-size: 13px; line-height: 1.55; color: #334155; margin: 0;">
-                У браузері працює легкий WebAssembly-модуль, який відсікає синю печатку і читає чіткий друкований скан. Для криво сфотографованих на телефон зім'ятих аркушів чи тіней розгортається локальний офлайн-конвеєр вирівнювання перспективи та повноцінного OCR без передачі даних у хмару.
+                У демо підтримується конкретний табличний шаблон (<code>560 × 220 px</code>), де легкий WebAssembly-модуль відділяє синю печатку від цифр. Адаптацію до ваших бланків та локальний офлайн-конвеєр OCR перевіряємо в межах пілоту.
               </p>
             </div>
             <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; padding: 15px 17px;">
@@ -597,11 +606,38 @@
             </div>
             <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; padding: 15px 17px;">
               <div style="font-size: 13.8px; font-weight: 700; color: var(--ink); margin-bottom: 6px;">
-                4. Офлайн-паспорт КЕП (<code>.p7s</code>) та глибока OPSEC-чистка
+                4. Поля контейнера КЕП (<code>.p7s</code>) та шаблонна OPSEC-санація
               </div>
               <p style="font-size: 13px; line-height: 1.55; color: #334155; margin: 0;">
-                Браузер миттєво витягує ПІБ, ЄДРПОУ та позначку часу з <code>.p7s</code> без виходу в інтернет. Повна криптографічна звірка підпису <code>ДСТУ 4145-2002</code> із базою відкликаних сертифікатів та побайтова зачистка всіх 7 прихованих каналів координат у бінарних логах підключаються у локальному контурі підприємства.
+                Поля контейнера <code>.p7s</code> (ПІБ, ЄДРПОУ, позначка часу за <code>SignerInfo.sid</code>) читаються у браузері без інтернету; криптографічний підпис у цьому режимі не перевіряється (<code>cryptoStatus: UNVERIFIED</code>). Санація OPSEC забезпечує автоматичне приховування визначених категорій даних за шаблонами (потребує перегляду людиною).
               </p>
+            </div>
+          </div>
+
+          <!-- ЗАВЕРШЕНИЙ ПРИКЛАД ОДНОГО ЦИКЛУ ПЕРЕВІРКИ -->
+          <div style="margin-top: 18px; padding: 16px 18px; background: #ffffff; border: 1px solid var(--line); border-radius: 12px;">
+            <h4 style="margin: 0 0 10px; font-size: 15px; font-weight: 800; color: var(--ink);">
+              Завершений приклад одного циклу перевірки (від вхідних файлів до рішення інженера)
+            </h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; font-size: 13px; line-height: 1.55; color: #1e293b;">
+              <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;">
+                <strong>1. Проблема:</strong> Розбіжності в цифрах, одиницях вимірювання (<code>г vs кг</code>, <code>В</code>, <code>°C</code>) та ревізіях між технічними вимогами (ТУ/ТЗ), протоколом ПМВ і відомістю комплектації (BOM).
+              </div>
+              <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;">
+                <strong>2. Вхід:</strong> Відкритий документ вимог <code>06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx</code> та контрольний протокол <code>07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx</code> (із внесеними тестовими розбіжностями за <code>PROVENANCE.json</code>).
+              </div>
+              <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;">
+                <strong>3. Перевірка:</strong> Локальний розбір XML-структури <code>.docx/.xlsx</code> у пам'яті браузера, зведення величин до базових одиниць SI та 7D-блокування несумісних розмірностей.
+              </div>
+              <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;">
+                <strong>4. Результат:</strong> Зіставлено 47 пар характеристик: виявлено 2 розбіжності з точними адресами комірок (<code>C31: 14.76 В vs 15.4 В</code>; <code>C48: -20…+50 °C vs -10…+40 °C</code>) та сформовано чекліст для інженера.
+              </div>
+              <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;">
+                <strong>5. Межі:</strong> Інструмент не редагує протоколи випробувань замість комісії, не перевіряє криптопідпис <code>.p7s</code> (<code>UNVERIFIED</code>) і переводить складні нестандартні конструкції у статус <code>UNVERIFIED</code>.
+              </div>
+              <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;">
+                <strong>6. Користь для інженера:</strong> Замість ручного звіряння десятків сторінок інженер за секунди отримує таблицю точних розбіжностей із посиланням на рядок і комірку первинного файла.
+              </div>
             </div>
           </div>
 
@@ -858,7 +894,7 @@
 
               return [
                 "<tr data-row-status='" + (rowPass ? "PASS" : "ISSUE") + "' data-row-index='" + idx + "'>",
-                "<td><b>" + esc(paramTitle) + "</b><div style='font-size:11.5px;color:#526077;margin-top:3px'>Розмірність SI: <code>" + esc(siDim) + "</code>" + simLabel + "</div></td>",
+                "<td><b>" + esc(paramTitle) + "</b><details style='font-size:11.5px;color:#526077;margin-top:4px'><summary style='cursor:pointer;user-select:none'>Технічні деталі SI</summary><div style='margin-top:2px'>Розмірність SI: <code>" + esc(siDim) + "</code>" + simLabel + "</div></details></td>",
                 "<td><span class='" + pillClass + "'>" + pillText + "</span>" +
                   "<div style='font-size:12.5px;margin-top:5px'>Вимога: <code>" + wrapNumUnitsHtml(normVal) + "</code> ↔ Факт: <code>" + wrapNumUnitsHtml(factVal) + "</code>" + accBadge + "</div>" +
                   "<div style='font-size:12px;color:#334155;margin-top:3px'>" + wrapNumUnitsHtml(r.deltaExplain || r.deltaStatus || "") + "</div></td>",
@@ -1452,7 +1488,7 @@
               "  <div class='op-stat-card'><span>Криптографічний контур</span><strong style='color:#0022ff'>" + esc(cipherStr) + " + " + esc(macStr) + "</strong></div>",
               "  <div class='op-stat-card'><span>Стиснення deflate-raw</span><strong style='color:#067647'><span class='num-unit'>" + esc(uncompBytes) + " Б</span> → <span class='num-unit'>" + esc(compBytes) + " Б</span> (<span class='num-unit'>-" + esc(compRatio) + "%</span>)</strong></div>",
               "  <div class='op-stat-card'><span>Мережева ізоляція RFC 3986</span><strong style='color:#067647'>" + esc(CANONICAL_ZERO_EGRESS_TEXT) + "</strong></div>",
-              "  <div class='op-stat-card'><span>OPSEC Санація &amp; Round-Trip</span><strong style='color:#067647'>Вилучено: " + esc(redaction.total_sensitive_entities_stripped || 0) + " · Витоків: " + esc(redaction.leaked_pii_tokens_remaining || 0) + " (" + esc((verified && verified.verdict) || "PASSED") + ")</strong></div>",
+              "  <div class='op-stat-card'><span>OPSEC Санація (за шаблонами)</span><strong style='color:#067647'>Вилучено: " + esc(redaction.total_sensitive_entities_stripped || 0) + " · Потребує перегляду людиною (" + esc((verified && verified.verdict) || "PASSED") + ")</strong></div>",
               "</div>",
               "<div style='font-size:12px;color:#334155;font-family:var(--font-mono);background:#ffffff;border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px'>",
               "  <div><b>Ключ доступу:</b> <code>" + esc(keyModeText) + "</code></div>",
@@ -1856,6 +1892,23 @@
           if (btnPreset5) {
             btnPreset5.addEventListener("click", function () {
               runPreset5RasterPdfOcr().catch(function () {});
+            });
+          }
+
+          var btnFastPath = document.getElementById("btnShowTwoConflictsFastPath");
+          if (btnFastPath) {
+            btnFastPath.addEventListener("click", function () {
+              var p1 = document.getElementById("btnWow11Preset1");
+              matrixFilterOnlyIssues = true;
+              if (p1) {
+                p1.click();
+              } else {
+                syncMatrixFilterAndCounter();
+              }
+              var tbl = document.getElementById("wow11AlignmentTable");
+              if (tbl && typeof tbl.scrollIntoView === "function") {
+                tbl.scrollIntoView({ behavior: "smooth", block: "start" });
+              }
             });
           }
 

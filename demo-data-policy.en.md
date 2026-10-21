@@ -1,67 +1,32 @@
-# Demo Data Policy
+# Demo and Control Data Policy (`v2.5.0`)
 
 *[Українською](demo-data-policy.md) · English*
 
-Demo data means example files used to show the project.
+This document defines the provenance, labeling, and safety rules for all sample files included in the repository (a complete per-file registry with SHA-256 digests is maintained in [`docs/real-samples/PROVENANCE.json`](real-samples/PROVENANCE.json)).
 
-All demo data in this repository must be synthetic.
+## Three Categories of Test Data in the Repository
 
-Synthetic means fake, educational, and not copied from real operations.
+1. **Synthetic Training Bundles (`examples/demo-*`):**
+   - fully fictional 4-file bundles (`BOM.csv`, `demo_manual.md`, `test_log.csv`, `qa_notes.md`) authored to deterministically test readiness scoring rules (`44/100`, `80/100`, `49/100`);
+   - every synthetic demo folder is explicitly labeled `Synthetic demo data only. Not operationally valid.`
+2. **Verbatim Public Reference Artifacts (`docs/real-samples/`, category `verbatim_public` in `PROVENANCE.json`):**
+   - unmodified public files from open Prozorro procurement tenders (`06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx`, `06a_Prozorro_UAV_TechVymogy_DJI_Matrice_4T_Tender2.docx`, `08_Prozorro_Real_KEP_Sign.p7s`) and official open-source autopilot/GNSS test suites (`ArduPilot`, `PX4`, `pyubx2`, `NMEA`).
+3. **Derived Control Fixtures with Injected Discrepancies (`docs/real-samples/`, category `derived_control_fixture` in `PROVENANCE.json`):**
+   - `07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx` — a control test protocol derived from `06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx` with 2 intentionally injected discrepancies (`15.40 V` vs `14.76 V` in row 20 and `18.5 m/s` vs `21 m/s` in row 9) to demonstrate cross-document conflict detection;
+   - `09_Real_UAV_Readiness_Matrix_BOM.csv` — a control BOM table with intentionally injected completeness discrepancies;
+   - `10_Stamped_PMV_Protocol_Scan_VP_MOU.pdf` — a synthetic raster protocol template (`560 × 220 px`) with a simulated wet blue stamp overlay used to test Beer-Lambert chromatic stamp drop-out.
 
-## Allowed Demo Data
+## Blocked Data (Strictly Prohibited in the Repository)
 
-Allowed examples:
+No file in this repository may include:
 
-- fake BOM files, meaning fake lists of parts;
-- fake manual snippets, meaning fake instruction text;
-- fake QA notes, meaning fake quality notes;
-- fake test logs, meaning fake test tables;
-- fake config dumps, meaning fake settings text;
-- fake evidence locks, meaning fake blocked claims.
+- restricted or sensitive coordinates of real test ranges, launch sites, or landing zones;
+- real operational routes, mission names, targeting data, or payload data;
+- proprietary or NDA-protected engineering documentation from manufacturers;
+- non-public personal data or private cryptographic keys.
 
-The examples may show:
+## Labeling and Provenance Separation Rule
 
-- document completeness;
-- missing evidence;
-- conflicting paperwork;
-- expired inspection notes;
-- training record presence;
-- maintenance record presence.
-
-## Blocked Demo Data
-
-Do not include:
-
-- real coordinates;
-- real routes;
-- mission names;
-- targeting data;
-- payload data;
-- tactical notes;
-- live telemetry;
-- operational frequencies;
-- real serial numbers;
-- real names or personal data;
-- real photos with metadata.
-
-Telemetry means data from a live system, such as position, speed, sensor values, or status.
-
-## Labeling Rule
-
-Every demo folder must clearly say:
-
-`Synthetic demo data only. Not operationally valid.`
-
-Operationally valid means usable for real-world operation. Demo data must not be usable that way.
-
-## Mixing Rule
-
-Do not mix synthetic evidence and real evidence.
-
-If a future version supports user uploads, the UI must clearly label:
-
-- synthetic;
-- user-provided;
-- generated output.
-
-UI means user interface, the screen a person clicks and reads.
+1. Synthetic bundles under `examples/demo-*` are explicitly labeled `SYNTHETIC DEMO`.
+2. When evaluating user-provided files (`synthetic: false` in the CLI or custom files in the browser), the `SYNTHETIC DEMO` banner is omitted and artifacts are labeled as `User-provided`.
+3. Every derived control fixture in `docs/real-samples/` is explicitly documented in `docs/real-samples/PROVENANCE.json` with each injected discrepancy listed so reviewers never mistake a control test fixture for an unmodified official protocol.
