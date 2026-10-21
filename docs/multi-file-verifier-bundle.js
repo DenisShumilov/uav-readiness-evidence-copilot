@@ -1368,11 +1368,11 @@
         signerInfos: [],
         tspEndpoints: [],
         hasDstuOid: false,
-        signerCn: "",
+        signerCn: "unknown",
         signerOrg: "",
-        issuerCn: "",
+        issuerCn: "unknown",
         issuerOrg: "",
-        edrpou: "",
+        edrpou: "unknown",
         drfo: "",
         signingTime: ""
       };
@@ -1396,11 +1396,11 @@
         signerInfos: [],
         tspEndpoints: [],
         hasDstuOid: false,
-        signerCn: "",
+        signerCn: "unknown",
         signerOrg: "",
-        issuerCn: "",
+        issuerCn: "unknown",
         issuerOrg: "",
-        edrpou: "",
+        edrpou: "unknown",
         drfo: "",
         signingTime: ""
       };
@@ -1478,6 +1478,27 @@
       };
     }
 
+    function normalizeDistinguishedNameKey(dnObj) {
+      if (!dnObj || !dnObj.raw) return "";
+      var keys = Object.keys(dnObj.raw).sort();
+      var parts = [];
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        var v = String(dnObj.raw[k] || "").trim().replace(/\s+/g, " ").toUpperCase();
+        if (v) parts.push(k + "=" + v);
+      }
+      return parts.join("|");
+    }
+
+    function bytesToUpperHex(u8) {
+      if (!u8 || !u8.length) return "";
+      var out = "";
+      for (var i = 0; i < u8.length; i++) {
+        out += ("0" + (u8[i] & 0xff).toString(16).toUpperCase()).slice(-2);
+      }
+      return out;
+    }
+
     function parseX509Certificate(certSeq) {
       if (!certSeq || certSeq.tag !== 0x30 || !certSeq.children || certSeq.children.length < 1) return null;
       var tbs = certSeq.children[0];
@@ -1488,15 +1509,13 @@
       var issuerNode = tbs.children[idx + 2];
       var validityNode = tbs.children[idx + 3];
       var subjectNode = tbs.children[idx + 4];
+      if (!serialNode || serialNode.tag !== 0x02 || !serialNode.bytes || serialNode.bytes.length < 1) return null;
       if (!issuerNode || !subjectNode || issuerNode.tag !== 0x30 || subjectNode.tag !== 0x30) return null;
 
-      var serialHex = "";
-      if (serialNode && serialNode.bytes) {
-        for (var s = 0; s < serialNode.bytes.length; s++) {
-          serialHex += ("0" + serialNode.bytes[s].toString(16).toUpperCase()).slice(-2);
-        }
-      }
+      var serialHex = bytesToUpperHex(serialNode.bytes);
+      var serialHexNorm = serialHex.replace(/^0+/, "") || "0";
       var issuer = parseX500Name(issuerNode);
+      var issuerKey = normalizeDistinguishedNameKey(issuer);
       var subject = parseX500Name(subjectNode);
       var notBefore = "";
       var notAfter = "";
@@ -1508,6 +1527,7 @@
       // Extract EDRPOU & DRFO/TIN from Subject RDN attributes (2.5.4.97, 2.5.4.5, 2.5.4.11, 2.5.4.10)
       var edrpou = "";
       var drfo = "";
+      var skiHex = "";
       var rdnPool = [subject.orgId, subject.serialNumber, subject.ou, subject.org].join(" ");
       var ntrMatch = rdnPool.match(/NTRUA-(\d{8})/i) || rdnPool.match(/EDRPOU[:=\s-]*(\d{8})/i);
       if (ntrMatch) {
@@ -1522,7 +1542,7 @@
         drfo = subject.serialNumber.trim();
       }
 
-      // Also inspect SubjectDirectoryAttributes (2.5.29.9) or QCStatements (1.3.6.1.5.5.7.1.3) in extensions [3]
+      // Also inspect SubjectKeyIdentifier (2.5.29.14), SubjectDirectoryAttributes (2.5.29.9) or QCStatements (1.3.6.1.5.5.7.1.3) in extensions [3]
       for (var cIdx = idx + 5; cIdx < tbs.children.length; cIdx++) {
         var extWrapper = tbs.children[cIdx];
         if (extWrapper && extWrapper.tag === 0xa3 && extWrapper.children && extWrapper.children[0]) {
@@ -1531,8 +1551,19 @@
             for (var ei = 0; ei < extSeq.children.length; ei++) {
               var extItem = extSeq.children[ei];
               if (extItem && extItem.children && extItem.children.length >= 2 && extItem.children[0].tag === 0x06) {
+                var extOid = decodeOidBytes(extItem.children[0].bytes);
                 var extValNode = extItem.children[extItem.children.length - 1];
                 if (extValNode && extValNode.bytes) {
+                  if (extOid === "2.5.29.14") {
+                    var skiBytes = extValNode.bytes;
+                    if (skiBytes.length >= 2 && skiBytes[0] === 0x04) {
+                      var innerSkiNodes = readAsn1Nodes(skiBytes, 0, skiBytes.length, 1);
+                      if (innerSkiNodes.length > 0 && innerSkiNodes[0].tag === 0x04 && innerSkiNodes[0].bytes) {
+                        skiBytes = innerSkiNodes[0].bytes;
+                      }
+                    }
+                    skiHex = bytesToUpperHex(skiBytes);
+                  }
                   var extText = decodeUtf8(extValNode.bytes);
                   if (!edrpou) {
                     var extNtr = extText.match(/NTRUA-(\d{8})/i);
@@ -1551,6 +1582,9 @@
 
       return {
         serialHex: serialHex,
+        serialHexNorm: serialHexNorm,
+        issuerKey: issuerKey,
+        skiHex: skiHex,
         issuer: issuer,
         subject: subject,
         notBefore: notBefore,
@@ -1562,8 +1596,95 @@
 
     var certificates = [];
     var signerInfos = [];
+    var hasMandatorySignedDataFields = false;
 
-    function extractCertsAndSignersFromSignedData(sdSeq) {
+    function validateSignedDataSequence(sdSeq) {
+      if (!sdSeq || sdSeq.tag !== 0x30 || !sdSeq.children || sdSeq.children.length < 4) return false;
+      var verNode = sdSeq.children[0];
+      var digSetNode = sdSeq.children[1];
+      var encapNode = sdSeq.children[2];
+      var lastNode = sdSeq.children[sdSeq.children.length - 1];
+      if (!verNode || verNode.tag !== 0x02 || !verNode.bytes || verNode.bytes.length < 1) return false;
+      if (!digSetNode || digSetNode.tag !== 0x31 || !digSetNode.children || digSetNode.children.length < 1) return false;
+      var hasDigestAlgOid = digSetNode.children.some(function (alg) {
+        return Boolean(alg && alg.tag === 0x30 && alg.children && alg.children.length >= 1 && alg.children[0].tag === 0x06);
+      });
+      if (!hasDigestAlgOid) return false;
+      if (!encapNode || encapNode.tag !== 0x30 || !encapNode.children || encapNode.children.length < 1 || encapNode.children[0].tag !== 0x06) return false;
+      if (!lastNode || lastNode.tag !== 0x31 || !lastNode.children || lastNode.children.length < 1) return false;
+      return true;
+    }
+
+    function parseSignerInfoNode(siNode, isTopLevel) {
+      if (!siNode || siNode.tag !== 0x30 || !siNode.children || siNode.children.length < 5) return null;
+      var verNode = siNode.children[0];
+      var sidNode = siNode.children[1];
+      var digAlgNode = siNode.children[2];
+      if (!verNode || verNode.tag !== 0x02 || !verNode.bytes || verNode.bytes.length < 1) return null;
+      if (!digAlgNode || digAlgNode.tag !== 0x30 || !digAlgNode.children || digAlgNode.children.length < 1 || digAlgNode.children[0].tag !== 0x06) return null;
+
+      var sidType;
+      var sidIssuerKey = "";
+      var sidSerialHex = "";
+      var sidSerialNorm = "";
+      var sidSkiHex = "";
+      if (sidNode && sidNode.tag === 0x30 && sidNode.children && sidNode.children.length >= 2 && sidNode.children[0].tag === 0x30 && sidNode.children[1].tag === 0x02 && sidNode.children[1].bytes && sidNode.children[1].bytes.length >= 1) {
+        sidType = "IssuerAndSerialNumber";
+        var sidIssuerObj = parseX500Name(sidNode.children[0]);
+        sidIssuerKey = normalizeDistinguishedNameKey(sidIssuerObj);
+        sidSerialHex = bytesToUpperHex(sidNode.children[1].bytes);
+        sidSerialNorm = sidSerialHex.replace(/^0+/, "") || "0";
+      } else if (sidNode && sidNode.tag === 0x80 && sidNode.bytes && sidNode.bytes.length >= 4) {
+        sidType = "SubjectKeyIdentifier";
+        sidSkiHex = bytesToUpperHex(sidNode.bytes);
+      } else {
+        return null;
+      }
+
+      var cursor = 3;
+      if (cursor < siNode.children.length && siNode.children[cursor].tag === 0xa0) {
+        var attrSet = siNode.children[cursor];
+        if (attrSet.children) {
+          for (var ai = 0; ai < attrSet.children.length; ai++) {
+            var attrSeq = attrSet.children[ai];
+            if (attrSeq && attrSeq.tag === 0x30 && attrSeq.children && attrSeq.children.length >= 2 && attrSeq.children[0].tag === 0x06) {
+              var attrOid = decodeOidBytes(attrSeq.children[0].bytes);
+              var attrValSet = attrSeq.children[1];
+              if (attrOid === "1.2.840.113549.1.9.5" && attrValSet && attrValSet.children && attrValSet.children[0]) {
+                var tNode = attrValSet.children[0];
+                var tStr = decodeAsn1StringNode(tNode.tag, tNode.bytes);
+                if (tStr && signingTimes.indexOf(tStr) === -1) signingTimes.push(tStr);
+              } else if (attrOid === "1.2.840.113549.1.9.16.2.14" && attrValSet && attrValSet.children && attrValSet.children[0]) {
+                var tstCi = attrValSet.children[0];
+                if (tstCi && tstCi.children && tstCi.children.length >= 2 && tstCi.children[1].children && tstCi.children[1].children[0]) {
+                  extractCertsAndSignersFromSignedData(tstCi.children[1].children[0], false);
+                }
+              }
+            }
+          }
+        }
+        cursor++;
+      }
+
+      if (cursor + 1 >= siNode.children.length) return null;
+      var sigAlgNode = siNode.children[cursor];
+      var sigOctet = siNode.children[cursor + 1];
+      if (!sigAlgNode || sigAlgNode.tag !== 0x30 || !sigAlgNode.children || sigAlgNode.children.length < 1 || sigAlgNode.children[0].tag !== 0x06) return null;
+      if (!sigOctet || sigOctet.tag !== 0x04 || !sigOctet.bytes || sigOctet.bytes.length < 16) return null;
+
+      return {
+        isTopLevel: Boolean(isTopLevel),
+        sidType: sidType,
+        sidIssuerKey: sidIssuerKey,
+        sidSerialHex: sidSerialHex,
+        sidSerialNorm: sidSerialNorm,
+        sidSkiHex: sidSkiHex,
+        hasSignatureBytes: true,
+        signatureByteLength: sigOctet.bytes.length
+      };
+    }
+
+    function extractCertsAndSignersFromSignedData(sdSeq, isTopLevel) {
       if (!sdSeq || !sdSeq.children) return;
       for (var i = 0; i < sdSeq.children.length; i++) {
         var child = sdSeq.children[i];
@@ -1576,102 +1697,104 @@
         } else if (child.tag === 0x31 && i >= 3 && child.children) {
           // signerInfos SET OF SignerInfo
           for (var si = 0; si < child.children.length; si++) {
-            var siNode = child.children[si];
-            if (siNode && siNode.tag === 0x30 && siNode.children && siNode.children.length >= 5) {
-              var sigOctet = null;
-              for (var k = siNode.children.length - 1; k >= 0; k--) {
-                if (siNode.children[k].tag === 0x04) {
-                  sigOctet = siNode.children[k];
-                  break;
-                }
-              }
-              // Check signedAttrs [0] IMPLICIT for signingTime (1.2.840.113549.1.9.5) and timeStampToken (1.2.840.113549.1.9.16.2.14)
-              for (var sa = 0; sa < siNode.children.length; sa++) {
-                var attrSet = siNode.children[sa];
-                if (attrSet.tag === 0xa0 && attrSet.children) {
-                  for (var ai = 0; ai < attrSet.children.length; ai++) {
-                    var attrSeq = attrSet.children[ai];
-                    if (attrSeq && attrSeq.tag === 0x30 && attrSeq.children && attrSeq.children.length >= 2 && attrSeq.children[0].tag === 0x06) {
-                      var attrOid = decodeOidBytes(attrSeq.children[0].bytes);
-                      var attrValSet = attrSeq.children[1];
-                      if (attrOid === "1.2.840.113549.1.9.5" && attrValSet && attrValSet.children && attrValSet.children[0]) {
-                        var tNode = attrValSet.children[0];
-                        var tStr = decodeAsn1StringNode(tNode.tag, tNode.bytes);
-                        if (tStr && signingTimes.indexOf(tStr) === -1) signingTimes.push(tStr);
-                      } else if (attrOid === "1.2.840.113549.1.9.16.2.14" && attrValSet && attrValSet.children && attrValSet.children[0]) {
-                        // Nested TimeStampToken ContentInfo -> SignedData
-                        var tstCi = attrValSet.children[0];
-                        if (tstCi && tstCi.children && tstCi.children.length >= 2 && tstCi.children[1].children && tstCi.children[1].children[0]) {
-                          extractCertsAndSignersFromSignedData(tstCi.children[1].children[0]);
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-              signerInfos.push({
-                hasSignatureBytes: Boolean(sigOctet && sigOctet.bytes && sigOctet.bytes.length >= 16),
-                signatureByteLength: sigOctet && sigOctet.bytes ? sigOctet.bytes.length : 0
-              });
-            }
+            var parsedSi = parseSignerInfoNode(child.children[si], isTopLevel);
+            if (parsedSi) signerInfos.push(parsedSi);
           }
         }
       }
     }
 
     if (signedDataSeq) {
-      extractCertsAndSignersFromSignedData(signedDataSeq);
+      hasMandatorySignedDataFields = validateSignedDataSequence(signedDataSeq);
+      if (hasMandatorySignedDataFields) {
+        extractCertsAndSignersFromSignedData(signedDataSeq, true);
+      }
     }
 
     var hasDstuOid = allOids.some(function (oid) {
       return oid.indexOf("1.2.804.2.1.1.1") === 0;
     });
 
-    // Select primary end-entity signer certificate (preferring non-CA / non-TSP cert)
+    // Strictly match primary end-entity signer certificate against top-level SignerInfo.sid (RFC 5652 §5.3)
+    var topLevelSigners = signerInfos.filter(function (s) { return s.isTopLevel && s.hasSignatureBytes; });
+    var primarySigner = topLevelSigners.length > 0 ? topLevelSigners[0] : null;
     var primaryCert = null;
-    for (var c = 0; c < certificates.length; c++) {
-      var crt = certificates[c];
-      var cnUpper = (crt.subject.cn || "").toUpperCase();
-      var isCaOrTsp = cnUpper.indexOf("КНЕДП") >= 0 || cnUpper.indexOf("АЦСК") >= 0 || cnUpper.indexOf("ЦСК") >= 0 || cnUpper.indexOf("TSP") >= 0 || cnUpper.indexOf("OCSP") >= 0 || (crt.subject.cn && crt.subject.cn === crt.issuer.cn);
-      if (!isCaOrTsp && (crt.subject.cn || crt.edrpou || crt.drfo)) {
-        primaryCert = crt;
-        break;
+    var sidMatched = false;
+
+    if (primarySigner && certificates.length > 0) {
+      var matchedCerts = [];
+      var seenCertKeys = {};
+      for (var c = 0; c < certificates.length; c++) {
+        var crt = certificates[c];
+        var isMatch = false;
+        if (primarySigner.sidType === "IssuerAndSerialNumber") {
+          isMatch = Boolean(
+            crt.serialHexNorm === primarySigner.sidSerialNorm &&
+            crt.issuerKey &&
+            crt.issuerKey === primarySigner.sidIssuerKey
+          );
+        } else if (primarySigner.sidType === "SubjectKeyIdentifier") {
+          isMatch = Boolean(crt.skiHex && crt.skiHex === primarySigner.sidSkiHex);
+        }
+        if (isMatch) {
+          var dedupKey = crt.serialHexNorm + "|" + crt.issuerKey;
+          if (!seenCertKeys[dedupKey]) {
+            seenCertKeys[dedupKey] = true;
+            matchedCerts.push(crt);
+          }
+        }
       }
-    }
-    if (!primaryCert && certificates.length > 0) {
-      primaryCert = certificates[0];
+      if (matchedCerts.length === 1) {
+        primaryCert = matchedCerts[0];
+        sidMatched = true;
+      }
     }
 
     var validStructure = Boolean(
       isSignedDataContent &&
       signedDataSeq &&
-      (certificates.length > 0 || signerInfos.length > 0) &&
-      (signerInfos.length === 0 || signerInfos.some(function (s) { return s.hasSignatureBytes; }))
+      hasMandatorySignedDataFields &&
+      topLevelSigners.length > 0 &&
+      certificates.length > 0 &&
+      sidMatched &&
+      primaryCert !== null
     );
 
-    var signerCn = primaryCert
-      ? (primaryCert.subject.cn || [primaryCert.subject.sn, primaryCert.subject.givenName].filter(Boolean).join(" ") || primaryCert.subject.org || "Не вказано в сертифікаті")
-      : "Сертифікат підписанта не вбудовано в контейнер";
-    var signerOrg = primaryCert ? (primaryCert.subject.org || primaryCert.subject.ou || "") : "";
-    var issuerCn = primaryCert ? (primaryCert.issuer.cn || primaryCert.issuer.org || "Не вказано") : "Не вказано";
-    var issuerOrg = primaryCert ? (primaryCert.issuer.org || primaryCert.issuer.cn || "") : "";
-    var edrpouFinal = primaryCert && primaryCert.edrpou ? primaryCert.edrpou : "Не вказано в сертифікаті";
-    var drfoFinal = primaryCert && primaryCert.drfo ? primaryCert.drfo : "";
+    var signerCn = (validStructure && primaryCert)
+      ? (primaryCert.subject.cn || [primaryCert.subject.sn, primaryCert.subject.givenName].filter(Boolean).join(" ") || primaryCert.subject.org || "unknown")
+      : "unknown";
+    var signerOrg = (validStructure && primaryCert) ? (primaryCert.subject.org || primaryCert.subject.ou || "") : "";
+    var issuerCn = (validStructure && primaryCert) ? (primaryCert.issuer.cn || primaryCert.issuer.org || "unknown") : "unknown";
+    var issuerOrg = (validStructure && primaryCert) ? (primaryCert.issuer.org || primaryCert.issuer.cn || "") : "";
+    var edrpouFinal = (validStructure && primaryCert && primaryCert.edrpou) ? primaryCert.edrpou : "unknown";
+    var drfoFinal = (validStructure && primaryCert && primaryCert.drfo) ? primaryCert.drfo : "";
 
-    var finalReasonCode = validStructure
-      ? "ok"
-      : (!isSignedDataContent ? "missing_signed_data_oid" : "missing_signer_info");
+    var finalReasonCode = "ok";
+    if (!validStructure) {
+      if (!isSignedDataContent) {
+        finalReasonCode = "missing_signed_data_oid";
+      } else if (!hasMandatorySignedDataFields) {
+        finalReasonCode = "invalid_signed_data_structure";
+      } else if (topLevelSigners.length === 0) {
+        finalReasonCode = "missing_valid_signer_info";
+      } else if (certificates.length === 0) {
+        finalReasonCode = "missing_signer_certificate";
+      } else {
+        finalReasonCode = "unmatched_signer_sid";
+      }
+    }
     var cryptoDisclaimer =
       "UNVERIFIED_CRYPTO: криптографічний підпис ДСТУ 4145 / ECDSA / RSA, геш підписаного документа та статус сертифіката (OCSP/CRL) у браузері не перевірялися";
 
     return {
       valid: validStructure,
       validPkcs7: validStructure,
+      sidMatched: sidMatched,
       reasonCode: finalReasonCode,
       structuralStatus: validStructure ? "PASS" : "FAIL",
       cryptoStatus: "UNVERIFIED",
       cryptoDisclaimer: cryptoDisclaimer,
-      error: validStructure ? null : "Відсутня обов'язкова структура CMS ContentInfo(signedData 1.2.840.113549.1.7.2) або підпис SignerInfo",
+      error: validStructure ? null : ("Порушено структуру RFC 5652 CMS SignedData або не знайдено сертифікат за SignerInfo.sid (" + finalReasonCode + ")"),
       encodingFormat: encodingFormat,
       contentTypeOid: contentTypeOid,
       hasDstuOid: hasDstuOid,
@@ -1689,10 +1812,10 @@
       issuerOrg: issuerOrg,
       edrpou: edrpouFinal,
       drfo: drfoFinal,
-      serialHex: primaryCert ? primaryCert.serialHex : "",
-      validFrom: primaryCert ? primaryCert.notBefore : "",
-      validTo: primaryCert ? primaryCert.notAfter : "",
-      signingTime: signingTimes.length > 0 ? signingTimes[0] : (primaryCert ? primaryCert.notBefore : "")
+      serialHex: (validStructure && primaryCert) ? primaryCert.serialHex : "",
+      validFrom: (validStructure && primaryCert) ? primaryCert.notBefore : "",
+      validTo: (validStructure && primaryCert) ? primaryCert.notAfter : "",
+      signingTime: signingTimes.length > 0 ? signingTimes[0] : ((validStructure && primaryCert) ? primaryCert.notBefore : "")
     };
   }
 
@@ -1718,6 +1841,7 @@
       certificatesCount: parsed.certificatesCount,
       signerInfosCount: parsed.signerInfosCount,
       tspEndpoints: parsed.tspEndpoints,
+      edrpou: parsed.edrpou,
       edrpouHint: parsed.edrpou,
       tinHint: parsed.drfo,
       signerCn: parsed.signerCn,
@@ -2998,7 +3122,9 @@
       } else if (magic.format === "p7s") {
         var p7sInfo = parseP7sSignature(safeU8, filename);
         subDetails = p7sInfo;
-        summaryUk = p7sInfo.standard + " · Підписант: " + p7sInfo.signerCn + " (ЄДРПОУ " + p7sInfo.edrpouHint + ") · TSP/OCSP: " + (p7sInfo.tspEndpoints.length > 0 ? p7sInfo.tspEndpoints.join(", ") : "вбудована мітка часу");
+        summaryUk = p7sInfo.structuralStatus === "PASS"
+          ? ("Поля контейнера прочитано (" + p7sInfo.standard + ") · Підписант за SignerInfo.sid: " + p7sInfo.signerCn + " (ЄДРПОУ " + p7sInfo.edrpouHint + ") · Криптографічний підпис у цьому режимі не перевірявся (cryptoStatus: UNVERIFIED)")
+          : ("Пошкоджений або неповний контейнер .p7s (" + (p7sInfo.reasonCode || "FAIL") + ") · Криптографічний підпис не перевірявся (cryptoStatus: UNVERIFIED)");
       } else if (magic.format === "csv" || magic.format === "tsv") {
         var csvText = decodeUtf8(safeU8);
         var csvLines = csvText.split(/\r?\n/).filter(function (ln) { return ln.trim().length > 0; });

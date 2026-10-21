@@ -45,10 +45,11 @@
           Миттєва перевірка <span>документації та польотних даних БпЛА</span>
         </h1>
         <blockquote style="margin: 12px 0 12px; padding: 14px 18px; background: #ffffff; border-left: 4px solid var(--blue); border-radius: 10px; font-size: 15px; line-height: 1.58; color: var(--ink); box-shadow: var(--shadow-sm);">
+          <strong>Автоматизую перевірку комплектів технічної документації під процеси вашої компанії.</strong><br />
           Розробляю локальні інструменти для звірки технічних документів і таблиць. Вони знаходять розбіжності, показують джерела висновків та окремо позначають те, що не вдалося перевірити. Починаємо з одного вашого процесу й узгодженого набору файлів.
         </blockquote>
         <p>
-          Знаходьте розбіжності у таблицях, перевіряйте справжність польотних логів і готуйте документи до приймання за лічені секунди. Повністю локально на вашому комп'ютері.
+          Знаходьте розбіжності у таблицях, перевіряйте цілісність польотних логів і готуйте документи до приймання локально на вашому комп'ютері.
         </p>
       </div>
 
@@ -58,11 +59,15 @@
           <span class="local-pill">🔒 У цьому перевіреному сценарії не спостерігалося передавання вмісту тестових файлів (спостережено 0 видимих звернень до інших origin за PerformanceResourceTiming)</span>
         </div>
         <div class="open-data-title" style="font-size: 19px; margin: 6px 0 8px;">Комплексна звірка пакета документів та телеметрії</div>
-        <p class="open-data-desc" style="font-size: 14.5px; line-height: 1.58; margin-bottom: 14px;">
-          Завантажте разом текстові документи, таблиці специфікацій, скани з печатками та польотні логи у будь-якому порядку. Система автоматично зіставить характеристики між усіма файлами та покаже кожну розбіжність.
+        <p class="open-data-desc" style="font-size: 14.5px; line-height: 1.58; margin-bottom: 10px;">
+          Завантажте разом текстові документи, таблиці специфікацій, скани та польотні логи. Система зіставить характеристики у системі одиниць SI, підсвітить розбіжності з адресою комірки та чесно позначить неперевірені позиції (<code>UNVERIFIED</code>).
         </p>
-        <div class="open-data-actions">
-          <a class="btn-action primary" href="tools/universal-ai-cockpit.html">Відкрити єдине вікно перевірки →</a>
+        <p style="font-size: 12.8px; line-height: 1.5; color: #334155; margin: 0 0 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px;">
+          <strong>Про походження головного демо-прикладу (<code>PROVENANCE.json</code>):</strong> файл <code>06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx</code> є відкритим тендерним документом Prozorro (1:1), а таблиця <code>07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx</code> — контрольним прикладом із двома внесеними розбіжностями (<code>14.76 В vs 15.4 В</code> у комірці <code>C31</code> та <code>-20…+50 °C vs -10…+40 °C</code> у <code>C48</code>) для наочної демонстрації виявлення помилок.
+        </p>
+        <div class="open-data-actions" style="display: flex; flex-wrap: wrap; gap: 10px;">
+          <a class="btn-action primary" href="tools/universal-ai-cockpit.html#wow11AlignmentTable">🔍 Показати дві розбіжності між вимогами й протоколом →</a>
+          <a class="btn-action" href="tools/universal-ai-cockpit.html">Відкрити єдине вікно перевірки →</a>
         </div>
       </div>
 
@@ -429,10 +434,10 @@
           </div>
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px;">
             <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
-              2. Скани з мокрою печаткою vs польові фото з телефона
+              2. Скани з мокрою печаткою vs адаптація під бланки КБ
             </div>
             <p style="font-size: 13.5px; line-height: 1.55; color: #334155; margin: 0;">
-              У браузері працює легкий WebAssembly-модуль, який відсікає синю печатку і читає чіткий друкований скан. Для криво сфотографованих на телефон зім'ятих аркушів чи тіней розгортається локальний офлайн-конвеєр вирівнювання перспективи та повноцінного OCR без передачі даних у хмару.
+              У демо підтримується конкретний табличний шаблон (<code>560 × 220 px</code>), на якому WebAssembly-модуль відділяє синій відбиток печатки від цифр. Адаптацію до ваших бланків та розгортання локального офлайн-конвеєра OCR перевіряємо в межах пілоту.
             </p>
           </div>
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px;">
@@ -445,11 +450,38 @@
           </div>
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px;">
             <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
-              4. Офлайн-паспорт КЕП (<code>.p7s</code>) та глибока OPSEC-чистка
+              4. Поля контейнера КЕП (<code>.p7s</code>) та шаблонна OPSEC-санація
             </div>
             <p style="font-size: 13.5px; line-height: 1.55; color: #334155; margin: 0;">
-              Браузер миттєво витягує ПІБ, ЄДРПОУ та позначку часу з <code>.p7s</code> без виходу в інтернет. Повна криптографічна звірка підпису <code>ДСТУ 4145-2002</code> із базою відкликаних сертифікатів та побайтова зачистка всіх 7 прихованих каналів координат у бінарних логах підключаються у локальному контурі підприємства.
+              Поля контейнера <code>.p7s</code> (ПІБ, ЄДРПОУ, мітка часу за <code>SignerInfo.sid</code>) читаються у браузері без інтернету; криптографічний підпис у цьому режимі не перевіряється (<code>cryptoStatus: UNVERIFIED</code>). Санація OPSEC забезпечує автоматичне приховування визначених категорій даних за шаблонами (потребує перегляду людиною перед передачею).
             </p>
+          </div>
+        </div>
+
+        <!-- ЗАВЕРШЕНИЙ ПРИКЛАД ОДНОГО ЦИКЛУ ПЕРЕВІРКИ -->
+        <div style="margin-top: 22px; padding: 18px 20px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 14px;">
+          <h3 style="margin: 0 0 12px; font-size: 16px; font-weight: 800; color: #0f172a;">
+            Завершений приклад одного циклу перевірки (від вхідних файлів до рішення інженера)
+          </h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; font-size: 13.5px; line-height: 1.55; color: #1e293b;">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
+              <strong>1. Проблема:</strong> Розбіжності в цифрах, одиницях вимірювання (<code>г vs кг</code>, <code>В</code>, <code>°C</code>) та ревізіях між технічними вимогами (ТУ/ТЗ), протоколом ПМВ і відомістю комплектації (BOM).
+            </div>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
+              <strong>2. Вхід:</strong> Відкритий документ вимог <code>06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx</code> та контрольний протокол <code>07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx</code> (із внесеними тестовими розбіжностями за <code>PROVENANCE.json</code>).
+            </div>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
+              <strong>3. Перевірка:</strong> Локальний розбір XML-структури <code>.docx/.xlsx</code> у пам'яті браузера, зведення величин до базових одиниць SI та 7D-блокування несумісних розмірностей.
+            </div>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
+              <strong>4. Результат:</strong> Зіставлено 47 пар характеристик: виявлено 2 розбіжності з точними адресами комірок (<code>C31: 14.76 В vs 15.4 В</code>; <code>C48: -20…+50 °C vs -10…+40 °C</code>) та сформовано чекліст для інженера.
+            </div>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
+              <strong>5. Межі:</strong> Інструмент не редагує протоколи випробувань замість комісії, не перевіряє криптопідпис <code>.p7s</code> (<code>UNVERIFIED</code>) і переводить складні нестандартні конструкції у статус <code>UNVERIFIED</code>.
+            </div>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
+              <strong>6. Користь для інженера:</strong> Замість ручного звіряння десятків сторінок інженер за секунди отримує таблицю точних розбіжностей із посиланням на рядок і комірку первинного файла.
+            </div>
           </div>
         </div>
 

@@ -75,6 +75,10 @@ describe("generateReadinessReportMarkdown", () => {
       "SYNTHETIC DEMO - EDUCATIONAL ONLY - NOT FOR REAL USE"
     );
     expect(markdown).toContain("NON-SYNTHETIC");
+    expect(markdown).toContain(
+      "# UAV Readiness & Evidence Copilot - Assessment Report"
+    );
+    expect(markdown).not.toContain("Keep demo data synthetic");
     expect(sanitizeHref("report(v1).md")).toBe("report%28v1%29.md");
     expect(sanitizeMarkdownInline("line1\n#heading")).toBe("line1 \\#heading");
   });

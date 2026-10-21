@@ -188,11 +188,65 @@ describe("Sector A15 Layer 1 — Anti-Substitution & Browser Engine Integration 
     const trailingParsed = multiVerifier.parseCmsSignedDataDer(withTrailing);
     expect(trailingParsed.valid).toBe(false);
     expect(trailingParsed.reasonCode).toBe("trailing_bytes");
+
+    // 53-byte dummy DER without RFC 5652 SignedData fields (version, digestAlgorithms, encapContentInfo, signerInfos) must FAIL
+    const dummy53 = Uint8Array.from(
+      Buffer.from(
+        "303306092a864886f70d010702a0263024302206035504030c1bd09fd0b5d182d180d0be20d086d0b2d0b0d0bdd0b5d0bdd0bad0be",
+        "hex"
+      )
+    );
+    const dummyParsed = multiVerifier.parseP7sSignature(dummy53, "dummy.p7s");
+    expect(dummyParsed.validPkcs7).toBe(false);
+    expect(dummyParsed.structuralStatus).toBe("FAIL");
+
+    // Mutating SignerInfo.sid serial number so it no longer matches the embedded certificate must FAIL with unmatched_signer_sid
+    const realParsedDer = multiVerifier.parseCmsSignedDataDer(realKepBytes);
+    expect(realParsedDer.sidMatched).toBe(true);
+    const certSerialHex = realParsedDer.certificates[0].serialHex.toLowerCase();
+    const serialByteLen = certSerialHex.length / 2;
+    const sidHeaderHex = "02" + serialByteLen.toString(16).padStart(2, "0") + certSerialHex;
+    const rawDerBuf =
+      realKepBytes[0] === 0x30
+        ? Buffer.from(realKepBytes)
+        : Buffer.from(Buffer.from(realKepBytes).toString("utf8").replace(/\s+/g, ""), "base64");
+    const realHex = rawDerBuf.toString("hex").toLowerCase();
+    const firstIdx = realHex.indexOf(sidHeaderHex);
+    const secondIdx = realHex.indexOf(sidHeaderHex, firstIdx + 2);
+    expect(secondIdx).toBeGreaterThan(firstIdx);
+    const mutatedBytes = new Uint8Array(rawDerBuf);
+    mutatedBytes[secondIdx / 2 + 2] ^= 0xff;
+    const mutatedParsed = multiVerifier.parseP7sSignature(mutatedBytes, "mutated_sid.p7s");
+    expect(mutatedParsed.validPkcs7).toBe(false);
+    expect(mutatedParsed.structuralStatus).toBe("FAIL");
+    expect(mutatedParsed.reasonCode).toBe("unmatched_signer_sid");
+    expect(mutatedParsed.signerCn).toBe("unknown");
+    expect(mutatedParsed.edrpou).toBe("unknown");
   });
 
   it("Sector A09 & A10.4: 7-segment shmlv-zk-v2 capsule encrypts with 32-hex secret, strips PII tokens via matchAll, and rejects 1-byte tampering", async () => {
     const secret = cryptoShare.generateRandomCapsuleSecret();
     expect(secret).toMatch(/^[0-9a-f]{32}$/);
+
+    // Verify 2-word Ukrainian PIB, phone number, and email redaction + explicit scope notice
+    const contactSanitized = cryptoShare.sanitizeToZeroKnowledgeGraph({
+      findings: [
+        {
+          note: "Контакт: Петро Іваненко, тел. +380501234567, email test@firma.ua"
+        }
+      ]
+    });
+    const sanitizedNote = String(contactSanitized.findings[0].note);
+    expect(sanitizedNote).not.toContain("Петро Іваненко");
+    expect(sanitizedNote).not.toContain("+380501234567");
+    expect(sanitizedNote).not.toContain("test@firma.ua");
+    expect(sanitizedNote).toContain("[zk_person_pib:");
+    expect(sanitizedNote).toContain("[zk_contact_pii:");
+    expect(contactSanitized.opsec_redaction_proof.leaked_pii_tokens_remaining).toBe(0);
+    expect(contactSanitized.opsec_redaction_proof.redaction_scope).toBe(
+      "PATTERN_BASED_KNOWN_CATEGORIES"
+    );
+    expect(contactSanitized.opsec_redaction_proof.human_review_required).toBe(true);
 
     const rawPayload = {
       title: "Перевірка комплексу «Перун-М» в/ч А1234",

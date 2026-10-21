@@ -43,7 +43,8 @@ export function parseQaNotesMd(
   markdown: string,
   options?: QaNotesParseOptions
 ): ParsedQaNotesMd {
-  const requireSyntheticBanner = options?.requireSyntheticBanner ?? true;
+  const requireSyntheticBanner =
+    options?.requireSyntheticBanner ?? (options?.synthetic !== false);
   const hasBanner = markdown.includes("SYNTHETIC DEMO");
   if (requireSyntheticBanner && !hasBanner) {
     throw new Error("QA notes fixture must be marked synthetic");
@@ -77,7 +78,9 @@ export function parseQaNotesMd(
     id: QA_NOTES_ARTIFACT_ID,
     kind: "qa_notes",
     filename: "qa_notes.md",
-    description: "Synthetic QA notes fixture for evidence review",
+    description: synthetic
+      ? "Synthetic QA notes fixture for evidence review"
+      : "User-provided QA notes artifact for evidence review",
     synthetic
   });
 
@@ -191,13 +194,20 @@ export function parseQaNotesMd(
     );
   }
 
+  const hasCleanInfoFinding =
+    severity === "info" &&
+    evidenceLocks.length === 0 &&
+    rows.every((row) => row.status === "verified");
+
   const readinessFindings = [
     ReadinessFindingSchema.parse({
       id: findingId,
-      title: "Traceability warning",
+      title: hasCleanInfoFinding
+        ? "Traceability check passed"
+        : "Traceability warning",
       category: "traceability",
       severity,
-      status: "blocked",
+      status: hasCleanInfoFinding ? "pass" : "blocked",
       evidenceClaimIds: evidenceClaims.map((claim) => claim.id),
       lockIds: evidenceLocks.map((lock) => lock.id),
       explanation: `${reason} ${impact}`

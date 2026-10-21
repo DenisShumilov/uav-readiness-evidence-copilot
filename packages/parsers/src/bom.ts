@@ -99,7 +99,9 @@ export function parseBOMCsv(
     id: BOM_ARTIFACT_ID,
     kind: "bom",
     filename: BOM_FILENAME,
-    description: "Synthetic BOM fixture for documentation QA review",
+    description: synthetic
+      ? "Synthetic BOM fixture for documentation QA review"
+      : "User-provided BOM artifact for documentation QA review",
     synthetic
   });
 

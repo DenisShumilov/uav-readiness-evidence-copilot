@@ -1,78 +1,66 @@
-# Project FAQ
+# Project FAQ (`v2.5.0`)
 
 *[Українською](project-faq.md) · English*
 
 ## What is the UAV Readiness & Evidence Copilot?
 
-The UAV Readiness & Evidence Copilot is a safe tool for reviewing UAV and robotics engineering documentation. It reads training files and generates an evidence-backed review package: a text report, an evidence map, a traceability matrix, digital file fingerprints, and a demo page.
+**UAV Readiness & Evidence Copilot (`v2.5.0`)** is a suite of local, deterministic tools for cross-checking UAV engineering and acceptance documentation bundles, spreadsheets, and test logs. The system detects discrepancies between requirements and protocols, links every finding to exact source coordinates, and explicitly flags anything that could not be verified automatically (`UNVERIFIED` / `locked`).
 
 ## Who is this project for?
 
-For engineering, QA, documentation, and internal teams that need to quickly check whether claims are backed by evidence.
+For engineering teams, quality control (QC / VTK) departments, design bureaus, compliance reviewers, and technical documentation specialists who need to rapidly cross-check a file bundle before testing or delivery.
 
-## Which files does the current MVP read?
+## What are the three contours of `v2.5.0` and which files do they read?
 
-The current MVP (Minimum Viable Product) reads only four training input files:
-
-- `BOM.csv`
-- `demo_manual.md`
-- `test_log.csv`
-- `qa_notes.md`
-
-Future training files live in `examples/demo-uav-readiness/future-fixtures/`, but the current MVP does not read them yet.
+1. **Browser Local UI (`docs/*.js`, `docs/index.html`, `docs/tools/universal-ai-cockpit.html`):**
+   - reads `.docx`, `.xlsx`, `.csv`, `.tsv`, `.pdf` (vector `/FlateDecode` and the fixed `560 × 220 px` wet-stamped raster reference template), `.p7s` (`ASN.1 DER CMS SignedData`), binary flight logs `.bin`, `.ulg`, `.tlog`, `.ubx`, `.nmea`, and `.param` configuration files;
+   - performs cross-document physical unit normalization via 7D SI vectors, audits cached Excel formula values (`SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT` and `+`, `-`, `*`, `/`), validates `.p7s` `CMS SignedData` structure and `SignerInfo.sid` binding (without performing mathematical signature verification in browser offline mode — `CRYPTO: UNVERIFIED`), and packages `#diag=` encrypted diagnostic capsules (`AES-256-GCM`).
+2. **Standalone Python Byte-Level CLI Engines (`engines/defdoc_ai/`, `engines/telemetry_ew/`):**
+   - read `.docx`, `.xlsx`, `.md`, `.txt`, and binary telemetry logs `.bin`, `.ulg`, `.tlog`, `.ubx`, `.nmea`, `.csv`, `.gz` (up to `64 MiB`);
+   - cross-check TU tables against PMV protocols and flight logs, and apply pattern-based OPSEC redaction across defined sensitive categories.
+3. **Typed TypeScript Core & CLI (`packages/*`, `uav-readiness` binary):**
+   - operates on a strict 4-file evidence bundle contract: `BOM.csv`, `demo_manual.md`, `test_log.csv`, `qa_notes.md`;
+   - supports both synthetic demo bundles (`examples/demo-*`) and user-provided bundles (`synthetic: false`, omitting the `SYNTHETIC DEMO` banner).
 
 ## What does the project generate?
 
-The demo command generates:
+Depending on the selected contour, the system generates:
 
-- demo pages;
-- a text report on documentation readiness;
-- a JSON file with the evidence map;
-- a JSON file with the documentation readiness score;
-- a CSV file with the traceability matrix;
-- a file with digital fingerprints of the input files.
+- a 4-column problem-first inspection table (`Parameter | Result / Status | Sources | Next Action`) and an encrypted `#diag=` capsule in the browser;
+- a Markdown readiness or audit report (`readiness-report.md` or `.audit.md`);
+- a JSON evidence graph (`evidence-graph.json`, validated against JSON Schema Draft 2020-12);
+- a JSON readiness assessment (`readiness-assessment.json`, `0–100` scale with `CONFLICT_CEILING = 49`);
+- a CSV traceability matrix (`traceability-matrix.csv` with CSV formula injection protection);
+- a SHA-256 input artifact manifest (`artifact-hashes.json`) and a `SARIF 2.1.0` report (`readiness.sarif`).
 
 ## What is the main rule?
 
-The main rule:
-
 ```text
-No evidence -> locked.
+No evidence -> locked (UNVERIFIED).
 ```
 
-If the tool does not find evidence for a claim, it leaves that claim locked and does not invent an answer.
+If the tool cannot find a paired source for a claim, encounters an unsupported formula, or cannot deterministically verify a parameter, it explicitly marks the item as `UNVERIFIED` or `locked` and never passes unverified data as `PASS`.
 
-## Why can the readiness score in the demo be low?
+## What sample data is included in the repository?
 
-The demo deliberately includes verified, partial, warning, and locked examples. A lower score shows that the tool is strict and does not pass off incomplete evidence as full readiness.
+The provenance of all sample and control files is documented in `docs/real-samples/PROVENANCE.json` and `docs/demo-data-policy.en.md`:
+- `examples/demo-*` — synthetic training bundles used to verify deterministic scores (`44/100`, `80/100`, and `49/100`);
+- `docs/real-samples/` — verbatim open-source and public procurement artifacts (Prozorro, PX4, ArduPilot, pyubx2) alongside derived control fixtures (`07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx`, `09_Real_UAV_Readiness_Matrix_BOM.csv`, `10_Stamped_PMV_Protocol_Scan_VP_MOU.pdf`) containing intentionally injected discrepancies to demonstrate conflict detection.
 
 ## What does the project not do?
 
-It does not control drones or robots, does not process live data from systems, does not generate routes or movement points, does not support payload operation, targeting, or tactical advice, and does not connect to real aircraft, radio modules, sensors, or field systems.
+It does not control drones or robots, does not process live in-flight telemetry, does not generate routes or waypoints, does not support payload or targeting operations, and never connects to flight hardware. The `0–100` score measures completeness and consistency of the provided documentation bundle, not physical airworthiness.
 
-## Is the data real?
+## How do I run and verify it?
 
-No. All demo data is for training, static, and not taken from real-world use.
-
-## How do I run it?
-
-```powershell
-npm install
-npm run demo:readiness
-```
-
-Open:
-
-```text
-examples/demo-uav-readiness/output/engineering-review.html
-```
-
-## How is quality verified?
-
-The repository uses TypeScript, Zod, Vitest, npm audit, and GitHub Actions. Local checks:
-
-```powershell
+```bash
+npm ci
+npm run lint
 npm run typecheck
+npm run build
 npm test
-npm audit --audit-level=moderate
+npm run qa:self-audit
+npm run demo:readiness
+python3 engines/defdoc_ai/defdoc_auditor.py --self-test
+python3 engines/telemetry_ew/telemetry_analyzer.py --self-test
 ```

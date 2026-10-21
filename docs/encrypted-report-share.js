@@ -315,11 +315,15 @@
   }
 
   // ---------- 4. Submodule 14.1: OPSEC-Safe Zero-Knowledge Sanitizer ----------
+  var PIB_UKR_PATTERN_SOURCE =
+    "(?:(?:ПІБ|Контакт|Автор|Підписант|Виконавець|Інженер|Керівник|Директор|Особа)\\s*[:—-]?\\s*[А-ЯІЇЄҐ][а-яіїєґ']{1,22}\\s+[А-ЯІЇЄҐ][а-яіїєґ']{1,22}(?:\\s+[А-ЯІЇЄҐ][а-яіїєґ']{2,22})?|[А-ЯІЇЄҐ][а-яіїєґ']{2,22}\\s+(?:[А-ЯІЇЄҐ]\\.\\s*[А-ЯІЇЄҐ]\\.🔥|[А-ЯІЇЄҐ][а-яіїєґ']{2,18}\\s+[А-ЯІЇЄҐ][а-яіїєґ']{3,22})|[А-ЯІЇЄҐ][а-яіїєґ']{1,20}\\s+[А-ЯІЇЄҐ][а-яіїєґ']{1,18}(?:енко|єнко|чук|щук|юк|ук|ський|зький|цький|ська|зька|цька|ович|евич|йович|івна|ївна|шин|ишин|ів|їв|єв|ов|єва|ова|ко|ак|як|ей|ій|ач|ич|ець|єць|ун|ин|ін)\\b|[А-ЯІЇЄҐ][а-яіїєґ']{1,18}(?:енко|єнко|чук|щук|юк|ук|ський|зький|цький|ська|зька|цька|шин|ишин|ів|їв|єв|ов|єва|ова|ко)\\s+[А-ЯІЇЄҐ][а-яіїєґ']{2,20}\\b)".replace("🔥", "");
+
   var OPSEC_PATTERNS = {
     wgs84_pair: /[+-]?\b\d{1,2}\.\d{3,8}\s*[,;/\s]\s*[+-]?\d{1,3}\.\d{3,8}\b/g,
     int1e7_coord: /[+-]?\b(?:[1-8]\d{8}|1[0-7]\d{8})\b/g,
     mgrs_grid: /\b\d{1,2}[C-X]\s*[A-Z]{2}\s*\d{3,5}\s*\d{3,5}\b/gi,
-    pib_ukr: /[А-ЯІЇЄҐ][а-яіїєґ']{2,22}\s+(?:[А-ЯІЇЄҐ]\.\s*[А-ЯІЇЄҐ]\.|[А-ЯІЇЄҐ][а-яіїєґ']{2,18}\s+[А-ЯІЇЄҐ][а-яіїєґ']{3,22})/g,
+    pib_ukr: new RegExp(PIB_UKR_PATTERN_SOURCE, "g"),
+    contact_pii: /(?:\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b|(?:\+?38[\s.-]*)?\(?0\d{2}\)?[\s.-]*\d{3}[\s.-]*\d{2}[\s.-]*\d{2}\b)/g,
     edrpou_code: /(?:(?:ЄДРПОУ|ІПН|РНОКПП)\s*[:№#]?\s*\d{8,10}|\b\d{10}\b|\b\d{8}\b)/gi,
     mil_unit: /(?:в\/ч\s*)?[АA]\d{4}\b/gi,
     product_codename: /(?:«[^»]{2,40}»|(?:Комплекс|БпАК|БпЛА|Виріб)\s+"[^"]{2,40}")/gi,
@@ -360,6 +364,7 @@
     replaceWithStat(OPSEC_PATTERNS.int1e7_coord, "coord_1e7", "coordinates_stripped");
     replaceWithStat(OPSEC_PATTERNS.unc_or_ip, "net_endpoint", "unc_paths_stripped");
     replaceWithStat(OPSEC_PATTERNS.pib_ukr, "person_pib", "pib_stripped");
+    replaceWithStat(OPSEC_PATTERNS.contact_pii, "contact_pii", "pib_stripped");
     replaceWithStat(OPSEC_PATTERNS.mil_unit, "mil_unit", "mil_units_stripped");
     replaceWithStat(OPSEC_PATTERNS.product_codename, "uav_product", "product_names_stripped");
     replaceWithStat(OPSEC_PATTERNS.edrpou_code, "org_edrpou", "edrpou_stripped");
@@ -416,7 +421,8 @@
       { name: "wgs84_pair", regex: /[+-]?\b\d{1,2}\.\d{3,8}\s*[,;/\s]\s*[+-]?\d{1,3}\.\d{3,8}\b/g },
       { name: "int1e7_coord", regex: /[+-]?\b(?:[1-8]\d{8}|1[0-7]\d{8})\b/g },
       { name: "mgrs_grid", regex: /\b\d{1,2}[C-X]\s*[A-Z]{2}\s*\d{3,5}\s*\d{3,5}\b/gi },
-      { name: "pib_ukr", regex: /[А-ЯІЇЄҐ][а-яіїєґ']{2,22}\s+(?:[А-ЯІЇЄҐ]\.\s*[А-ЯІЇЄҐ]\.|[А-ЯІЇЄҐ][а-яіїєґ']{2,18}\s+[А-ЯІЇЄҐ][а-яіїєґ']{3,22})/g },
+      { name: "pib_ukr", regex: new RegExp(PIB_UKR_PATTERN_SOURCE, "g") },
+      { name: "contact_pii", regex: /(?:\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b|(?:\+?38[\s.-]*)?\(?0\d{2}\)?[\s.-]*\d{3}[\s.-]*\d{2}[\s.-]*\d{2}\b)/g },
       { name: "edrpou_or_ipn", regex: /(?:(?:ЄДРПОУ|ІПН|РНОКПП)\s*[:№#]?\s*\d{8,10}|\b\d{10}\b|\b\d{8}\b)/gi },
       { name: "mil_unit", regex: /(?:в\/ч\s*)?[АA]\d{4}\b/gi },
       { name: "product_codename", regex: /«[^»]{2,40}»/g },
@@ -434,6 +440,9 @@
     }
     return {
       opsec_clean: totalTokensCount === 0,
+      redaction_scope: "PATTERN_BASED_KNOWN_CATEGORIES",
+      human_review_required: true,
+      scope_notice_uk: "Автоматичне приховування визначених категорій даних за шаблонами (потребує перегляду людиною перед зовнішньою передачею)",
       leaked_categories: leaks,
       leaked_category_count: leaks.length,
       leaked_pii_tokens_remaining: totalTokensCount
@@ -668,6 +677,9 @@
     zkGraph.opsec_redaction_proof.leaked_category_count = leakAudit.leaked_category_count;
     zkGraph.opsec_redaction_proof.leaked_pii_tokens_remaining = leakAudit.leaked_pii_tokens_remaining;
     zkGraph.opsec_redaction_proof.opsec_clean_verified = leakAudit.opsec_clean;
+    zkGraph.opsec_redaction_proof.redaction_scope = "PATTERN_BASED_KNOWN_CATEGORIES";
+    zkGraph.opsec_redaction_proof.human_review_required = true;
+    zkGraph.opsec_redaction_proof.scope_notice_uk = leakAudit.scope_notice_uk;
     zkGraph.sha256_fingerprints.zk_graph_canonical_sha256 = sha256HexSync(serializedCheck);
 
     return zkGraph;

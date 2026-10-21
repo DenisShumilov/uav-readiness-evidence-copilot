@@ -180,4 +180,28 @@ Impact: Review is incomplete
 `)
     ).toThrow(/Missing markdown field: Reason/i);
   });
+
+  it("marks QA notes finding as pass and uses non-synthetic description when Status is info and all rows are verified", () => {
+    const parsed = parseQaNotesMd(
+      `
+# QA Notes
+
+| Evidence ID | Status | Meaning |
+|---|---|---|
+| EV-CLEAN-001 | verified | Traceability matrix aligned with revision 2.0 |
+
+Finding ID: INFO-TRACE-001
+Status: info
+Reason: All evidence links are verified
+Impact: Ready for engineering sign-off
+`,
+      { synthetic: false }
+    );
+
+    expect(parsed.artifact.synthetic).toBe(false);
+    expect(parsed.artifact.description).toContain("User-provided");
+    expect(parsed.readinessFindings).toHaveLength(1);
+    expect(parsed.readinessFindings[0].status).toBe("pass");
+    expect(parsed.readinessFindings[0].title).toBe("Traceability check passed");
+  });
 });

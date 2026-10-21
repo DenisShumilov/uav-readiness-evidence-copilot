@@ -20,9 +20,15 @@ export function generateReadinessReportMarkdown(
   const banner = isSynthetic
     ? "SYNTHETIC DEMO - EDUCATIONAL ONLY - NOT FOR REAL USE"
     : "USER-PROVIDED ARTIFACT BUNDLE (NON-SYNTHETIC) - DOCUMENTATION QA ONLY - NOT FOR REAL USE";
+  const reportHeading = isSynthetic
+    ? "# UAV Readiness & Evidence Copilot - Demo Report"
+    : "# UAV Readiness & Evidence Copilot - Assessment Report";
+  const safeDataBullet = isSynthetic
+    ? "- Keep demo data synthetic and documentation-only."
+    : "- Keep evidence bundle artifacts traceable and documentation-only.";
 
   const lines = [
-    "# UAV Readiness & Evidence Copilot - Demo Report",
+    reportHeading,
     "",
     banner,
     "",
@@ -72,7 +78,7 @@ export function generateReadinessReportMarkdown(
     "",
     "- Add missing supporting sources for locked items.",
     "- Review partial evidence before marking anything verified.",
-    "- Keep demo data synthetic and documentation-only.",
+    safeDataBullet,
     "",
     "## Safety Boundary",
     "",

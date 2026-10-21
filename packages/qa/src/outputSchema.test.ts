@@ -107,6 +107,9 @@ describe("generated output JSON Schemas (Zod <-> Ajv 2020-12 parity + 12 negativ
       delete clone.findings;
       expect(ReadinessAssessmentSchema.safeParse(clone).success).toBe(false);
       expect(validateAssessment(clone)).toBe(false);
+      expect((validateAssessment.errors ?? []).map((e) => e.keyword)).toContain(
+        "required"
+      );
     });
 
     it("2. rejects wrong field type (readinessScore as string)", () => {
@@ -114,6 +117,9 @@ describe("generated output JSON Schemas (Zod <-> Ajv 2020-12 parity + 12 negativ
       clone.readinessScore = "44";
       expect(ReadinessAssessmentSchema.safeParse(clone).success).toBe(false);
       expect(validateAssessment(clone)).toBe(false);
+      expect((validateAssessment.errors ?? []).map((e) => e.keyword)).toContain(
+        "type"
+      );
     });
 
     it("3. rejects corrupted nested item (delete findings[0].severity)", () => {
@@ -122,6 +128,9 @@ describe("generated output JSON Schemas (Zod <-> Ajv 2020-12 parity + 12 negativ
       delete findings[0].severity;
       expect(ReadinessAssessmentSchema.safeParse(clone).success).toBe(false);
       expect(validateAssessment(clone)).toBe(false);
+      expect((validateAssessment.errors ?? []).map((e) => e.keyword)).toContain(
+        "required"
+      );
     });
 
     it("4. rejects unknown additional property (unexpectedExtraField)", () => {
@@ -129,13 +138,20 @@ describe("generated output JSON Schemas (Zod <-> Ajv 2020-12 parity + 12 negativ
       clone.unexpectedExtraField = 123;
       expect(ReadinessAssessmentSchema.safeParse(clone).success).toBe(false);
       expect(validateAssessment(clone)).toBe(false);
+      expect((validateAssessment.errors ?? []).map((e) => e.keyword)).toContain(
+        "additionalProperties"
+      );
     });
 
-    it("5. rejects invalid enum value (confidence = 'ultra')", () => {
+    it("5. rejects invalid enum value (findings[0].severity = 'ultra')", () => {
       const clone = deepClone(validAssessment);
-      clone.confidence = "ultra";
+      const findings = clone.findings as Array<Record<string, unknown>>;
+      findings[0].severity = "ultra";
       expect(ReadinessAssessmentSchema.safeParse(clone).success).toBe(false);
       expect(validateAssessment(clone)).toBe(false);
+      expect((validateAssessment.errors ?? []).map((e) => e.keyword)).toContain(
+        "enum"
+      );
     });
 
     it("6. rejects out-of-bounds numeric values (readinessScore = 101 and -1)", () => {
@@ -143,11 +159,17 @@ describe("generated output JSON Schemas (Zod <-> Ajv 2020-12 parity + 12 negativ
       cloneHigh.readinessScore = 101;
       expect(ReadinessAssessmentSchema.safeParse(cloneHigh).success).toBe(false);
       expect(validateAssessment(cloneHigh)).toBe(false);
+      expect((validateAssessment.errors ?? []).map((e) => e.keyword)).toContain(
+        "maximum"
+      );
 
       const cloneLow = deepClone(validAssessment);
       cloneLow.readinessScore = -1;
       expect(ReadinessAssessmentSchema.safeParse(cloneLow).success).toBe(false);
       expect(validateAssessment(cloneLow)).toBe(false);
+      expect((validateAssessment.errors ?? []).map((e) => e.keyword)).toContain(
+        "minimum"
+      );
     });
   });
 
@@ -165,13 +187,20 @@ describe("generated output JSON Schemas (Zod <-> Ajv 2020-12 parity + 12 negativ
       delete summary.totalSources;
       expect(EvidenceGraphSchema.safeParse(clone).success).toBe(false);
       expect(validateGraph(clone)).toBe(false);
+      expect((validateGraph.errors ?? []).map((e) => e.keyword)).toContain(
+        "required"
+      );
     });
 
-    it("2. rejects wrong field type (synthetic as string)", () => {
+    it("2. rejects wrong field type (evidenceGraph.synthetic as string)", () => {
       const clone = deepClone(validGraph);
-      clone.synthetic = "true";
+      const graphObj = clone.evidenceGraph as Record<string, unknown>;
+      graphObj.synthetic = "true";
       expect(EvidenceGraphSchema.safeParse(clone).success).toBe(false);
       expect(validateGraph(clone)).toBe(false);
+      expect((validateGraph.errors ?? []).map((e) => e.keyword)).toContain(
+        "type"
+      );
     });
 
     it("3. rejects corrupted nested item (delete evidenceSources[0].excerpt)", () => {
@@ -180,6 +209,9 @@ describe("generated output JSON Schemas (Zod <-> Ajv 2020-12 parity + 12 negativ
       delete sources[0].excerpt;
       expect(EvidenceGraphSchema.safeParse(clone).success).toBe(false);
       expect(validateGraph(clone)).toBe(false);
+      expect((validateGraph.errors ?? []).map((e) => e.keyword)).toContain(
+        "required"
+      );
     });
 
     it("4. rejects unknown additional property (unexpectedExtraField)", () => {
@@ -187,6 +219,9 @@ describe("generated output JSON Schemas (Zod <-> Ajv 2020-12 parity + 12 negativ
       clone.unexpectedExtraField = 123;
       expect(EvidenceGraphSchema.safeParse(clone).success).toBe(false);
       expect(validateGraph(clone)).toBe(false);
+      expect((validateGraph.errors ?? []).map((e) => e.keyword)).toContain(
+        "additionalProperties"
+      );
     });
 
     it("5. rejects invalid enum value (evidenceClaims[0].status = 'unknown_status')", () => {
@@ -195,14 +230,20 @@ describe("generated output JSON Schemas (Zod <-> Ajv 2020-12 parity + 12 negativ
       claims[0].status = "unknown_status";
       expect(EvidenceGraphSchema.safeParse(clone).success).toBe(false);
       expect(validateGraph(clone)).toBe(false);
+      expect((validateGraph.errors ?? []).map((e) => e.keyword)).toContain(
+        "enum"
+      );
     });
 
-    it("6. rejects out-of-bounds numeric value (summary.verifiedClaims = -1)", () => {
+    it("6. rejects out-of-bounds numeric value (summary.verifiedCount = -1)", () => {
       const clone = deepClone(validGraph);
       const summary = clone.summary as Record<string, unknown>;
-      summary.verifiedClaims = -1;
+      summary.verifiedCount = -1;
       expect(EvidenceGraphSchema.safeParse(clone).success).toBe(false);
       expect(validateGraph(clone)).toBe(false);
+      expect((validateGraph.errors ?? []).map((e) => e.keyword)).toContain(
+        "minimum"
+      );
     });
   });
 });

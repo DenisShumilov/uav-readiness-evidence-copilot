@@ -3,11 +3,11 @@
 - **Дата та контур виконання**: `2026-10-18` | **100% Local Air-Gapped (`--network=none`, Pure Python 3 Stdlib `zipfile` + `xml.etree.ElementTree`)**
 - **Апаратний стенд (реальний замір)**: `Intel(R) Core(TM) i9-9880H CPU @ 2.30GHz (16 GB RAM, macOS, Python 3.9.6)`
 - **Перевірені вхідні контейнери ОВТ**: `tu_bpla_synthetic.docx` (DOCX word/document.xml, 2319 B), `passport_bpla_synthetic.docx` (DOCX word/document.xml, 2241 B), `pmv_spec_table.xlsx` (XLSX xl/sharedStrings+sheet1, 3234 B)
-- **Швидкодія пайплайну на `.docx` + `.xlsx`**: Деідентифікація `sanitize_doc.py` = **`12.39 мс`** | Детермінована звірка `defdoc_auditor.py` = **`9.51 мс`** | Разом = **`21.91 мс`**
+- **Швидкодія пайплайну на `.docx` + `.xlsx`**: Деідентифікація `sanitize_doc.py` = **`15.82 мс`** | Детермінована звірка `defdoc_auditor.py` = **`9.60 мс`** | Разом = **`25.42 мс`**
 - **Статус OPSEC-санітарії**: Автоматично токенізовано **`28` чутливих сутностей** (`ASSET`, `ORG`, `EDRPOU`, `UNIT`, `VP`, `COORD`, `PERSON`, `SERIAL`, `ADDR`) прямо всередині XML-дерева `word/document.xml` та `xl/sharedStrings.xml` зі 100% збереженням числових ТТХ.
 - **Двостороння сумісність із публічним `UAV Readiness & Evidence Copilot` Дениса** (`https://github.com/DenisShumilov/uav-readiness-evidence-copilot` / `https://denisshumilov.github.io/uav-readiness-evidence-copilot/`):
   1. **Експорт (`--export-copilot-bundle`)**: автоматично конвертує `.docx`/`.xlsx` у 4 контрактні файли (`bom.csv`, `manual.md`, `test-log.csv`, `qa-notes.md`) у `sample_data/copilot_bundle/` зі скором **`49/100 BLOCKED`**.
-  2. **Зворотний авто-патчинг OpenXML (`--apply-fixes-from-bundle`)**: пропатчено **`13` XML-вузлів** за **`24.63 мс`**, згенеровано `tu_bpla_autofixed.docx`, `passport_bpla_autofixed.docx`, `pmv_spec_table_autofixed.xlsx` -> повторний аудит підтвердив **`0 CRITICAL CONFLICTS / 100/100 (READY)`**.
+  2. **Зворотний авто-патчинг OpenXML (`--apply-fixes-from-bundle`)**: пропатчено **`13` XML-вузлів** за **`27.54 мс`**, згенеровано `tu_bpla_autofixed.docx`, `passport_bpla_autofixed.docx`, `pmv_spec_table_autofixed.xlsx` -> повторний аудит підтвердив **`0 CRITICAL CONFLICTS / 100/100 (READY)`**.
 - **Підсумковий вердикт нормоконтролю первинного пакета (Постанова КМУ №345 / ДСТУ ГОСТ 2.114)**: 🔴 **ПАКЕТ ПІДЛЯГАЄ ПОВЕРНЕННЮ НА ДООПРАЦЮВАННЯ (`Readiness Score: 49/100 BLOCKED`)** — виявлено **`7` критичних розбіжностей** між `tu_bpla_synthetic.docx`, `passport_bpla_synthetic.docx` та `pmv_spec_table.xlsx`.
 
 ---

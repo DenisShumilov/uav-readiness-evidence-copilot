@@ -30,7 +30,8 @@ export function parseManualMd(
   markdown: string,
   options?: ManualParseOptions
 ): ParsedManualMd {
-  const requireSyntheticBanner = options?.requireSyntheticBanner ?? true;
+  const requireSyntheticBanner =
+    options?.requireSyntheticBanner ?? (options?.synthetic !== false);
   const hasBanner = markdown.includes("SYNTHETIC DEMO");
   if (requireSyntheticBanner && !hasBanner) {
     throw new Error("Manual fixture must be marked synthetic");
@@ -60,7 +61,9 @@ export function parseManualMd(
     id: MANUAL_ARTIFACT_ID,
     kind: "manual",
     filename: "demo_manual.md",
-    description: "Synthetic manual fixture for documentation QA review",
+    description: synthetic
+      ? "Synthetic manual fixture for documentation QA review"
+      : "User-provided manual artifact for documentation QA review",
     synthetic
   });
 

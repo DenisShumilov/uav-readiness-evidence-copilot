@@ -4,9 +4,8 @@
 
 ![Verification Testbench Overview](docs/social-card.png)
 
-> Розробляю локальні інструменти для звірки технічних документів і таблиць. Вони знаходять розбіжності, показують джерела висновків та окремо позначають те, що не вдалося перевірити. Починаємо з одного вашого процесу й узгодженого набору файлів.
->
-> *(I build local tools for cross-checking technical documents and tables. They find discrepancies, point to the exact source of every finding, and explicitly flag what could not be verified. We start with one specific workflow of yours and an agreed set of sample files.)*
+> **I automate technical documentation bundle verification tailored to your company's workflows.**
+> I build local tools for cross-checking technical documents and tables. They find discrepancies, point to the exact source of every finding, and explicitly flag what could not be verified. We start with one specific workflow of yours and an agreed set of sample files.
 
 > **System Purpose (`v2.5.0`):** deterministic local verification of UAV engineering and acceptance documentation (`.docx`, `.xlsx`, `.pdf`, `.p7s`), byte-level inspection of binary flight telemetry logs (`.bin`, `.ulg`, `.tlog`, `.ubx`, `.nmea`), OPSEC de-identification of test-range coordinates and PII, and formal `0–100` assessment of evidence package completeness and consistency.
 >
@@ -17,12 +16,12 @@
 ## 1. Architectural Separation: Live Web Testbench ⇄ GitHub Repository
 
 1. **[Live Web Testbench (`https://denisshumilov.github.io/uav-readiness-evidence-copilot/`)](https://denisshumilov.github.io/uav-readiness-evidence-copilot/)** — a client-side inspection interface built around **Two-Tier Result Presentation**:
-   - **Tier 1 (Automated local verification in seconds linked to exact source coordinates):** overall evidence completeness score (`0–100`), gate status (`READY` / `REQUIRES REMEDIATION` / `BLOCKED` / `UNVERIFIED`), critical contradiction count, and a prioritized 4-column problem-first matrix (`Параметр | Результат / статус | Джерела | Наступна дія`).
+   - **Tier 1 (Automated local verification in seconds linked to exact source coordinates):** overall evidence completeness score (`0–100`), gate status (`READY` / `REQUIRES REMEDIATION` / `BLOCKED` / `UNVERIFIED`), critical contradiction count, and a prioritized 4-column problem-first matrix (`Parameter | Result / Status | Sources | Next Action`).
    - **Tier 2 (On-Demand Byte-Level Specification):** expandable technical disclosure blocks (`<details>`) exposing raw OOXML nodes, 7D SI dimension vectors, binary telemetry frame slices, `ASN.1 DER` certificate trees, and `SHA-256` artifact manifests.
 2. **This GitHub Repository (`uav-readiness-evidence-copilot`, release `v2.5.0`)** — the complete engineering whitepaper and reference implementation:
    - documents the mathematical formulations and parser invariants across all 6 subsystems;
    - contains the full source code for the client-side JS/WASM modules (`docs/`), standalone Python byte-level auditors (`engines/`), and the typed TypeScript readiness monorepo (`packages/`);
-   - enforces cross-surface determinism via **126** tests in Vitest (`packages/qa/`) plus standalone Python regression suites and Playwright Chromium E2E checks.
+   - enforces cross-surface determinism via **127** tests in Vitest (`packages/qa/`) plus standalone Python regression suites and Playwright Chromium E2E checks.
 
 ---
 
@@ -83,7 +82,7 @@ uav-readiness-evidence-copilot/
 
 | Contour | Input Formats & Structure | What Is Actually Verified | Generated Output | Honest Engineering Boundaries | Verification Command / Test |
 |---|---|---|---|---|---|
-| **1. Browser Local UI (`docs/*.js`, `docs/index.html`, `universal-ai-cockpit.html`)** | `.docx`, `.xlsx`, `.csv`, `.tsv`, `.pdf` (raster scan `560×220` + vector `/FlateDecode`), `.p7s` (`ASN.1 DER`), `.bin`, `.ulg`, `.tlog`, `.ubx`, `.nmea`, `.c/.cpp/.py/.lua` | Cross-document spec collisions (7D SI vectors), Excel formula cache (`SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT` and `+`, `-`, `*`, `/`), wet-stamp drop-out & WASM OCR, `CMS SignedData` (`.p7s`) structure via `SignerInfo.sid`, binary log headers/CRCs, `SHA-256` duplicates | 4-column problem-first matrix (`Параметр \| Результат / статус \| Джерела \| Наступна дія`), `#diag=` encrypted capsule (`AES-256-GCM` + 128-bit CSPRNG secret), Markdown/CSV/JSON exports | Browser offline mode does NOT perform mathematical `DSTU 4145-2002` curve verification or live OCSP/CRL queries (`UNVERIFIED_CRYPTO`); OCR targets aligned scans; a single 2-column file without a second source yields `SINGLE_SOURCE_UNVERIFIED` | `npm test` (`siteParity.test.ts`, `browserIntegration.test.ts`, `browserE2E.test.ts` on Playwright Chromium) |
+| **1. Browser Local UI (`docs/*.js`, `docs/index.html`, `universal-ai-cockpit.html`)** | `.docx`, `.xlsx`, `.csv`, `.tsv`, `.pdf` (raster reference template `560×220 px` + vector `/FlateDecode`), `.p7s` (`ASN.1 DER`), `.bin`, `.ulg`, `.tlog`, `.ubx`, `.nmea`, `.c/.cpp/.py/.lua` | Cross-document spec collisions (7D SI vectors), Excel formula cache (`SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT` and `+`, `-`, `*`, `/`), wet-stamp drop-out & fixed-grid `560×220 px` Hamming glyph classification, `CMS SignedData` (`.p7s`) RFC 5652 structure via `SignerInfo.sid`, binary log headers/CRCs, `SHA-256` duplicates | 4-column problem-first matrix (`Parameter \| Result / Status \| Sources \| Next Action`), `#diag=` encrypted capsule (`AES-256-GCM` + 128-bit CSPRNG secret), Markdown/CSV/JSON exports | Browser offline mode does NOT perform mathematical `DSTU 4145-2002` curve verification or live OCSP/CRL queries (`UNVERIFIED_CRYPTO`); browser OCR targets the fixed `560×220 px` reference template (arbitrary scans → `UNVERIFIED`); pattern-based OPSEC redaction requires human review before external sharing; a single 2-column file without a second source yields `SINGLE_SOURCE_UNVERIFIED` | `npm test` (`siteParity.test.ts`, `browserIntegration.test.ts`, `browserE2E.test.ts` on Playwright Chromium) |
 | **2. Python CLI Engines (`engines/defdoc_ai/*`, `engines/telemetry_ew/*`)** | `.docx`, `.xlsx`, `.md`, `.txt` + binary logs `.bin`, `.ulg`, `.tlog`, `.ubx`, `.nmea`, `.csv`, `.gz` (up to `64 MiB`, ZIP limit `128 MiB`) | `<w:tbl>` tables with `gridSpan`/`vMerge`, intervals, `±` tolerances, BOM kit counts, PMV vs binary flight log cross-check, `Fletcher-8` / `CRC-16/MCRF4XX` / `XOR` checksums, PII tokenization (`leaked_pii_tokens_remaining = 0`) | Markdown audit report (`.audit.md`), sanitized `.sanitized.docx/.xlsx`, JSON de-identification & telemetry stats, 4-file bundle for TypeScript Core | Does not infer contradictions from unstructured free prose without tables or custom columns lacking SI units/operators (`UNVERIFIED`); outputs descriptive telemetry statistics without causal EW claims | `python3 engines/defdoc_ai/defdoc_auditor.py --self-test`, `--test-client`, `--benchmark`, `sanitize_doc.py --json-stats`, `telemetry_analyzer.py --self-test` |
 | **3. TypeScript Core & CLI (`packages/core`, `parsers`, `rules`, `evidence`, `reports`, `cli`)** | Strict 4-file evidence bundle contract: `BOM.csv`, `demo_manual.md`, `test_log.csv`, `qa_notes.md` (supports both synthetic demo and real BYOD folders without `SYNTHETIC DEMO` banner) | Non-empty artifact & excerpt backing for every claim, dangling evidence detection, test outcome gating (`fail`/`blocked` → `locked`), `subject=value` revision conflicts (`CONFLICT_CEILING = 49`), `Zero-Evidence Ceiling = 0` | `readiness-assessment.json`, `evidence-graph.json`, `readiness-report.md`, `traceability-matrix.csv` (with CSV formula injection guard), `artifact-hashes.json`, `readiness.sarif` (`SARIF 2.1.0`) | Evaluates documentation completeness and consistency only (not airworthiness); `verified` (`reviewer_upper_bound`) indicates linked source presence without detected contradiction | `npm test`, `npm run qa:self-audit`, `npm run demo:readiness`, `npm run demo:conflict`, `npm run demo:lock`, `npm run demo:pack` |
 
@@ -91,25 +90,39 @@ uav-readiness-evidence-copilot/
 
 ## 4. Engineering Pilot on a Single Agreed Process (Service Positioning & Evaluation Metrics)
 
-> Розробляю локальні інструменти для звірки технічних документів і таблиць. Вони знаходять розбіжності, показують джерела висновків та окремо позначають те, що не вдалося перевірити. Починаємо з одного вашого процесу й узгодженого набору файлів.
+> **I automate technical documentation bundle verification tailored to your company's workflows.**
+> I build local tools for cross-checking technical documents and tables. They find discrepancies, point to the exact source of every finding, and explicitly flag what could not be verified. We start with one specific workflow of yours and an agreed set of sample files.
 
-### 6 Fixed Pilot Stages (`Інженерний пілот на одному узгодженому процесі`)
-1. **Один процес (Single Process)**: selecting one specific engineering cross-check workflow (e.g., TU ↔ PMV ↔ BOM specification).
-2. **Погоджені входи (Agreed Inputs)**: fixing supported formats and table structures on de-identified sample files.
-3. **Правила (Rules)**: formalizing tolerances, SI units, and blocking conditions (`FAIL` / `LOCKED` / `UNVERIFIED`).
-4. **Потрібний вихід (Required Output)**: aligning on report layout, traceability matrix, and `#diag=` encrypted capsule format.
-5. **Перевірка на відкладеному контрольному наборі (Hold-out set)**: validating on unseen files not used during rule calibration.
-6. **Передача коду, тестів та інструкції (Handover)**: delivering the standalone package, automated test suite, and documentation to the customer's team.
+### 6 Fixed Pilot Stages
+1. **Single Process**: selecting one specific engineering cross-check workflow (e.g., TU ↔ PMV ↔ BOM specification).
+2. **Agreed Inputs**: fixing supported formats and table structures on de-identified sample files.
+3. **Rules**: formalizing tolerances, SI units, and blocking conditions (`FAIL` / `LOCKED` / `UNVERIFIED`).
+4. **Required Output**: aligning on report layout, traceability matrix, and `#diag=` encrypted capsule format.
+5. **Hold-out Set Validation**: validating on unseen files not used during rule calibration.
+6. **Code, Tests, and Guide Handover**: delivering the standalone package, automated test suite, and documentation to the customer's team.
 
-*Timeline and pricing are determined after reviewing de-identified samples and task boundaries (`Час і вартість визначаються після перегляду знеособлених зразків і меж задачі`).*
+*Timeline and pricing are determined after reviewing de-identified samples and task boundaries.*
 
 ### 4 Pilot Evaluation Metrics (Measured on the Hold-Out Set)
-1. **Повнота виявлення розбіжностей (Recall)**: `TP / (TP + FN)` — fraction of true discrepancies in the hold-out bundle detected and linked to source coordinates.
-2. **Частка хибних спрацювань (False Discovery Rate)**: `FP / (TP + FP)` — fraction of false alarms among all raised warnings.
-3. **Частка неперевіреного (Unverified Rate)**: `UNVERIFIED / Total` — fraction of items or files transparently deferred to human review as unsupported or incomplete.
-4. **Повний час роботи інженера (`T_before` vs `T_after`)**: comparison of end-to-end manual review time before deployment (`T_before`) against tool-assisted workflow time **including human review and verification of the generated report** (`T_after`).
+1. **Discrepancy Recall**: `TP / (TP + FN)` — fraction of true discrepancies in the hold-out bundle detected and linked to source coordinates.
+2. **False Discovery Rate**: `FP / (TP + FP)` — fraction of false alarms among all raised warnings.
+3. **Unverified Rate**: `UNVERIFIED / Total` — fraction of items or files transparently deferred to human review as unsupported or incomplete.
+4. **Total Engineer Workflow Time (`T_before` vs `T_after`)**: comparison of end-to-end manual review time before deployment (`T_before`) against tool-assisted workflow time **including human review and verification of the generated report** (`T_after`).
 
-*Zero-denominator rule: if the denominator of any metric equals `0` (for example, `TP + FN = 0`), the metric is reported as **"не визначено на цьому наборі" ("undefined on this dataset")** and is never interpreted as `100%` or `0%`.*
+*Zero-denominator rule: if the denominator of any metric equals `0` (for example, `TP + FN = 0`), the metric is reported as **"undefined on this dataset"** (`не визначено на цьому наборі`) and is never interpreted as `100%` or `0%`.*
+
+### Complete End-to-End Verification Cycle Example (From Input Files to Corrected Report)
+
+1. **Initial Files (`Input`):** an engineer loads the public technical requirements `06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx` (verbatim from Prozorro) and the control test protocol `07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx` (derived from `06` with 2 intentionally injected discrepancies per `docs/real-samples/PROVENANCE.json`).
+2. **Detected Discrepancies (`Before Fix`):** the engine aligns 47 parameter pairs via 7D SI vectors and flags **2 discrepancies**:
+   - `Standard Battery Voltage`: requirements state `14.76 V`, protocol states `15.40 V` (`Δ = +0.64 V`, status `FAIL`);
+   - `Maximum Horizontal Flight Speed`: requirements state `21 m/s`, protocol states `18.5 m/s` (`Δ = -2.5 m/s`, status `FAIL`).
+3. **Exact Source Coordinates (`Provenance`):**
+   - `06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx (word/document.xml: table 2, row 21)` ⇄ `07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx (sheet1.xml!row 20 (A20,B20,C20))`;
+   - `06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx (word/document.xml: table 2, row 10)` ⇄ `07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx (sheet1.xml!row 9 (A9,B9,C9))`.
+4. **Deferred to Human Review (`UNVERIFIED`):** single-source procurement quantity `DJI Matrice 4T — 55 kits` (present only in table 1 of requirements without a paired row in the test protocol) and compound 3D dimension strings without a single scalar SI rule are explicitly marked `UNVERIFIED`.
+5. **Engineer Action (`Remediation`):** the engineer checks cells `C20` and `C9` in `07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx` against the bench log (`4S LiHV 14.76 V` and `21 m/s`), updates the protocol values (or records a formal deviation), and reloads the pair.
+6. **Re-Verification (`After Fix`):** both parameters transition from `FAIL` to `PASS` (`0` discrepancies between requirements and protocol), and the updated report and `#diag=` capsule record the new SHA-256 digests.
 
 ---
 

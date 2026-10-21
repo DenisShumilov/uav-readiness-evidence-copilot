@@ -85,7 +85,9 @@ export function parseTestLogCsv(
     id: TEST_LOG_ARTIFACT_ID,
     kind: "test_log",
     filename: "test_log.csv",
-    description: "Synthetic QA test log fixture",
+    description: synthetic
+      ? "Synthetic QA test log fixture"
+      : "User-provided QA test log artifact",
     synthetic
   });
 
