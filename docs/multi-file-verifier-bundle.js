@@ -704,10 +704,14 @@
     var tblRegex = /<w:tbl[\s>][\s\S]*?<\/w:tbl>/g;
     var tblMatch;
     var currentSection = "Загальні ТТХ";
+    var tblIdx = 0;
     while ((tblMatch = tblRegex.exec(docXml)) !== null) {
+      tblIdx++;
       var trRegex = /<w:tr[\s>][\s\S]*?<\/w:tr>/g;
       var trMatch;
+      var trIdx = 0;
       while ((trMatch = trRegex.exec(tblMatch[0])) !== null) {
+        trIdx++;
         var tcRegex = /<w:tc[\s>][\s\S]*?<\/w:tc>/g;
         var cells = [];
         var tcMatch;
@@ -729,7 +733,8 @@
               paramName: "Спеціалізована прошивка БпЛА (" + fwParts[0].trim() + ")",
               rawValue: fwParts.slice(1).join(":").trim(),
               sourceFile: filename,
-              sourceRole: "TU_DOCX"
+              sourceRole: "TU_DOCX",
+              normRef: "word/document.xml: таблиця " + tblIdx + ", w:tr " + trIdx + " (запис ТТХ #" + (tablePairs.length + 1) + ")"
             });
           } else {
             currentSection = cells[0];
@@ -744,7 +749,8 @@
               paramName: "Кількість комплектів (" + cells[1] + ")",
               rawValue: cells[2] + " " + (cells[3] || "шт"),
               sourceFile: filename,
-              sourceRole: "TU_DOCX"
+              sourceRole: "TU_DOCX",
+              normRef: "word/document.xml: таблиця " + tblIdx + ", w:tr " + trIdx + " (запис ТТХ #" + (tablePairs.length + 1) + ")"
             });
           } else if (k && v && k !== "Характеристики" && k !== "Параметр" && k !== "№") {
             var disambigParam = k;
@@ -758,7 +764,8 @@
               paramName: disambigParam,
               rawValue: v,
               sourceFile: filename,
-              sourceRole: "TU_DOCX"
+              sourceRole: "TU_DOCX",
+              normRef: "word/document.xml: таблиця " + tblIdx + ", w:tr " + trIdx + " (запис ТТХ #" + (tablePairs.length + 1) + ")"
             });
           }
         }
@@ -1604,7 +1611,9 @@
       var digSetNode = sdSeq.children[1];
       var encapNode = sdSeq.children[2];
       var lastNode = sdSeq.children[sdSeq.children.length - 1];
-      if (!verNode || verNode.tag !== 0x02 || !verNode.bytes || verNode.bytes.length < 1) return false;
+      if (!verNode || verNode.tag !== 0x02 || !verNode.bytes || verNode.bytes.length !== 1) return false;
+      var cmsVer = verNode.bytes[0];
+      if (cmsVer !== 1 && cmsVer !== 2 && cmsVer !== 3 && cmsVer !== 4 && cmsVer !== 5) return false;
       if (!digSetNode || digSetNode.tag !== 0x31 || !digSetNode.children || digSetNode.children.length < 1) return false;
       var hasDigestAlgOid = digSetNode.children.some(function (alg) {
         return Boolean(alg && alg.tag === 0x30 && alg.children && alg.children.length >= 1 && alg.children[0].tag === 0x06);
@@ -1620,7 +1629,9 @@
       var verNode = siNode.children[0];
       var sidNode = siNode.children[1];
       var digAlgNode = siNode.children[2];
-      if (!verNode || verNode.tag !== 0x02 || !verNode.bytes || verNode.bytes.length < 1) return null;
+      if (!verNode || verNode.tag !== 0x02 || !verNode.bytes || verNode.bytes.length !== 1) return null;
+      var siVer = verNode.bytes[0];
+      if (siVer !== 1 && siVer !== 3) return null;
       if (!digAlgNode || digAlgNode.tag !== 0x30 || !digAlgNode.children || digAlgNode.children.length < 1 || digAlgNode.children[0].tag !== 0x06) return null;
 
       var sidType;
@@ -2436,11 +2447,13 @@
       }
     }
 
+    var matchedTuRowIndices = Object.create(null);
     for (var a = 0; a < assignments.length; a++) {
       var asg = assignments[a];
       var src = enrichedTu[asg.rowIdx];
       var dst = enrichedTgt[asg.colIdx];
       if (!src || !dst || asg.similarity < 0.35) continue;
+      matchedTuRowIndices[asg.rowIdx] = true;
 
       var status = "PASS";
       var deltaExplain = "100% збіг у базових одиницях SI";
@@ -2533,8 +2546,26 @@
       });
     }
 
+    var unmatchedTuRows = [];
+    for (var ur = 0; ur < enrichedTu.length; ur++) {
+      if (!matchedTuRowIndices[ur]) {
+        var uSrc = enrichedTu[ur];
+        unmatchedTuRows.push({
+          conceptId: uSrc.conceptId,
+          tuParam: uSrc.item.paramName,
+          tuValue: uSrc.item.rawValue,
+          tuSource: uSrc.item.sourceFile,
+          tuRef: uSrc.item.normRef || uSrc.item.cellRef || null,
+          siDimension: uSrc.phys.dimLabel,
+          status: "UNVERIFIED_UNPAIRED_TU_ROW",
+          reasonUk: "Односторонній запис у вимогах ТУ без парного рядка у протоколі випробувань (поза " + alignedRows.length + " зіставленими парами — потребує окремої перевірки людиною)"
+        });
+      }
+    }
+
     return {
       alignedRows: alignedRows,
+      unmatchedTuRows: unmatchedTuRows,
       blockedByPhysicsSamples: blockedByPhysicsSamples
     };
   }
@@ -3275,6 +3306,7 @@
       uniqueFilesCount: uniqueProcessedFiles.length,
       proseSlots: allProseSlots,
       alignedRows: alignment.alignedRows,
+      unmatchedTuRows: alignment.unmatchedTuRows || [],
       blockedByPhysicsSamples: alignment.blockedByPhysicsSamples,
       extraRemediations: extraRemediations,
       hwStatus: hwStatus
@@ -3755,13 +3787,27 @@
         ? "<div style='margin-top:6px;font-size:12.5px;color:#9a3412;background:#fff7ed;border:1px solid #fed7aa;padding:6px 10px;border-radius:6px'>📦 Доступний збережений витяг; вихідний файл не передано.</div>"
         : "";
 
+      var unmatchedTuList = (state && Array.isArray(state.unmatchedTuRows)) ? state.unmatchedTuRows : [];
+      var unmatchedTuHtml = "";
+      if (unmatchedTuList.length > 0 && !isRestoredCapsuleOnly) {
+        var uItemsHtml = unmatchedTuList.map(function (u, uIdx) {
+          return "<li><b>#" + (uIdx + 1) + " " + escHtml(u.tuParam) + "</b>: <code>" + escHtml(u.tuValue) + "</code> · <span style='color:#475467'>" + escHtml(u.tuSource || "ТУ") + (u.tuRef ? (" (<code>" + escHtml(u.tuRef) + "</code>)") : "") + "</span> — <i>" + escHtml(u.reasonUk) + "</i></li>";
+        }).join("");
+        unmatchedTuHtml =
+          "<details style='margin-top:8px;font-size:12.5px;color:#7c2d12;background:#fffbeb;border:1px solid #fde68a;padding:7px 10px;border-radius:6px'>" +
+          "<summary style='cursor:pointer;font-weight:600'>📋 Односторонні позиції з вимог ТУ без парного рядка у протоколі випробувань (UNVERIFIED: " + unmatchedTuList.length + " записів поза " + sortedRows.length + " зіставленими парами)</summary>" +
+          "<ul style='margin:6px 0 2px 18px;padding:0;line-height:1.45'>" + uItemsHtml + "</ul>" +
+          "</details>";
+      }
+
       summaryBanner.innerHTML = [
         "<div style='display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between'>",
         "<div><strong>💡 Підсумок порівняння вимог та протоколу:</strong> ",
         "Перевірено позицій: <b>" + sortedRows.length + "</b> · ",
         "Збігається (PASS): <b style='color:#067647'>" + passCnt + "</b> (переведено одиниці SI: <b>" + convCnt + "</b>) · ",
         "Розбіжностей (FAIL): <b style='color:#d92d20'>" + failCnt + "</b> · ",
-        "Неперевірено / Заблоковано (UNVERIFIED): <b style='color:#b54708'>" + unverifiedCnt + "</b> · ",
+        "Неперевірено у парах (UNVERIFIED): <b style='color:#b54708'>" + unverifiedCnt + "</b> · ",
+        "Односторонніх позицій ТУ без пари (UNVERIFIED): <b style='color:#b54708'>" + unmatchedTuList.length + "</b> · ",
         "Відсіяно несумісних величин SI: <b style='color:#0022ff'>" + ((state && state.blockedByPhysicsSamples) ? state.blockedByPhysicsSamples.length : 0) + "</b>",
         hiddenPassNotice,
         "</div>",
@@ -3769,6 +3815,7 @@
         "  <button type='button' id='btnWow11ToggleProblemsFilter' class='btn-action' style='padding:5px 10px;font-size:12px'>" + escHtml(filterBtnLabel) + "</button>",
         "</div>",
         "</div>",
+        unmatchedTuHtml,
         capsuleNotice
       ].join("");
 

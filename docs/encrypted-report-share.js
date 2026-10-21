@@ -361,16 +361,22 @@
       mil_units_stripped: 0,
       product_names_stripped: 0,
       unc_paths_stripped: 0,
-      commitments: []
+      commitments: [],
+      trustedTags: Object.create(null)
     };
+    if (!stats.trustedTags) {
+      stats.trustedTags = Object.create(null);
+    }
 
     var protectedSlots = [];
-    // Protect any already-generated [zk_...] commitment tags from subsequent regex passes
-    text = text.replace(/\[zk_[a-z0-9_]+:[0-9a-f]{8,64}\]/gi, function (existingTag) {
-      var idx = protectedSlots.length;
-      protectedSlots.push(existingTag);
-      return "@@ZKSLOT_" + idx + "_END@@";
-    });
+    // Neutralize any user-supplied slot markers or spoofed [zk_...] tags in raw input
+    // so their inner text is always scanned and redacted by the OPSEC regex passes.
+    text = text
+      .replace(/@@ZKSLOT_/g, "@@UNTRUSTED_SLOT_")
+      .replace(/\[?zk_([a-z0-9_]+):([0-9a-f]{6,64})\]?/gi, function (existingTag, cat, hexPart) {
+        var hasBr = existingTag.charAt(0) === "[" && existingTag.charAt(existingTag.length - 1) === "]";
+        return (hasBr ? "[" : "") + "untrusted_zk_" + cat + ":" + hexPart + (hasBr ? "]" : "");
+      });
 
     function replaceWithStat(regex, category, statKey) {
       text = text.replace(regex, function (match) {
@@ -379,8 +385,11 @@
         if (stats.commitments.length < 32) {
           stats.commitments.push(tag);
         }
+        var bracketed = "[" + tag + "]";
+        stats.trustedTags[tag] = true;
+        stats.trustedTags[bracketed] = true;
         var slotIdx = protectedSlots.length;
-        protectedSlots.push("[" + tag + "]");
+        protectedSlots.push(bracketed);
         return "@@ZKSLOT_" + slotIdx + "_END@@";
       });
     }
@@ -447,10 +456,65 @@
     return String(value);
   }
 
-  function verifyZeroOpsecLeakage(serializedString) {
-    // Strip our own [zk_<category>:<hex>] commitment tags and 32..64-char hex digests before scanning for leaks
-    var s = String(serializedString || "")
-      .replace(/\[?zk_[a-z0-9_]+:[0-9a-f]{8,64}\]?/gi, " ")
+  function verifyZeroOpsecLeakage(serializedString, trustedCommitmentsInput) {
+    var rawStr = String(serializedString || "");
+    var allowedTags = Object.create(null);
+    if (Array.isArray(trustedCommitmentsInput)) {
+      for (var ti = 0; ti < trustedCommitmentsInput.length; ti++) {
+        var tItem = String(trustedCommitmentsInput[ti] || "");
+        if (tItem) {
+          allowedTags[tItem] = true;
+          allowedTags["[" + tItem.replace(/^\[|\]$/g, "") + "]"] = true;
+          allowedTags[tItem.replace(/^\[|\]$/g, "")] = true;
+        }
+      }
+    } else if (trustedCommitmentsInput && typeof trustedCommitmentsInput === "object") {
+      var tKeys = Object.keys(trustedCommitmentsInput);
+      for (var tk = 0; tk < tKeys.length; tk++) {
+        var kVal = tKeys[tk];
+        allowedTags[kVal] = true;
+        allowedTags["[" + kVal.replace(/^\[|\]$/g, "") + "]"] = true;
+        allowedTags[kVal.replace(/^\[|\]$/g, "")] = true;
+      }
+    } else {
+      try {
+        var parsedCandidate = JSON.parse(rawStr);
+        if (parsedCandidate && typeof parsedCandidate === "object") {
+          var proofList =
+            parsedCandidate.opsec_redaction_proof &&
+            Array.isArray(parsedCandidate.opsec_redaction_proof.trusted_commitments)
+              ? parsedCandidate.opsec_redaction_proof.trusted_commitments
+              : [];
+          for (var pi = 0; pi < proofList.length; pi++) {
+            var pTag = String(proofList[pi] || "");
+            if (pTag) {
+              allowedTags[pTag] = true;
+              allowedTags["[" + pTag.replace(/^\[|\]$/g, "") + "]"] = true;
+              allowedTags[pTag.replace(/^\[|\]$/g, "")] = true;
+            }
+          }
+          var uidComm =
+            parsedCandidate.sha256_fingerprints &&
+            parsedCandidate.sha256_fingerprints.silicon_wafer_uid_commitment;
+          if (typeof uidComm === "string" && uidComm) {
+            allowedTags[uidComm] = true;
+            allowedTags["[" + uidComm + "]"] = true;
+          }
+        }
+      } catch (_ignoreJsonErr) {
+        // Not a full zkGraph JSON object
+      }
+    }
+
+    // Strip ONLY verified commitment tags from allowedTags (and 32..64-char SHA-256 hex digests)
+    var s = rawStr
+      .replace(/\[?zk_[a-z0-9_]+:[0-9a-f]{6,64}\]?/gi, function (matchedTag) {
+        var bare = matchedTag.replace(/^\[|\]$/g, "");
+        if (allowedTags[matchedTag] || allowedTags[bare]) {
+          return " ";
+        }
+        return matchedTag;
+      })
       .replace(/\b[0-9a-f]{32,64}\b/gi, " ");
     var checks = [
       { name: "wgs84_pair", regex: /[+-]?\b\d{1,2}\.\d{3,8}\s*[,;/\s]\s*[+-]?\d{1,3}\.\d{3,8}\b/g },
@@ -496,7 +560,8 @@
       mil_units_stripped: 0,
       product_names_stripped: 0,
       unc_paths_stripped: 0,
-      commitments: []
+      commitments: [],
+      trustedTags: Object.create(null)
     };
 
     if (raw.raw_confidential_context !== undefined) {
@@ -522,7 +587,8 @@
               observed_unit: "ratio",
               spec_value: 1,
               observed_value: 0,
-              severity: "HIGH"
+              severity: "HIGH",
+              _alreadySanitized: true
             });
           }
         } else if (fItem && typeof fItem === "object") {
@@ -536,7 +602,8 @@
               observed_unit: String(cleanObj.observed_unit || cleanObj.observedUnit || cleanObj.unit || "ratio"),
               spec_value: cleanObj.spec_value !== undefined ? cleanObj.spec_value : (cleanObj.specValue !== undefined ? cleanObj.specValue : 1),
               observed_value: cleanObj.observed_value !== undefined ? cleanObj.observed_value : (cleanObj.observedValue !== undefined ? cleanObj.observedValue : 0),
-              severity: String(cleanObj.severity || "HIGH")
+              severity: String(cleanObj.severity || "HIGH"),
+              _alreadySanitized: true
             });
           }
         }
@@ -560,7 +627,9 @@
         ? Number(((Math.abs(deltaSi) / Math.abs(specNorm.normalized_si_value)) * 100).toFixed(2))
         : 0.0;
 
-      var safeSectionRef = redactSensitiveText(item.section_ref || ("SEC_" + (i + 1)), saltHex, redactionStats);
+      var safeSectionRef = item._alreadySanitized
+        ? String(item.section_ref || ("SEC_" + (i + 1)))
+        : redactSensitiveText(item.section_ref || ("SEC_" + (i + 1)), saltHex, redactionStats);
       var specNodeId = "NODE_SPEC_" + (i + 1) + "_" + ruleId;
       var obsNodeId = "NODE_OBS_" + (i + 1) + "_" + ruleId;
 
@@ -707,8 +776,15 @@
       redactionStats.product_names_stripped +
       redactionStats.unc_paths_stripped;
 
+    var uidCommitment = zkGraph.sha256_fingerprints.silicon_wafer_uid_commitment;
+    if (uidCommitment) {
+      redactionStats.trustedTags[uidCommitment] = true;
+      redactionStats.trustedTags["[" + uidCommitment + "]"] = true;
+    }
+    zkGraph.opsec_redaction_proof.trusted_commitments = Object.keys(redactionStats.trustedTags);
+
     var serializedCheck = JSON.stringify(zkGraph);
-    var leakAudit = verifyZeroOpsecLeakage(serializedCheck);
+    var leakAudit = verifyZeroOpsecLeakage(serializedCheck, redactionStats.trustedTags);
     zkGraph.opsec_redaction_proof.leaked_category_count = leakAudit.leaked_category_count;
     zkGraph.opsec_redaction_proof.leaked_pii_tokens_remaining = leakAudit.leaked_pii_tokens_remaining;
     zkGraph.opsec_redaction_proof.opsec_clean = leakAudit.opsec_clean;

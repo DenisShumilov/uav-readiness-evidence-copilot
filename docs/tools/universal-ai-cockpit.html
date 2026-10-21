@@ -827,6 +827,19 @@
             }
           }
 
+          var unmatchedTuList = Array.isArray(state.unmatchedTuRows) ? state.unmatchedTuRows : [];
+          var unmatchedTuHtml = "";
+          if (unmatchedTuList.length > 0 && !isRestoredCapsule) {
+            var uItemsHtml = unmatchedTuList.map(function (u, uIdx) {
+              return "<li><b>#" + (uIdx + 1) + " " + esc(u.tuParam) + "</b>: <code>" + esc(u.tuValue) + "</code> · <span style='color:#475467'>" + esc(u.tuSource || "ТУ") + (u.tuRef ? (" (<code>" + esc(u.tuRef) + "</code>)") : "") + "</span> — <i>" + esc(u.reasonUk) + "</i></li>";
+            }).join("");
+            unmatchedTuHtml =
+              "<details style='margin-top:8px;font-size:12.5px;color:#7c2d12;background:#fffbeb;border:1px solid #fde68a;padding:7px 10px;border-radius:6px'>" +
+              "<summary style='cursor:pointer;font-weight:600'>📋 Односторонні позиції з вимог ТУ без парного рядка у протоколі випробувань (UNVERIFIED: " + unmatchedTuList.length + " записів поза " + alignedRows.length + " зіставленими парами)</summary>" +
+              "<ul style='margin:6px 0 2px 18px;padding:0;line-height:1.45'>" + uItemsHtml + "</ul>" +
+              "</details>";
+          }
+
           if (summaryBanner) {
             summaryBanner.innerHTML = [
               "<div style='display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between'>",
@@ -836,9 +849,11 @@
                 (convCnt > 0 ? " (переведено в одиниці SI: <b>" + convCnt + "</b>)" : "") +
                 " · ",
               "Розбіжностей (FAIL): <b style='color:#d92d20'>" + failCnt + "</b> · ",
-              "Неперевірено (UNVERIFIED): <b style='color:#853104'>" + unverifiedCnt + "</b> · ",
+              "Неперевірено у парах (UNVERIFIED): <b style='color:#853104'>" + unverifiedCnt + "</b> · ",
+              "Односторонніх позицій ТУ без пари (UNVERIFIED): <b style='color:#853104'>" + unmatchedTuList.length + "</b> · ",
               "Відсіяно несумісних величин SI: <b style='color:#0022ff'>" + blockedSamples.length + "</b></div>",
               "</div>",
+              unmatchedTuHtml,
               isRestoredCapsule
                 ? "<div style='margin-top:6px;font-size:12.5px;color:#9a3412;background:#fff7ed;border:1px solid #fed7aa;padding:6px 10px;border-radius:6px'>📦 Доступний збережений витяг; вихідний файл не передано</div>"
                 : ""
@@ -1915,9 +1930,15 @@
               } else {
                 syncMatrixFilterAndCounter();
               }
-              var tbl = document.getElementById("wow11AlignmentTable");
-              if (tbl && typeof tbl.scrollIntoView === "function") {
-                tbl.scrollIntoView({ behavior: "smooth", block: "start" });
+              var tbl = document.getElementById("wow11AlignmentSummary") || document.getElementById("wow11AlignmentBody");
+              if (tbl) {
+                tbl.setAttribute("tabindex", "-1");
+                if (typeof tbl.scrollIntoView === "function") {
+                  tbl.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+                if (typeof tbl.focus === "function") {
+                  try { tbl.focus({ preventScroll: true }); } catch (_e) {}
+                }
               }
             });
           }
@@ -1931,9 +1952,15 @@
                 if (id === "btnWow11Preset1Fixed" || id === "btnRunFixedProtocolAfterRemediation") {
                   matrixFilterOnlyIssues = false;
                   syncMatrixFilterAndCounter();
-                  var tblFixed = document.getElementById("wow11AlignmentTable");
-                  if (tblFixed && typeof tblFixed.scrollIntoView === "function") {
-                    tblFixed.scrollIntoView({ behavior: "smooth", block: "start" });
+                  var tblFixed = document.getElementById("wow11AlignmentSummary") || document.getElementById("wow11AlignmentBody");
+                  if (tblFixed) {
+                    tblFixed.setAttribute("tabindex", "-1");
+                    if (typeof tblFixed.scrollIntoView === "function") {
+                      tblFixed.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }
+                    if (typeof tblFixed.focus === "function") {
+                      try { tblFixed.focus({ preventScroll: true }); } catch (_e) {}
+                    }
                   }
                 }
                 hideRasterOcrPanel();

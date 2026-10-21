@@ -284,6 +284,19 @@ describe("Sector A15 Layer 2 — Real Headless Chromium E2E Suite", () => {
     const detailsText = (await page3.locator("#wow11CryptoTelemetryDetails").textContent()) || "";
     expect(detailsText).toContain("VERIFIER_ERROR");
 
+    // Verify Tool 07 (zero-trust-sandbox.html) #btnApplyDiagHashNow demo roundtrip succeeds without passphrase error
+    await page1.goto(`${baseUrl}/tools/zero-trust-sandbox.html`, { waitUntil: "domcontentloaded" });
+    await page1.click('[data-real-sample="sample-encrypted-diag-capsule"]');
+    await page1.waitForSelector("#btnApplyDiagHashNow", { state: "attached" });
+    await page1.click("#btnApplyDiagHashNow");
+    await page1.waitForFunction(() => {
+      const box = document.getElementById("localCheckResult");
+      return Boolean(box && box.textContent && box.textContent.includes("КАПСУЛУ #diag= ВЕРИФІКОВАНО"));
+    });
+    const tool07CapsuleText = (await page1.locator("#localCheckResult").textContent()) || "";
+    expect(tool07CapsuleText).toContain("КАПСУЛУ #diag= ВЕРИФІКОВАНО");
+    expect(tool07CapsuleText).not.toContain("ПОМИЛКА ВЕРИФІКАЦІЇ КАПСУЛИ");
+
     await context1.close();
     await context2.close();
     await context3.close();

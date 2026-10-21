@@ -328,6 +328,23 @@ describe("Sector A15 Layer 1 — Anti-Substitution & Browser Engine Integration 
     expect(ownTagCheck.opsec_clean).toBe(true);
     expect(ownTagCheck.leaked_pii_tokens_remaining).toBe(0);
 
+    // User-injected spoofed [zk_...] token containing a phone number must NOT be trusted:
+    // sanitizeToZeroKnowledgeGraph rewrites untrusted [zk_...] and strips the phone number inside
+    const spoofedZkSanitized = cryptoShare.sanitizeToZeroKnowledgeGraph({
+      title: "[zk_contact_pii:0501234567]"
+    });
+    expect(String(spoofedZkSanitized.title)).not.toContain("0501234567");
+    expect(String(spoofedZkSanitized.title)).toContain("[untrusted_zk_contact_pii:[zk_contact_pii:");
+    expect(spoofedZkSanitized.opsec_redaction_proof.pib_stripped).toBe(1);
+    expect(spoofedZkSanitized.opsec_redaction_proof.total_sensitive_entities_stripped).toBe(1);
+    expect(spoofedZkSanitized.opsec_redaction_proof.opsec_clean).toBe(true);
+    expect(spoofedZkSanitized.opsec_redaction_proof.leaked_pii_tokens_remaining).toBe(0);
+
+    // Raw unverified [zk_contact_pii:0501234567] passed directly to verifyZeroOpsecLeakage must fail
+    const rawSpoofedLeak = cryptoShare.verifyZeroOpsecLeakage('{"title":"[zk_contact_pii:0501234567]"}');
+    expect(rawSpoofedLeak.opsec_clean).toBe(false);
+    expect(rawSpoofedLeak.leaked_pii_tokens_remaining).toBeGreaterThanOrEqual(1);
+
     // Deterministic salt "3fa34a33aa9b72791a35f44188212af2" that produces a2308 in zk_uav_product must pass cleanly
     const capsuleFixedSalt = await cryptoShare.createSignedDiagnosticCapsule(rawPayload, {
       saltHex: "3fa34a33aa9b72791a35f44188212af2"
@@ -345,10 +362,28 @@ describe("Sector A15 Layer 1 — Anti-Substitution & Browser Engine Integration 
         reasonCode: string;
       };
       runPreset1RealProzorroMatrice4T: (docxBytes: Uint8Array, xlsxBytes: Uint8Array) => {
-        alignedRows: Array<{ status: string; targetRef?: string | null; tuValue?: string; targetValue?: string }>;
+        alignedRows: Array<{
+          status: string;
+          tuRef?: string | null;
+          targetRef?: string | null;
+          tuValue?: string;
+          targetValue?: string;
+        }>;
+        unmatchedTuRows?: Array<{
+          tuParam: string;
+          tuValue: string;
+          tuRef: string;
+          status: string;
+        }>;
       };
       runPreset1RemediatedProzorroMatrice4T: (docxBytes: Uint8Array, xlsxBytes: Uint8Array) => {
         alignedRows: Array<{ status: string; targetRef?: string | null }>;
+        unmatchedTuRows?: Array<{
+          tuParam: string;
+          tuValue: string;
+          tuRef: string;
+          status: string;
+        }>;
       };
     };
 
@@ -384,7 +419,27 @@ describe("Sector A15 Layer 1 — Anti-Substitution & Browser Engine Integration 
     expect(rejectedOuterTag.structuralStatus).toBe("FAIL");
     expect(rejectedOuterTag.reasonCode).toBe("invalid_signed_data_structure");
 
-    // Verify Preset 1 Before (45 PASS / 2 FAIL in C31 and C48) vs After Remediation (47 PASS / 0 FAIL)
+    // Mutate SignedData.version INTEGER 1 (02 01 01) -> 127 (02 01 7F) and verify RFC 5652 CMSVersion bounds reject it
+    const mutatedVersionDer = new Uint8Array(realDer);
+    let versionValueOffset = -1;
+    for (let i = a0Offset; i + 4 < mutatedVersionDer.length; i++) {
+      if (
+        mutatedVersionDer[i] === 0x02 &&
+        mutatedVersionDer[i + 1] === 0x01 &&
+        mutatedVersionDer[i + 2] === 0x01
+      ) {
+        versionValueOffset = i + 2;
+        break;
+      }
+    }
+    expect(versionValueOffset).toBeGreaterThan(a0Offset);
+    mutatedVersionDer[versionValueOffset] = 0x7f;
+    const rejectedVersion = mfv.parseCmsSignedDataDer(mutatedVersionDer);
+    expect(rejectedVersion.valid).toBe(false);
+    expect(rejectedVersion.validPkcs7).toBe(false);
+    expect(rejectedVersion.structuralStatus).toBe("FAIL");
+
+    // Verify Preset 1 Before (45 PASS / 2 FAIL in C31 and C48 + 5 unmatchedTuRows) vs After Remediation (47 PASS / 0 FAIL)
     const docx06Bytes = new Uint8Array(
       readFileSync(join(process.cwd(), "docs", "real-samples", "06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx"))
     );
@@ -397,6 +452,16 @@ describe("Sector A15 Layer 1 — Anti-Substitution & Browser Engine Integration 
     const beforeFails = beforeState.alignedRows.filter((r) => r.status.startsWith("FAIL"));
     expect(beforeFails).toHaveLength(2);
     expect(beforeFails.map((r) => r.targetRef).sort()).toEqual(["C31", "C48"]);
+    expect(beforeFails.map((r) => r.tuRef)).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("w:tr 36 (запис ТТХ #31)"),
+        expect.stringContaining("w:tr 56 (запис ТТХ #48)")
+      ])
+    );
+    expect(beforeState.unmatchedTuRows).toBeDefined();
+    expect(beforeState.unmatchedTuRows).toHaveLength(5);
+    expect(beforeState.unmatchedTuRows?.[0]?.tuValue).toContain("55 комплект");
+    expect(beforeState.unmatchedTuRows?.[0]?.status).toBe("UNVERIFIED_UNPAIRED_TU_ROW");
 
     const afterState = mfv.runPreset1RemediatedProzorroMatrice4T(docx06Bytes, xlsx07Bytes);
     expect(afterState.alignedRows).toHaveLength(47);
