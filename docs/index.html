@@ -399,9 +399,9 @@
                 </svg>
               </div>
               <div class="card-content">
-                <h2 class="card-title">Автономна робота без мережі та перевірка КЕП</h2>
+                <h2 class="card-title">Автономна робота без мережі та інспекція контейнера КЕП</h2>
                 <p class="card-desc">
-                  Перевіряє цифрові підписи .p7s та гарантує, що жоден байт ваших файлів не залишає браузер. Дозволяє безпечно оглядати конфігурації, прошивки й підписані документи повністю офлайн.
+                  Читає структуру контейнера .p7s (ASN.1 DER та реквізити сертифіката за SignerInfo.sid; криптографічний підпис у браузері має статус UNVERIFIED) та перевіряє ізоляцію вкладки в цьому сценарії.
                 </p>
               </div>
             </div>
@@ -461,27 +461,35 @@
         <!-- ЗАВЕРШЕНИЙ ПРИКЛАД ОДНОГО ЦИКЛУ ПЕРЕВІРКИ -->
         <div style="margin-top: 22px; padding: 18px 20px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 14px;">
           <h3 style="margin: 0 0 12px; font-size: 16px; font-weight: 800; color: #0f172a;">
-            Завершений приклад одного циклу перевірки (від вхідних файлів до рішення інженера)
+            Завершений приклад одного циклу перевірки (від вхідних файлів до повторного прогону після виправлення C31 і C48)
           </h3>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; font-size: 13.5px; line-height: 1.55; color: #1e293b;">
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
-              <strong>1. Проблема:</strong> Розбіжності в цифрах, одиницях вимірювання (<code>г vs кг</code>, <code>В</code>, <code>°C</code>) та ревізіях між технічними вимогами (ТУ/ТЗ), протоколом ПМВ і відомістю комплектації (BOM).
+              <strong>1. Вхідні файли:</strong> Відкритий документ вимог <code>06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx</code> (Prozorro 1:1, 55 записів) та контрольний протокол <code>07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx</code> (52 рядки за <code>PROVENANCE.json</code>).
             </div>
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
-              <strong>2. Вхід:</strong> Відкритий документ вимог <code>06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx</code> та контрольний протокол <code>07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx</code> (із внесеними тестовими розбіжностями за <code>PROVENANCE.json</code>).
+              <strong>2. Початкова звірка (До виправлення):</strong> У пам'яті браузера зіставлено <code>47</code> пар характеристик у системі SI: <code>45 PASS</code> (зокрема <code>1420 г = 1.42 кг</code>, <code>75.6 км/год = 21 м/с</code>) та <code>2 FAIL</code>.
             </div>
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
-              <strong>3. Перевірка:</strong> Локальний розбір XML-структури <code>.docx/.xlsx</code> у пам'яті браузера, зведення величин до базових одиниць SI та 7D-блокування несумісних розмірностей.
+              <strong>3. Точні координати 2 розбіжностей:</strong> Комірка <code>C31</code> (<code>Стандартна напруга</code>: вимога <code>14.76 В</code> проти <code>15.4 В</code> у протоколі, <code>Δ = +0.64 В</code>) та комірка <code>C48</code> (<code>Робоча температура</code>: вимога <code>від -20°C до 50°C</code> проти <code>від -10° до 40° C</code>).
             </div>
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
-              <strong>4. Результат:</strong> Зіставлено 47 пар характеристик: виявлено 2 розбіжності з точними адресами комірок (<code>C31: 14.76 В vs 15.4 В</code>; <code>C48: -20…+50 °C vs -10…+40 °C</code>) та сформовано чекліст для інженера.
+              <strong>4. Чесна межа (<code>UNVERIFIED</code>):</strong> Позиції без парного джерела або з багатовимірним записом (<code>260.6 × 113.7 × 138.4 мм</code>, <code>1420 г / 1430 г</code>) і криптопідпис <code>.p7s</code> чесно позначаються як <code>UNVERIFIED</code>.
             </div>
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
-              <strong>5. Межі:</strong> Інструмент не редагує протоколи випробувань замість комісії, не перевіряє криптопідпис <code>.p7s</code> (<code>UNVERIFIED</code>) і переводить складні нестандартні конструкції у статус <code>UNVERIFIED</code>.
+              <strong>5. Виправлення інженером:</strong> Після звірки з первинним актом випробувань інженер коригує комірки <code>C31</code> (<code>15.4 В → 14.76 В</code>) та <code>C48</code> (<code>від -10° до 40° C → від -20°C до 50°C</code>) у <code>07_Prozorro_UAV_Protocol_DJI_Matrice_4T_FIXED.xlsx</code>.
             </div>
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
-              <strong>6. Користь для інженера:</strong> Замість ручного звіряння десятків сторінок інженер за секунди отримує таблицю точних розбіжностей із посиланням на рядок і комірку первинного файла.
+              <strong>6. Повторний прогін (Після виправлення):</strong> Повторна перевірка виправленого пакета у браузері підтверджує <strong><code>47/47 PASS</code> та <code>0 FAIL</code></strong> (із збереженням чесного статусу <code>UNVERIFIED</code> для односторонніх полів).
             </div>
+          </div>
+          <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 10px;">
+            <a class="btn-action" href="tools/universal-ai-cockpit.html" style="text-decoration: none;">
+              🔍 Відкрити до виправлення (45 PASS / 2 FAIL у C31, C48)
+            </a>
+            <a class="btn-action primary" href="tools/universal-ai-cockpit.html?preset=fixed" style="text-decoration: none;">
+              ✅ Відкрити після виправлення C31 і C48 (47/47 PASS, 0 FAIL)
+            </a>
           </div>
         </div>
 
@@ -523,7 +531,7 @@
 
     <footer class="site-footer">
       <div class="wrap footer-inner">
-        <div><b>shmlv systems v2.5.0</b> — Інженерні системи перевірки документації, коду та телеметрії БпЛА</div>
+        <div><b>shmlv systems v2.5.0 · build 2026-10-21</b> — Інженерні системи перевірки документації, коду та телеметрії БпЛА</div>
         <div>
           <a href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot">GitHub</a>
           &nbsp;·&nbsp;

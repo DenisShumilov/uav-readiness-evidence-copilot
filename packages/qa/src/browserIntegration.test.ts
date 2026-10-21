@@ -313,6 +313,99 @@ describe("Sector A15 Layer 1 — Anti-Substitution & Browser Engine Integration 
     expect(multiLeak.opsec_clean).toBe(false);
     expect(multiLeak.leaked_category_count).toBe(2);
     expect(multiLeak.leaked_pii_tokens_remaining).toBe(4);
+
+    // Standalone 2-word Ukrainian name without "Контакт:" prefix must be redacted
+    const standaloneNameSanitized = cryptoShare.sanitizeToZeroKnowledgeGraph({
+      title: "Петро Іваненко"
+    });
+    expect(standaloneNameSanitized.title).toMatch(/^\[zk_person_pib:[0-9a-f]{16}\]$/);
+    expect(standaloneNameSanitized.opsec_redaction_proof.pib_stripped).toBe(1);
+    expect(standaloneNameSanitized.opsec_redaction_proof.opsec_clean).toBe(true);
+    expect(standaloneNameSanitized.opsec_redaction_proof.leaked_pii_tokens_remaining).toBe(0);
+
+    // Own [zk_<category>:<16hex>] commitment tags ending in a\d{4} must NOT trigger false-positive mil_unit leak
+    const ownTagCheck = cryptoShare.verifyZeroOpsecLeakage("[zk_uav_product:c7ab511111ca2308]");
+    expect(ownTagCheck.opsec_clean).toBe(true);
+    expect(ownTagCheck.leaked_pii_tokens_remaining).toBe(0);
+
+    // Deterministic salt "3fa34a33aa9b72791a35f44188212af2" that produces a2308 in zk_uav_product must pass cleanly
+    const capsuleFixedSalt = await cryptoShare.createSignedDiagnosticCapsule(rawPayload, {
+      saltHex: "3fa34a33aa9b72791a35f44188212af2"
+    });
+    expect(capsuleFixedSalt.zk_diagnostic_graph.opsec_redaction_proof.opsec_clean).toBe(true);
+    expect(capsuleFixedSalt.zk_diagnostic_graph.opsec_redaction_proof.leaked_pii_tokens_remaining).toBe(0);
+  });
+
+  it("Sector A04 & A18: rejects .p7s outer [0] EXPLICIT (0xA0 -> 0xA1) mutation and verifies Preset 1 Before (45 PASS / 2 FAIL at C31, C48) vs After Remediation (47 PASS / 0 FAIL)", () => {
+    const mfv = multiVerifier as {
+      parseCmsSignedDataDer: (bytes: Uint8Array) => {
+        valid: boolean;
+        validPkcs7: boolean;
+        structuralStatus: string;
+        reasonCode: string;
+      };
+      runPreset1RealProzorroMatrice4T: (docxBytes: Uint8Array, xlsxBytes: Uint8Array) => {
+        alignedRows: Array<{ status: string; targetRef?: string | null; tuValue?: string; targetValue?: string }>;
+      };
+      runPreset1RemediatedProzorroMatrice4T: (docxBytes: Uint8Array, xlsxBytes: Uint8Array) => {
+        alignedRows: Array<{ status: string; targetRef?: string | null }>;
+      };
+    };
+
+    const realP7sBase64 = readFileSync(
+      join(process.cwd(), "docs", "real-samples", "08_Prozorro_Real_KEP_Sign.p7s"),
+      "utf8"
+    ).replace(/\s+/g, "");
+    const realDer = new Uint8Array(Buffer.from(realP7sBase64, "base64"));
+    const validParsed = mfv.parseCmsSignedDataDer(realDer);
+    expect(validParsed.valid).toBe(true);
+    expect(validParsed.structuralStatus).toBe("PASS");
+
+    // Mutate outer ContentInfo [0] EXPLICIT tag 0xA0 -> 0xA1 (immediately after signedData OID 06 09 2A 86 48 86 F7 0D 01 07 02)
+    const mutatedOuterTagDer = new Uint8Array(realDer);
+    let a0Offset = -1;
+    for (let i = 0; i + 11 < mutatedOuterTagDer.length; i++) {
+      if (
+        mutatedOuterTagDer[i] === 0x06 &&
+        mutatedOuterTagDer[i + 1] === 0x09 &&
+        mutatedOuterTagDer[i + 2] === 0x2a &&
+        mutatedOuterTagDer[i + 10] === 0x02 &&
+        mutatedOuterTagDer[i + 11] === 0xa0
+      ) {
+        a0Offset = i + 11;
+        break;
+      }
+    }
+    expect(a0Offset).toBeGreaterThan(0);
+    mutatedOuterTagDer[a0Offset] = 0xa1;
+    const rejectedOuterTag = mfv.parseCmsSignedDataDer(mutatedOuterTagDer);
+    expect(rejectedOuterTag.valid).toBe(false);
+    expect(rejectedOuterTag.validPkcs7).toBe(false);
+    expect(rejectedOuterTag.structuralStatus).toBe("FAIL");
+    expect(rejectedOuterTag.reasonCode).toBe("invalid_signed_data_structure");
+
+    // Verify Preset 1 Before (45 PASS / 2 FAIL in C31 and C48) vs After Remediation (47 PASS / 0 FAIL)
+    const docx06Bytes = new Uint8Array(
+      readFileSync(join(process.cwd(), "docs", "real-samples", "06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx"))
+    );
+    const xlsx07Bytes = new Uint8Array(
+      readFileSync(join(process.cwd(), "docs", "real-samples", "07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx"))
+    );
+
+    const beforeState = mfv.runPreset1RealProzorroMatrice4T(docx06Bytes, xlsx07Bytes);
+    expect(beforeState.alignedRows).toHaveLength(47);
+    const beforeFails = beforeState.alignedRows.filter((r) => r.status.startsWith("FAIL"));
+    expect(beforeFails).toHaveLength(2);
+    expect(beforeFails.map((r) => r.targetRef).sort()).toEqual(["C31", "C48"]);
+
+    const afterState = mfv.runPreset1RemediatedProzorroMatrice4T(docx06Bytes, xlsx07Bytes);
+    expect(afterState.alignedRows).toHaveLength(47);
+    const afterFails = afterState.alignedRows.filter((r) => r.status.startsWith("FAIL"));
+    const afterPasses = afterState.alignedRows.filter(
+      (r) => r.status === "PASS" || r.status === "UNIT_CONVERTED_PASS"
+    );
+    expect(afterFails).toHaveLength(0);
+    expect(afterPasses).toHaveLength(47);
   });
 
   it("Sector A02.2: tools-engine.js compute() returns 0 when all sources are disabled and 44 in baseline state", () => {

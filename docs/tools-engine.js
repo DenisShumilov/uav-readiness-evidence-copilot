@@ -5115,7 +5115,7 @@ function inspectCodeOrKepInBrowser(filename, uint8) {
         '<div><span class="' + (validDer ? "pill-warn" : "pill-err") + '">' + (validDer ? "Поля контейнера прочитано · Криптопідпис: UNVERIFIED" : "Пошкоджений або невалідний контейнер .p7s (FAIL)") + '</span></div>' +
       '</div>' +
       '<div class="preview-row header"><div>Поле контейнера КЕП</div><div>Значення у файлі</div><div>Статус перевірки</div><div>Примітка</div></div>' +
-      '<div class="preview-row"><div><b>SHA-256 відбиток</b></div><div style="font-family:var(--font-mono);font-size:11.5px" title="' + escHtml(sha) + '">' + sha.slice(0, 24) + '…</div><div><span class="pill-ok">Цілісність OK</span></div><div>Локальний розрахунок</div></div>' +
+      '<div class="preview-row"><div><b>SHA-256 відбиток</b></div><div style="font-family:var(--font-mono);font-size:11.5px" title="' + escHtml(sha) + '">' + sha.slice(0, 24) + '…</div><div><span class="pill-ok">SHA-256 обчислено</span></div><div>Локальний розрахунок</div></div>' +
       '<div class="preview-row"><div><b>OID структури підпису</b></div><div>1.2.840.113549.1.7.2 (signedData)</div><div><span class="' + (validDer ? "pill-ok" : "pill-err") + '">' + (validDer ? "Структуру RFC 5652 прочитано" : "Відсутній / Помилка структури") + '</span></div><div>RFC 5652 (CMS / PKCS#7) · SignerInfo.sid</div></div>' +
       '<div class="preview-row"><div><b>Підписант / Надавач КЕП (за SignerInfo.sid)</b></div><div>' + escHtml(cnClean + (caClean ? " · " + caClean : "")) + '</div><div><span class="' + (validDer ? "pill-ok" : "pill-err") + '">' + (validDer ? "Зіставлено за SignerInfo.sid" : "Не підтверджено") + '</span></div><div>' + escHtml((cmsParsed && cmsParsed.errorReason) || "Локальний розбір ASN.1") + '</div></div>' +
       '<div class="preview-row"><div><b>Криптографічна перевірка підпису</b></div><div>Математичний підпис ДСТУ 4145 / ECDSA / RSA та OCSP/CRL</div><div><span class="pill-warn">UNVERIFIED</span></div><div>Криптографічний підпис у цьому режимі не перевірявся</div></div>' +
@@ -7000,16 +7000,43 @@ __globalRoot.runRealOpenDataSample = async function (action) {
     var ocrRowsCnt = (ocr13Out && ocr13Out.rows) ? ocr13Out.rows.length : 0;
     var ocrAcc = (ocr13Out && typeof ocr13Out.ocrAccuracyPct === "number") ? ocr13Out.ocrAccuracyPct : 0;
     var ocrCirc = (ocr13Out && typeof ocr13Out.circularityScore === "number") ? ocr13Out.circularityScore : 0;
+    var ocrFailRows = (ocr13Out && ocr13Out.rows)
+      ? ocr13Out.rows.filter(function (r) { return String(r.status || "") !== "PASS"; })
+      : [];
 
     var cross14Aligned = (cross14Out && cross14Out.alignedRows) ? cross14Out.alignedRows.length : 0;
-    var cross14Fails = (cross14Out && cross14Out.alignedRows)
-      ? cross14Out.alignedRows.filter(function (r) { return String(r.status || "").indexOf("FAIL") === 0; }).length
-      : 0;
-    var cross15SharedRecords = Math.min(docx06Recs, docx06aRecs);
+    var cross14FailRows = (cross14Out && cross14Out.alignedRows)
+      ? cross14Out.alignedRows.filter(function (r) { return String(r.status || "").indexOf("FAIL") === 0; })
+      : [];
+    var cross14Fails = cross14FailRows.length;
+
+    // Row-by-row content comparison between 06_Matrice_4T.docx and 06a_Matrice_4T_Tender2.docx
+    var cross15MatchedRows = 0;
+    var cross15ValueDiffs = 0;
+    var r06Arr = (docx06Out && docx06Out.records) ? docx06Out.records : [];
+    var r06aArr = (docx06aOut && docx06aOut.records) ? docx06aOut.records : [];
+    var minRecLen15 = Math.min(r06Arr.length, r06aArr.length);
+    for (var r15 = 0; r15 < minRecLen15; r15++) {
+      var cA = (r06Arr[r15] && r06Arr[r15].cells) ? r06Arr[r15].cells : [];
+      var cB = (r06aArr[r15] && r06aArr[r15].cells) ? r06aArr[r15].cells : [];
+      var pA = String(cA[0] || "").trim();
+      var pB = String(cB[0] || "").trim();
+      var vA = String(cA.slice(1).join(" | ") || "").trim();
+      var vB = String(cB.slice(1).join(" | ") || "").trim();
+      if (pA && pA === pB && vA === vB) {
+        cross15MatchedRows++;
+      } else {
+        cross15ValueDiffs++;
+      }
+    }
+    if (r06Arr.length !== r06aArr.length) {
+      cross15ValueDiffs += Math.abs(r06Arr.length - r06aArr.length);
+    }
+    var cross15ComparedTotal = cross15MatchedRows + cross15ValueDiffs;
     var cross15RsidDelta = Math.abs(docx06aRsids - docx06Rsids);
 
     var totalDocRecordsExtracted = docx06Recs + docx06aRecs + docx06bRecs + xlsx07Recs + xlsx07aRecs + csv09Recs + ocrRowsCnt;
-    var totalCrossPairsChecked = cross14Aligned + cross15SharedRecords;
+    var totalCrossPairsChecked = cross14Aligned + cross15ComparedTotal;
     var totalTelemetryBytesChecked =
       (ulgOut ? ulgOut.bytes : 0) +
       (binOut ? binOut.bytes : 0) +
@@ -7085,10 +7112,14 @@ __globalRoot.runRealOpenDataSample = async function (action) {
       {
         id: "09",
         file: "07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx (контрольний приклад із PROVENANCE.json)",
-        baselineDesc: "52 рядки протоколу, 156 комірок",
-        fullParse: xlsx07Recs + " записів · " + xlsx07Cells + " комірок · " + xlsx07Shared + " рядків sharedStrings",
-        domainVerdict: xlsx07Recs === 52 ? "FAIL (контрольний протокол містить розбіжності C31 15.4 В та C48 -10..+40°C)" : "FAIL (помилка читання .xlsx)",
-        baselineOk: Boolean(xlsx07Recs === 52 && xlsx07Cells === 156 && xlsx07Shared === 104)
+        baselineDesc: "52 рядки протоколу, 156 комірок, 2 розбіжності (C31, C48)",
+        fullParse: xlsx07Recs + " записів · " + xlsx07Cells + " комірок · " + xlsx07Shared + " рядків sharedStrings · розбіжностей з ТУ: " + cross14Fails,
+        domainVerdict: xlsx07Recs === 0
+          ? "FAIL (помилка читання .xlsx)"
+          : (cross14Fails > 0
+            ? ("FAIL (виявлено " + cross14Fails + " розбіжності у протоколі: " + cross14FailRows.map(function (r) { return (r.targetRef || r.tuParam) + " " + r.targetValue + " vs " + r.tuValue; }).join("; ") + ")")
+            : "PASS (усі числові значення протоколу збігаються з ТУ)"),
+        baselineOk: Boolean(xlsx07Recs === 52 && xlsx07Cells === 156 && xlsx07Shared === 104 && cross14Fails === 2)
       },
       {
         id: "10",
@@ -7111,32 +7142,42 @@ __globalRoot.runRealOpenDataSample = async function (action) {
         file: "09_Real_UAV_Readiness_Matrix_BOM.csv (контрольний BOM із PROVENANCE.json)",
         baselineDesc: "15 рядків CSV (14 позицій BOM, 2 CONFLICT)",
         fullParse: csv09Recs + " записів CSV · виявлено рядків зі статусом CONFLICT: " + csv09Conflicts,
-        domainVerdict: csv09Conflicts === 2 ? "FAIL (виявлено 2 конфлікти ревізій у відомості комплектації BOM)" : "WARN (потребує перевірки)",
+        domainVerdict: csv09Conflicts > 0 ? ("FAIL (виявлено " + csv09Conflicts + " конфлікти ревізій у відомості комплектації BOM)") : "PASS (конфліктів ревізій не виявлено)",
         baselineOk: Boolean(csv09Recs === 15 && csv09Conflicts === 2)
       },
       {
         id: "13",
         file: "10_Stamped_PMV_Protocol_Scan_VP_MOU.pdf (растровий шаблон 560×220 px із печаткою)",
         baselineDesc: "5 рядків табличного шаблону 560×220 px",
-        fullParse: "Розпізнано рядків шаблону: " + ocrRowsCnt + " / 5 (точність на шаблоні: " + ocrAcc + "%, C=" + ocrCirc + ")",
-        domainVerdict: ocrRowsCnt === 5 ? "FAIL (у рядку #3 шаблону виявлено 15.4 В проти норми 14.76 В)" : "FAIL (шаблон не розпізнано)",
-        baselineOk: Boolean(ocrRowsCnt === 5 && ocrAcc === 100)
+        fullParse: "Розпізнано рядків шаблону: " + ocrRowsCnt + " / 5 (точність на шаблоні: " + ocrAcc + "%, C=" + ocrCirc + ", відхилень: " + ocrFailRows.length + ")",
+        domainVerdict: ocrRowsCnt === 0
+          ? "FAIL (шаблон не розпізнано)"
+          : (ocrFailRows.length > 0
+            ? ("FAIL (виявлено " + ocrFailRows.length + " відхилення у скані: " + ocrFailRows.map(function (r) { return "#" + r.rowIndex + " " + r.factPmv + " vs " + r.normTu; }).join("; ") + ")")
+            : "PASS (усі розпізнані рядки скана в межах норми)"),
+        baselineOk: Boolean(ocrRowsCnt === 5 && ocrAcc === 100 && ocrFailRows.length > 0)
       },
       {
         id: "14",
         file: "Крос-звірка #1: 06_TechVymogy_Matrice_4T.docx ⇄ 07_Protocol_Matrice_4T.xlsx",
         baselineDesc: "47 зіставлених пар за маскою SI, 2 розбіжності",
         fullParse: "Зіставлено пар у системі SI: " + cross14Aligned + " · виявлено числових розбіжностей: " + cross14Fails,
-        domainVerdict: (cross14Aligned === 47 && cross14Fails === 2) ? "FAIL (виявлено 2 розбіжності: 14.76 В vs 15.4 В у C31 та -20..+50 °C vs -10..+40 °C у C48)" : "WARN (потребує перевірки)",
+        domainVerdict: cross14Aligned === 0
+          ? "FAIL (не вдалося зіставити пари)"
+          : (cross14Fails > 0
+            ? ("FAIL (виявлено " + cross14Fails + " розбіжності: " + cross14FailRows.map(function (r) { return (r.targetRef || r.tuParam) + " " + r.tuValue + " vs " + r.targetValue; }).join("; ") + ")")
+            : "PASS (47/47 пар SI збігаються)"),
         baselineOk: Boolean(cross14Aligned === 47 && cross14Fails === 2)
       },
       {
         id: "15",
         file: "Крос-звірка #2: 06_Matrice_4T.docx ⇄ 06a_Matrice_4T_Tender2.docx (порівняння ревізій)",
-        baselineDesc: "55 спільних записів, різниця +34 сесії w:rsid",
-        fullParse: "Спільних записів ТТХ: " + cross15SharedRecords + " · різниця сесій редагування w:rsid: +" + cross15RsidDelta + " (" + docx06Rsids + " → " + docx06aRsids + ")",
-        domainVerdict: cross15RsidDelta === 34 ? "WARN (другий тендерний файл містить +34 додаткові сесії редагування Word)" : "PASS (історію ревізій порівняно)",
-        baselineOk: Boolean(cross15SharedRecords === 55 && cross15RsidDelta === 34)
+        baselineDesc: "55 рядків ТТХ порівняно покомірково (0 розбіжностей значень), +34 сесії w:rsid",
+        fullParse: "Збіг значень ТТХ: " + cross15MatchedRows + "/" + cross15ComparedTotal + " (розбіжностей значень: " + cross15ValueDiffs + ") · різниця w:rsid: +" + cross15RsidDelta + " (" + docx06Rsids + " → " + docx06aRsids + ")",
+        domainVerdict: cross15ValueDiffs > 0
+          ? ("FAIL (виявлено " + cross15ValueDiffs + " змінених значень ТТХ між двома ревізіями .docx)")
+          : (cross15RsidDelta === 34 ? "WARN (значення 55/55 ідентичні, але другий тендерний файл містить +34 додаткові сесії редагування Word)" : "PASS (ревізії порівняно)"),
+        baselineOk: Boolean(cross15MatchedRows === 55 && cross15ValueDiffs === 0 && cross15RsidDelta === 34)
       }
     ];
 
@@ -7154,9 +7195,9 @@ __globalRoot.runRealOpenDataSample = async function (action) {
 
     if (bufEl) {
       bufEl.value =
-        "[ЗВЕДЕНА ЖИВА ПЕРЕВІРКА 15 КОНТРОЛЬНИХ СЦЕНАРІЇЇВ (12 ФАЙЛІВ ІЗ PROVENANCE.JSON + СКАН 560×220 PX + 2 КРОС-ЗВІРКИ)]\n" +
+        "[ЗВЕДЕНА ЖИВА ПЕРЕВІРКА 15 КОНТРОЛЬНИХ СЦЕНАРІЇВ (12 ФАЙЛІВ ІЗ PROVENANCE.JSON + СКАН 560×220 PX + 2 КРОС-ЗВІРКИ)]\n" +
         "• Обчислено наживо записів у документах і таблицях: " + totalDocRecordsExtracted + " записів\n" +
-        "• Обчислено наживо пар у крос-документних звірках (#14 та #15): " + totalCrossPairsChecked + " пар\n" +
+        "• Обчислено наживо у крос-документних звірках: " + cross14Aligned + " пар SI (#14) + " + cross15ComparedTotal + " рядків ревізій (#15) = " + totalCrossPairsChecked + "\n" +
         "• Перевірено наживо байтів телеметрії у браузерному бандлі (#01..#05): " + totalTelemetryBytesChecked.toLocaleString("uk-UA") + " B\n" +
         "• Звірка з еталоном: " + passedBaselineCount + "/15 сценаріїв підтверджено\n" +
         "• Реальний живий замір у вашому браузері (N=3 прогони): Cold start = " + coldStartMs + " мс | Median = " + medianMs + " мс (min..max: " + minMs + ".." + maxMs + " мс)\n\n" +
@@ -7186,7 +7227,7 @@ __globalRoot.runRealOpenDataSample = async function (action) {
           '<div><b>🏆 Зведена жива перевірка 15 контрольних сценаріїв (12 реальних/контрольних файлів із PROVENANCE.json + скан 560×220 px + 2 крос-звірки)</b></div>' +
           '<div>' +
             '<span class="pill-ok">Витягнуто наживо: ' + totalDocRecordsExtracted + ' записів</span> &nbsp;' +
-            '<span class="pill-ok">Крос-пари: ' + totalCrossPairsChecked + '</span> &nbsp;' +
+            '<span class="pill-ok">Крос-пари: ' + cross14Aligned + ' SI (#14) + ' + cross15ComparedTotal + ' рев. (#15)</span> &nbsp;' +
             '<span class="pill-ok">Еталон: ' + passedBaselineCount + '/15</span> &nbsp;' +
             '<span class="pill-ok">Живий замір (N=3): Cold ' + coldStartMs + ' мс · Median ' + medianMs + ' мс (' + minMs + '..' + maxMs + ' мс)</span>' +
           '</div>' +
@@ -7199,10 +7240,10 @@ __globalRoot.runRealOpenDataSample = async function (action) {
         status: passedBaselineCount === 15 ? "WARN" : "FAIL",
         badgeText: passedBaselineCount + "/15 ВХОДІВ ПЕРЕВІРЕНО НАЖИВО · ВИЯВЛЕНО КОНТРОЛЬНІ РОЗБІЖНОСТІ У #09, #12, #13, #14 (MEDIAN " + medianMs + " МС)",
         title: "Зведена наскрізна верифікація 15 контрольних сценаріїв (12 файлів із PROVENANCE.json + скан 560×220 px + 2 крос-звірки)",
-        summaryText: "Усі 15 контрольних сценаріїв виконано наживо у браузері за N=3 прогони (Cold start = " + coldStartMs + " мс, Median = " + medianMs + " мс, діапазон " + minMs + ".." + maxMs + " мс): витягнуто " + totalDocRecordsExtracted + " записів із документів/таблиць, перевірено " + totalCrossPairsChecked + " крос-документних пар та " + totalTelemetryBytesChecked.toLocaleString("uk-UA") + " байтів телеметрії. Для контейнера #11 (08_Prozorro_Real_KEP_Sign.p7s) прочитано поля сертифіката за SignerInfo.sid, а криптографічний підпис чесно позначено як UNVERIFIED.",
+        summaryText: "Усі 15 контрольних сценаріїв виконано наживо у браузері за N=3 прогони (Cold start = " + coldStartMs + " мс, Median = " + medianMs + " мс, діапазон " + minMs + ".." + maxMs + " мс): витягнуто " + totalDocRecordsExtracted + " записів із документів/таблиць, перевірено " + cross14Aligned + " пар SI у #14 та " + cross15ComparedTotal + " рядків ревізій у #15 (сумарно " + totalCrossPairsChecked + "), а також " + totalTelemetryBytesChecked.toLocaleString("uk-UA") + " байтів телеметрії. Для контейнера #11 (08_Prozorro_Real_KEP_Sign.p7s) прочитано поля сертифіката за SignerInfo.sid, а криптографічний підпис чесно позначено як UNVERIFIED.",
         bullets: [
-          "Динамічно витягнуто " + totalDocRecordsExtracted + " записів та зіставлено " + totalCrossPairsChecked + " пар без фіксованих або резервних (fallback) підстановок",
-          "Виявлено очікувані контрольні невідповідності у #09/#14 (07_Protocol.xlsx: C31 15.4 В, C48 -10..+40°C), #12 (09_BOM.csv: 3 CONFLICT) та #13 (скан 560×220 px: 15.4 В vs 14.76 В)",
+          "Динамічно витягнуто " + totalDocRecordsExtracted + " записів та зіставлено " + cross14Aligned + " пар SI (#14) + " + cross15ComparedTotal + " рядків ревізій (#15) без резервних (fallback) підстановок",
+          "Виявлено очікувані контрольні невідповідності у #09/#14 (07_Protocol.xlsx: C31 15.4 В, C48 -10..+40°C), #12 (09_BOM.csv: " + csv09Conflicts + " CONFLICT) та #13 (скан 560×220 px: " + ocrFailRows.length + " відхилень)",
           "Для #11 (08_Prozorro_Real_KEP_Sign.p7s): поля контейнера прочитано (сертифікатів: " + p7sCerts + ", підписів: " + p7sSigners + "), криптографічний підпис не перевірявся (cryptoStatus: UNVERIFIED)"
         ]
       }, fullPkgDetailedHtml);

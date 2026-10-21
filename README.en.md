@@ -21,7 +21,7 @@
 2. **This GitHub Repository (`uav-readiness-evidence-copilot`, release `v2.5.0`)** — the complete engineering whitepaper and reference implementation:
    - documents the mathematical formulations and parser invariants across all 6 subsystems;
    - contains the full source code for the client-side JS/WASM modules (`docs/`), standalone Python byte-level auditors (`engines/`), and the typed TypeScript readiness monorepo (`packages/`);
-   - enforces cross-surface determinism via **127** tests in Vitest (`packages/qa/`) plus standalone Python regression suites and Playwright Chromium E2E checks.
+   - enforces cross-surface determinism via **128** tests in Vitest (`packages/qa/`) plus standalone Python regression suites and Playwright Chromium E2E checks.
 
 ---
 
@@ -111,18 +111,18 @@ uav-readiness-evidence-copilot/
 
 *Zero-denominator rule: if the denominator of any metric equals `0` (for example, `TP + FN = 0`), the metric is reported as **"undefined on this dataset"** (`не визначено на цьому наборі`) and is never interpreted as `100%` or `0%`.*
 
-### Complete End-to-End Verification Cycle Example (From Input Files to Corrected Report)
+### Complete End-to-End Verification Cycle Example (From Input Files to Corrected `47/47 PASS` Report)
 
-1. **Initial Files (`Input`):** an engineer loads the public technical requirements `06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx` (verbatim from Prozorro) and the control test protocol `07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx` (derived from `06` with 2 intentionally injected discrepancies per `docs/real-samples/PROVENANCE.json`).
-2. **Detected Discrepancies (`Before Fix`):** the engine aligns 47 parameter pairs via 7D SI vectors and flags **2 discrepancies**:
-   - `Standard Battery Voltage`: requirements state `14.76 V`, protocol states `15.40 V` (`Δ = +0.64 V`, status `FAIL`);
-   - `Maximum Horizontal Flight Speed`: requirements state `21 m/s`, protocol states `18.5 m/s` (`Δ = -2.5 m/s`, status `FAIL`).
+1. **Initial Files (`Input`):** an engineer loads the public technical requirements `06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx` (verbatim from Prozorro, 55 records) and the control test protocol `07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx` (52 rows derived from `06` with 2 intentionally injected discrepancies per `docs/real-samples/PROVENANCE.json`).
+2. **Detected Discrepancies (`Before Fix`):** the engine aligns `47` parameter pairs via 7D SI vectors (`45 PASS`, including SI unit conversions `1420 g = 1.42 kg`, `75.6 km/h = 21 m/s`) and flags **2 discrepancies (`FAIL`)**:
+   - `Standard Battery Voltage` (`Стандартна напруга`): requirements state `14.76 V`, protocol cell `C31` states `15.4 V` (`Δ = +0.64 V`, status `FAIL`);
+   - `Operating Temperature` (`Робоча температура`): requirements state `from -20°C to 50°C`, protocol cell `C48` states `from -10° to 40° C` (narrowed by `20 °C`, status `FAIL`).
 3. **Exact Source Coordinates (`Provenance`):**
-   - `06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx (word/document.xml: table 2, row 21)` ⇄ `07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx (sheet1.xml!row 20 (A20,B20,C20))`;
-   - `06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx (word/document.xml: table 2, row 10)` ⇄ `07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx (sheet1.xml!row 9 (A9,B9,C9))`.
-4. **Deferred to Human Review (`UNVERIFIED`):** single-source procurement quantity `DJI Matrice 4T — 55 kits` (present only in table 1 of requirements without a paired row in the test protocol) and compound 3D dimension strings without a single scalar SI rule are explicitly marked `UNVERIFIED`.
-5. **Engineer Action (`Remediation`):** the engineer checks cells `C20` and `C9` in `07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx` against the bench log (`4S LiHV 14.76 V` and `21 m/s`), updates the protocol values (or records a formal deviation), and reloads the pair.
-6. **Re-Verification (`After Fix`):** both parameters transition from `FAIL` to `PASS` (`0` discrepancies between requirements and protocol), and the updated report and `#diag=` capsule record the new SHA-256 digests.
+   - `06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx (word/document.xml: table 2, row 32)` ⇄ `07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx (sheet1.xml!row 31 (A31,B31,C31))`;
+   - `06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx (word/document.xml: table 2, row 49)` ⇄ `07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx (sheet1.xml!row 48 (A48,B48,C48))`.
+4. **Deferred to Human Review (`UNVERIFIED`):** single-source procurement quantity `DJI Matrice 4T — 55 kits` (present only in table 1 of requirements without a paired row in the test protocol) and compound 3D dimension strings (`260.6 × 113.7 × 138.4 mm`, `1420 g / 1430 g`) are explicitly marked `UNVERIFIED`.
+5. **Engineer Action (`Remediation of C31 & C48`):** the engineer checks cells `C31` and `C48` in `07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx` against the primary bench log (`4S Li-Ion 14.76 V` and `-20°C..+50°C`), updates the protocol values (`07_Prozorro_UAV_Protocol_DJI_Matrice_4T_FIXED.xlsx`), and re-runs verification (or clicks **"Після виправлення C31 і C48 (`47/47 PASS, 0 FAIL`)"** at `tools/universal-ai-cockpit.html?preset=fixed`).
+6. **Re-Verification (`After Fix`):** both parameters (`C31` and `C48`) transition from `FAIL` to `PASS` (**`47/47 PASS`, `0 FAIL`** between requirements and protocol while preserving `UNVERIFIED` for unpaired fields), and the updated report and `#diag=` capsule record the new SHA-256 digests.
 
 ---
 

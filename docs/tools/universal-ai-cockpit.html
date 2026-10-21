@@ -247,11 +247,16 @@
             </blockquote>
             <div style="margin: 0 0 14px; padding: 10px 14px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;">
               <div style="font-size: 13px; line-height: 1.48; color: #1e293b; flex: 1 1 320px;">
-                <strong>Швидкий перегляд результату:</strong> порівняння відкритих вимог <code>06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx</code> (Prozorro 1:1) із контрольним прикладом протоколу <code>07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx</code> (містить 2 внесені розбіжності згідно з <code>PROVENANCE.json</code>).
+                <strong>Швидкий перегляд результату (До і Після виправлення C31 і C48):</strong> порівняння відкритих вимог <code>06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx</code> (Prozorro 1:1) із контрольним протоколом <code>07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx</code> (містить 2 внесені розбіжності у комірках <code>C31</code> та <code>C48</code> згідно з <code>PROVENANCE.json</code>) та повторний прогін після їх усунення (<code>47/47 PASS, 0 FAIL</code>).
               </div>
-              <button type="button" class="btn-action primary" id="btnShowTwoConflictsFastPath">
-                🔍 Показати дві розбіжності між вимогами й протоколом
-              </button>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <button type="button" class="btn-action primary" id="btnShowTwoConflictsFastPath">
+                  🔍 До виправлення: показати 2 розбіжності (C31 і C48)
+                </button>
+                <button type="button" class="btn-action" id="btnRunFixedProtocolAfterRemediation" style="border-color: #067647; color: #067647; font-weight: 700;">
+                  ✅ Після виправлення C31 і C48 (47/47 PASS, 0 FAIL)
+                </button>
+              </div>
             </div>
             <div class="explain-list">
               <div class="explain-item">
@@ -617,27 +622,32 @@
           <!-- ЗАВЕРШЕНИЙ ПРИКЛАД ОДНОГО ЦИКЛУ ПЕРЕВІРКИ -->
           <div style="margin-top: 18px; padding: 16px 18px; background: #ffffff; border: 1px solid var(--line); border-radius: 12px;">
             <h4 style="margin: 0 0 10px; font-size: 15px; font-weight: 800; color: var(--ink);">
-              Завершений приклад одного циклу перевірки (від вхідних файлів до рішення інженера)
+              Завершений приклад одного циклу перевірки (від вхідних файлів до повторного прогону після виправлення C31 і C48)
             </h4>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; font-size: 13px; line-height: 1.55; color: #1e293b;">
               <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;">
-                <strong>1. Проблема:</strong> Розбіжності в цифрах, одиницях вимірювання (<code>г vs кг</code>, <code>В</code>, <code>°C</code>) та ревізіях між технічними вимогами (ТУ/ТЗ), протоколом ПМВ і відомістю комплектації (BOM).
+                <strong>1. Вхідні файли:</strong> Відкритий документ вимог <code>06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx</code> (Prozorro 1:1, 55 записів) та контрольний протокол <code>07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx</code> (52 рядки за <code>PROVENANCE.json</code>).
               </div>
               <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;">
-                <strong>2. Вхід:</strong> Відкритий документ вимог <code>06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx</code> та контрольний протокол <code>07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx</code> (із внесеними тестовими розбіжностями за <code>PROVENANCE.json</code>).
+                <strong>2. Початкова звірка (До виправлення):</strong> У пам'яті браузера зіставлено <code>47</code> пар характеристик у системі SI: <code>45 PASS</code> (зокрема <code>1420 г = 1.42 кг</code>, <code>75.6 км/год = 21 м/с</code>) та <code>2 FAIL</code>.
               </div>
               <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;">
-                <strong>3. Перевірка:</strong> Локальний розбір XML-структури <code>.docx/.xlsx</code> у пам'яті браузера, зведення величин до базових одиниць SI та 7D-блокування несумісних розмірностей.
+                <strong>3. Точні координати 2 розбіжностей:</strong> Комірка <code>C31</code> (<code>Стандартна напруга</code>: вимога <code>14.76 В</code> проти <code>15.4 В</code> у протоколі, <code>Δ = +0.64 В</code>) та комірка <code>C48</code> (<code>Робоча температура</code>: вимога <code>від -20°C до 50°C</code> проти <code>від -10° до 40° C</code>).
               </div>
               <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;">
-                <strong>4. Результат:</strong> Зіставлено 47 пар характеристик: виявлено 2 розбіжності з точними адресами комірок (<code>C31: 14.76 В vs 15.4 В</code>; <code>C48: -20…+50 °C vs -10…+40 °C</code>) та сформовано чекліст для інженера.
+                <strong>4. Чесна межа (<code>UNVERIFIED</code>):</strong> Позиції без парного джерела або з багатовимірним записом (<code>260.6 × 113.7 × 138.4 мм</code>, <code>1420 г / 1430 г</code>) і криптопідпис <code>.p7s</code> чесно позначаються як <code>UNVERIFIED</code>.
               </div>
               <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;">
-                <strong>5. Межі:</strong> Інструмент не редагує протоколи випробувань замість комісії, не перевіряє криптопідпис <code>.p7s</code> (<code>UNVERIFIED</code>) і переводить складні нестандартні конструкції у статус <code>UNVERIFIED</code>.
+                <strong>5. Виправлення інженером:</strong> Після звірки з первинним актом випробувань інженер коригує комірки <code>C31</code> (<code>15.4 В → 14.76 В</code>) та <code>C48</code> (<code>від -10° до 40° C → від -20°C до 50°C</code>) у <code>07_Prozorro_UAV_Protocol_DJI_Matrice_4T_FIXED.xlsx</code>.
               </div>
               <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;">
-                <strong>6. Користь для інженера:</strong> Замість ручного звіряння десятків сторінок інженер за секунди отримує таблицю точних розбіжностей із посиланням на рядок і комірку первинного файла.
+                <strong>6. Повторний прогін (Після виправлення):</strong> Повторна перевірка виправленого пакета у браузері підтверджує <strong><code>47/47 PASS</code> та <code>0 FAIL</code></strong> (із збереженням чесного статусу <code>UNVERIFIED</code> для односторонніх полів).
               </div>
+            </div>
+            <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px;">
+              <button type="button" class="btn-action" id="btnWow11Preset1Fixed" style="border-color: #067647; color: #067647; font-weight: 700;">
+                ✅ Запустити повторну перевірку після виправлення C31 і C48 (47/47 PASS, 0 FAIL)
+              </button>
             </div>
           </div>
 
@@ -685,7 +695,7 @@
 
     <footer class="site-footer">
       <div class="wrap footer-inner">
-        <div><b>shmlv systems v2.5.0</b> — Інструмент 08: Єдине вікно комплексної перевірки файлів БпЛА</div>
+        <div><b>shmlv systems v2.5.0 · build 2026-10-21</b> — Інструмент 08: Єдине вікно комплексної перевірки файлів БпЛА</div>
         <div><a href="../index.html">← Усі інструменти каталогу</a></div>
       </div>
     </footer>
@@ -1912,12 +1922,20 @@
             });
           }
 
-          // Hide OCR forensics box when switching back to Presets 1-4
-          ["btnWow11Preset1", "btnWow11Preset2", "btnWow11Preset3", "btnWow11Preset4"].forEach(function (id) {
+          // Hide OCR forensics box when switching back to Presets 1-4 or Remediated Preset 1
+          ["btnWow11Preset1", "btnWow11Preset1Fixed", "btnRunFixedProtocolAfterRemediation", "btnWow11Preset2", "btnWow11Preset3", "btnWow11Preset4"].forEach(function (id) {
             var b = document.getElementById(id);
             if (b) {
               b.addEventListener("click", function () {
                 isRestoringFromIncomingDiag = false;
+                if (id === "btnWow11Preset1Fixed" || id === "btnRunFixedProtocolAfterRemediation") {
+                  matrixFilterOnlyIssues = false;
+                  syncMatrixFilterAndCounter();
+                  var tblFixed = document.getElementById("wow11AlignmentTable");
+                  if (tblFixed && typeof tblFixed.scrollIntoView === "function") {
+                    tblFixed.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }
+                }
                 hideRasterOcrPanel();
                 setTimeout(function () {
                   generateAndVerifyZeroServerCryptoUri().catch(function () {});

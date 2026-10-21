@@ -153,7 +153,7 @@ export function parseBOMCsv(
     }
 
     bomItems.push(buildBOMItem(row, finalEvidenceId));
-    evidenceClaims.push(buildEvidenceClaim(row, finalEvidenceId));
+    evidenceClaims.push(buildEvidenceClaim(row, finalEvidenceId, synthetic));
   });
 
   return {
@@ -182,7 +182,8 @@ function buildBOMItem(row: BOMCsvRow, finalEvidenceId: string): BOMItem {
 
 function buildEvidenceClaim(
   row: BOMCsvRow,
-  finalEvidenceId: string
+  finalEvidenceId: string,
+  synthetic: boolean
 ): EvidenceClaim {
   const evidenceSourceIds = finalEvidenceId ? [finalEvidenceId] : [];
   const status = evidenceSourceIds.length === 0 ? "locked" : row.record_status;
@@ -192,7 +193,7 @@ function buildEvidenceClaim(
     statement:
       status === "locked"
         ? `${row.item_name} requires supporting evidence`
-        : `${row.item_name} appears in the synthetic BOM`,
+        : `${row.item_name} appears in the ${synthetic ? "synthetic " : ""}BOM`,
     claimType: "component_record",
     status,
     evidenceSourceIds,
