@@ -626,7 +626,7 @@
             </h4>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; font-size: 13px; line-height: 1.55; color: #1e293b;">
               <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;">
-                <strong>1. Вхідні файли:</strong> Відкритий документ вимог <code>06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx</code> (Prozorro 1:1, 55 записів) та контрольний протокол <code>07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx</code> (52 рядки за <code>PROVENANCE.json</code>).
+                <strong>1. Вхідні файли:</strong> Відкритий документ вимог <code>06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx</code> (Prozorro 1:1, 52 табличні записи ТТХ) та контрольний протокол <code>07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx</code> (51 рядок даних за <code>PROVENANCE.json</code>, 47 зіставлених пар).
               </div>
               <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;">
                 <strong>2. Початкова звірка (До виправлення):</strong> У пам'яті браузера зіставлено <code>47</code> пар характеристик у системі SI: <code>45 PASS</code> (зокрема <code>1420 г = 1.42 кг</code>, <code>75.6 км/год = 21 м/с</code>) та <code>2 FAIL</code>.
@@ -635,13 +635,13 @@
                 <strong>3. Точні координати 2 розбіжностей:</strong> Комірка <code>C31</code> (<code>Стандартна напруга</code>: вимога <code>14.76 В</code> проти <code>15.4 В</code> у протоколі, <code>Δ = +0.64 В</code>) та комірка <code>C48</code> (<code>Робоча температура</code>: вимога <code>від -20°C до 50°C</code> проти <code>від -10° до 40° C</code>).
               </div>
               <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;">
-                <strong>4. Чесна межа (<code>UNVERIFIED</code>):</strong> Позиції без парного джерела або з багатовимірним записом (<code>260.6 × 113.7 × 138.4 мм</code>, <code>1420 г / 1430 г</code>) і криптопідпис <code>.p7s</code> чесно позначаються як <code>UNVERIFIED</code>.
+                <strong>4. Чесна межа (<code>UNVERIFIED</code>):</strong> Багатовимірні та складені рядки (<code>260.6 × 113.7 × 138.4 мм</code>, <code>1420 г / 1430 г</code>) у цьому пакеті успішно зіставлені за провідною величиною SI і входять до <code>47 PASS</code>, тоді як <code>5</code> вимог ТУ (<code>Еквівалентна фокусна відстань</code>, <code>Експозиція</code>, <code>Час роботи</code>, <code>Кількість супутників</code>, <code>Комплектація БпЛА</code>) не зіставлено автоматично з протоколом і винесено в окремий блок <code>UNVERIFIED</code> для ручної перевірки інженером (разом із <code>.p7s</code> у Пресеті 3).
               </div>
               <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;">
                 <strong>5. Виправлення інженером:</strong> Після звірки з первинним актом випробувань інженер коригує комірки <code>C31</code> (<code>15.4 В → 14.76 В</code>) та <code>C48</code> (<code>від -10° до 40° C → від -20°C до 50°C</code>) у <code>07_Prozorro_UAV_Protocol_DJI_Matrice_4T_FIXED.xlsx</code>.
               </div>
               <div style="background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;">
-                <strong>6. Повторний прогін (Після виправлення):</strong> Повторна перевірка виправленого пакета у браузері підтверджує <strong><code>47/47 PASS</code> та <code>0 FAIL</code></strong> (із збереженням чесного статусу <code>UNVERIFIED</code> для односторонніх полів).
+                <strong>6. Повторний прогін (Після виправлення):</strong> Повторна перевірка виправленого пакета у браузері підтверджує <strong><code>47/47 PASS</code> та <code>0 FAIL</code></strong> (із збереженням списку з <code>5</code> не зіставлених автоматично вимог ТУ зі статусом <code>UNVERIFIED</code> для ручної перевірки).
               </div>
             </div>
             <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px;">
@@ -829,13 +829,13 @@
 
           var unmatchedTuList = Array.isArray(state.unmatchedTuRows) ? state.unmatchedTuRows : [];
           var unmatchedTuHtml = "";
-          if (unmatchedTuList.length > 0 && !isRestoredCapsule) {
+          if (unmatchedTuList.length > 0) {
             var uItemsHtml = unmatchedTuList.map(function (u, uIdx) {
               return "<li><b>#" + (uIdx + 1) + " " + esc(u.tuParam) + "</b>: <code>" + esc(u.tuValue) + "</code> · <span style='color:#475467'>" + esc(u.tuSource || "ТУ") + (u.tuRef ? (" (<code>" + esc(u.tuRef) + "</code>)") : "") + "</span> — <i>" + esc(u.reasonUk) + "</i></li>";
             }).join("");
             unmatchedTuHtml =
               "<details style='margin-top:8px;font-size:12.5px;color:#7c2d12;background:#fffbeb;border:1px solid #fde68a;padding:7px 10px;border-radius:6px'>" +
-              "<summary style='cursor:pointer;font-weight:600'>📋 Односторонні позиції з вимог ТУ без парного рядка у протоколі випробувань (UNVERIFIED: " + unmatchedTuList.length + " записів поза " + alignedRows.length + " зіставленими парами)</summary>" +
+              "<summary style='cursor:pointer;font-weight:600'>📋 Позиції з вимог ТУ, які не зіставлено автоматично — потрібна ручна перевірка (UNVERIFIED: " + unmatchedTuList.length + " записів поза " + alignedRows.length + " зіставленими парами)</summary>" +
               "<ul style='margin:6px 0 2px 18px;padding:0;line-height:1.45'>" + uItemsHtml + "</ul>" +
               "</details>";
           }
@@ -850,7 +850,7 @@
                 " · ",
               "Розбіжностей (FAIL): <b style='color:#d92d20'>" + failCnt + "</b> · ",
               "Неперевірено у парах (UNVERIFIED): <b style='color:#853104'>" + unverifiedCnt + "</b> · ",
-              "Односторонніх позицій ТУ без пари (UNVERIFIED): <b style='color:#853104'>" + unmatchedTuList.length + "</b> · ",
+              "Не зіставлено автоматично з ТУ (UNVERIFIED, ручна перевірка): <b style='color:#853104'>" + unmatchedTuList.length + "</b> · ",
               "Відсіяно несумісних величин SI: <b style='color:#0022ff'>" + blockedSamples.length + "</b></div>",
               "</div>",
               unmatchedTuHtml,
@@ -1327,6 +1327,13 @@
           var alignedRows = Array.isArray(opts.alignedRows)
             ? opts.alignedRows
             : (Array.isArray(state.alignedRows) ? state.alignedRows : []);
+          var unmatchedTuRows = Array.isArray(opts.unmatchedTuRows)
+            ? opts.unmatchedTuRows
+            : (Array.isArray(state.unmatchedTuRows)
+                ? state.unmatchedTuRows
+                : (state.timeSaver && state.timeSaver.diagCapsule && Array.isArray(state.timeSaver.diagCapsule.unmatchedTuRows)
+                    ? state.timeSaver.diagCapsule.unmatchedTuRows
+                    : []));
           var proseSlots = Array.isArray(opts.proseSlots)
             ? opts.proseSlots
             : (Array.isArray(state.proseSlots) ? state.proseSlots : []);
@@ -1401,6 +1408,8 @@
             passCount: opts.passCount != null ? Number(opts.passCount) : passCount,
             failCount: opts.failCount != null ? Number(opts.failCount) : failCount,
             unverifiedCount: opts.unverifiedCount != null ? Number(opts.unverifiedCount) : unverifiedCount,
+            unmatchedTuRowsCount: opts.unmatchedTuRowsCount != null ? Number(opts.unmatchedTuRowsCount) : unmatchedTuRows.length,
+            unmatchedTuRows: unmatchedTuRows,
             alignedRows: alignedRows,
             proseSlots: proseSlots,
             remediations: remediations,
@@ -1513,7 +1522,7 @@
               "  <div class='op-stat-card'><span>Криптографічний контур</span><strong style='color:#0022ff'>" + esc(cipherStr) + " + " + esc(macStr) + "</strong></div>",
               "  <div class='op-stat-card'><span>Стиснення deflate-raw</span><strong style='color:#067647'><span class='num-unit'>" + esc(uncompBytes) + " Б</span> → <span class='num-unit'>" + esc(compBytes) + " Б</span> (<span class='num-unit'>-" + esc(compRatio) + "%</span>)</strong></div>",
               "  <div class='op-stat-card'><span>Мережева ізоляція RFC 3986</span><strong style='color:#067647'>" + esc(CANONICAL_ZERO_EGRESS_TEXT) + "</strong></div>",
-              "  <div class='op-stat-card'><span>OPSEC Санація (за шаблонами)</span><strong style='color:#067647'>Вилучено: " + esc(redaction.total_sensitive_entities_stripped || 0) + " · Потребує перегляду людиною (" + esc((verified && verified.verdict) || "PASSED") + ")</strong></div>",
+              "  <div class='op-stat-card'><span>OPSEC Санація (за шаблонами)</span><strong style='color:#067647'>Вилучено: " + esc(redaction.total_sensitive_entities_stripped || 0) + " · Статус OPSEC: " + esc(verified && verified.opsec_clean === false ? "ПОТРЕБУЄ ПЕРЕВІРКИ" : "ЧИСТО (PASSED)") + "</strong></div>",
               "</div>",
               "<div style='font-size:12px;color:#334155;font-family:var(--font-mono);background:#ffffff;border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px'>",
               "  <div><b>Ключ доступу:</b> <code>" + esc(keyModeText) + "</code></div>",
@@ -1612,6 +1621,7 @@
                 bytesProcessed: Number(verified.uncompressed_size_bytes || 1024)
               };
 
+          var restoredUnmatchedTuRows = Array.isArray(zk.unmatchedTuRows) ? zk.unmatchedTuRows : [];
           var restoredState = {
             presetId: "restored_from_diag_hash",
             title: zk.title || "Відновлений звіт із криптокапсули #diag=",
@@ -1622,6 +1632,8 @@
             files: restoredFiles,
             proseSlots: Array.isArray(zk.proseSlots) ? zk.proseSlots : [],
             alignedRows: restoredAlignedRows,
+            unmatchedTuRowsCount: restoredUnmatchedTuRows.length,
+            unmatchedTuRows: restoredUnmatchedTuRows,
             remediations: restoredRemediations,
             blockedByPhysicsSamples: [],
             extraRemediations: [],
@@ -1686,11 +1698,12 @@
               renderCryptoCapsuleVerification(null, verified, badge, detailsBox, candidateKey, usedDemo);
               restoreCockpitStateFromDecryptedCapsule(verified);
               if (feedback) {
+                var opsecStatusLabel = verified.opsec_clean === false ? "OPSEC: ПОТРЕБУЄ ПЕРЕВІРКИ" : "OPSEC: ЧИСТО (PASSED)";
                 feedback.style.color = "var(--green)";
                 feedback.textContent =
-                  "🔐 Успішно розшифровано вхідне посилання #diag= та атомарно відновлено стан перевірки (" +
-                  (verified.verdict || "PASSED") +
-                  ")!";
+                  "🔐 Успішно розшифровано вхідне посилання #diag= (AES-256-GCM + HMAC-SHA256: ПІДТВЕРДЖЕНО · " +
+                  opsecStatusLabel +
+                  ") та атомарно відновлено стан перевірки!";
               }
             })
             .catch(function (err) {

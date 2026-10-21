@@ -7010,12 +7010,24 @@ __globalRoot.runRealOpenDataSample = async function (action) {
       : [];
     var cross14Fails = cross14FailRows.length;
 
-    // Parameter-keyed content comparison between 06_Matrice_4T.docx and 06a_Matrice_4T_Tender2.docx (order-independent)
+    // Parameter-keyed multiset content comparison between 06_Matrice_4T.docx and 06a_Matrice_4T_Tender2.docx (order-independent)
     var cross15MatchedRows = 0;
     var cross15ValueDiffs = 0;
     var r06Arr = (docx06Out && docx06Out.records) ? docx06Out.records : [];
     var r06aArr = (docx06aOut && docx06aOut.records) ? docx06aOut.records : [];
+    var r06Buckets = Object.create(null);
     var r06aBuckets = Object.create(null);
+    var all15Keys = Object.create(null);
+    for (var r15 = 0; r15 < r06Arr.length; r15++) {
+      var cA = (r06Arr[r15] && r06Arr[r15].cells) ? r06Arr[r15].cells : [];
+      var pA = String(cA[0] || "").trim();
+      var vA = String(cA.slice(1).join(" | ") || "").trim();
+      if (pA) {
+        if (!r06Buckets[pA]) r06Buckets[pA] = [];
+        r06Buckets[pA].push(vA);
+        all15Keys[pA] = true;
+      }
+    }
     for (var b15 = 0; b15 < r06aArr.length; b15++) {
       var cB = (r06aArr[b15] && r06aArr[b15].cells) ? r06aArr[b15].cells : [];
       var pB = String(cB[0] || "").trim();
@@ -7023,28 +7035,25 @@ __globalRoot.runRealOpenDataSample = async function (action) {
       if (pB) {
         if (!r06aBuckets[pB]) r06aBuckets[pB] = [];
         r06aBuckets[pB].push(vB);
+        all15Keys[pB] = true;
       }
     }
-    for (var r15 = 0; r15 < r06Arr.length; r15++) {
-      var cA = (r06Arr[r15] && r06Arr[r15].cells) ? r06Arr[r15].cells : [];
-      var pA = String(cA[0] || "").trim();
-      var vA = String(cA.slice(1).join(" | ") || "").trim();
-      var bucket = pA ? r06aBuckets[pA] : null;
-      if (bucket && bucket.length > 0) {
-        var matchIdx = bucket.indexOf(vA);
-        if (matchIdx >= 0) {
-          bucket.splice(matchIdx, 1);
+    Object.keys(all15Keys).forEach(function (k) {
+      var listA = (r06Buckets[k] || []).slice();
+      var listB = (r06aBuckets[k] || []).slice();
+      var remA = [];
+      // Pass 1: exact value matches inside the multiset for key k (completely independent of row order)
+      for (var iA = 0; iA < listA.length; iA++) {
+        var exactIdx = listB.indexOf(listA[iA]);
+        if (exactIdx >= 0) {
+          listB.splice(exactIdx, 1);
           cross15MatchedRows++;
         } else {
-          bucket.shift();
-          cross15ValueDiffs++;
+          remA.push(listA[iA]);
         }
-      } else {
-        cross15ValueDiffs++;
       }
-    }
-    Object.keys(r06aBuckets).forEach(function (k) {
-      cross15ValueDiffs += r06aBuckets[k].length;
+      // Pass 2: remaining unmatched values for key k count as value/row diffs
+      cross15ValueDiffs += Math.max(remA.length, listB.length);
     });
     var cross15ComparedTotal = cross15MatchedRows + cross15ValueDiffs;
     var cross15RsidDelta = Math.abs(docx06aRsids - docx06Rsids);

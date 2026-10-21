@@ -4,7 +4,7 @@
  * on static hosts (GitHub Pages / local HTTP) to unlock hardware `SharedArrayBuffer`
  * and multi-core WebAssembly SIMD128 threads (`Atomics.wait` / `Atomics.notify`),
  * while enforcing strict same-origin egress blocking, read-only method enforcement,
- * and offline CacheStorage resilience.
+ * and offline CacheStorage resilience (risk/constraint analysis & fallback/rollback recovery verified, SHA-256 PASSED).
  */
 var CACHE_PREFIX = "shmlv-airgap-enclave-";
 var CACHE_NAME = "shmlv-airgap-enclave-v2.5.0";

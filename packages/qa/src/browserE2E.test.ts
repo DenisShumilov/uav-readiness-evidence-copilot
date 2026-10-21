@@ -268,6 +268,14 @@ describe("Sector A15 Layer 2 — Real Headless Chromium E2E Suite", () => {
     const restoredTableText = (await page2.locator("#wow11AlignmentBody").textContent()) || "";
     expect(restoredTableText).toContain("Доступний збережений витяг; вихідний файл не передано");
 
+    const restoredSummaryText = (await page2.locator("#wow11AlignmentSummary").textContent()) || "";
+    expect(restoredSummaryText).toContain("Не зіставлено автоматично з ТУ (UNVERIFIED, ручна перевірка): 5");
+    expect(restoredSummaryText).toContain("Позиції з вимог ТУ, які не зіставлено автоматично — потрібна ручна перевірка");
+
+    const restoredFeedbackText = (await page2.locator("#wow11ActionFeedback").textContent()) || "";
+    expect(restoredFeedbackText).toContain("OPSEC: ЧИСТО (PASSED)");
+    expect(restoredFeedbackText).not.toContain("(FAILED)");
+
     // Mutate 1 character in the ciphertext segment of #diag= and open in a 3rd clean context
     const [basePart, hashPart] = capsuleInfo.shareUrl.split("#diag=");
     const segs = hashPart.split(".");

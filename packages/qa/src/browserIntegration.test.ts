@@ -340,10 +340,24 @@ describe("Sector A15 Layer 1 — Anti-Substitution & Browser Engine Integration 
     expect(spoofedZkSanitized.opsec_redaction_proof.opsec_clean).toBe(true);
     expect(spoofedZkSanitized.opsec_redaction_proof.leaked_pii_tokens_remaining).toBe(0);
 
-    // Raw unverified [zk_contact_pii:0501234567] passed directly to verifyZeroOpsecLeakage must fail
-    const rawSpoofedLeak = cryptoShare.verifyZeroOpsecLeakage('{"title":"[zk_contact_pii:0501234567]"}');
+    // Raw unverified [zk_contact_pii:0501234567] passed directly to verifyZeroOpsecLeakage must fail,
+    // even if the caller tries to spoof opsec_redaction_proof.trusted_commitments inside the JSON string
+    const rawSpoofedLeak = cryptoShare.verifyZeroOpsecLeakage(
+      '{"title":"[zk_contact_pii:0501234567]","opsec_redaction_proof":{"trusted_commitments":["[zk_contact_pii:0501234567]"]}}'
+    );
     expect(rawSpoofedLeak.opsec_clean).toBe(false);
     expect(rawSpoofedLeak.leaked_pii_tokens_remaining).toBeGreaterThanOrEqual(1);
+
+    // Floating-point numbers like 0.8284930213349333 or 0.41885390829169544 must NOT trigger false-positive phone/edrpou leaks
+    const floatPrecisionCheck = cryptoShare.verifyZeroOpsecLeakage(
+      JSON.stringify({
+        alignedRows: [
+          { similarityNum: 0.8284930213349333, note: "score=0.41885390829169544" }
+        ]
+      })
+    );
+    expect(floatPrecisionCheck.opsec_clean).toBe(true);
+    expect(floatPrecisionCheck.leaked_pii_tokens_remaining).toBe(0);
 
     // Deterministic salt "3fa34a33aa9b72791a35f44188212af2" that produces a2308 in zk_uav_product must pass cleanly
     const capsuleFixedSalt = await cryptoShare.createSignedDiagnosticCapsule(rawPayload, {
@@ -353,7 +367,7 @@ describe("Sector A15 Layer 1 — Anti-Substitution & Browser Engine Integration 
     expect(capsuleFixedSalt.zk_diagnostic_graph.opsec_redaction_proof.leaked_pii_tokens_remaining).toBe(0);
   });
 
-  it("Sector A04 & A18: rejects .p7s outer [0] EXPLICIT (0xA0 -> 0xA1) mutation and verifies Preset 1 Before (45 PASS / 2 FAIL at C31, C48) vs After Remediation (47 PASS / 0 FAIL)", () => {
+  it("Sector A04 & A18: rejects .p7s outer [0] EXPLICIT (0xA0 -> 0xA1) mutation and verifies Preset 1 Before (45 PASS / 2 FAIL at C31, C48) vs After Remediation (47 PASS / 0 FAIL)", async () => {
     const mfv = multiVerifier as {
       parseCmsSignedDataDer: (bytes: Uint8Array) => {
         valid: boolean;
@@ -471,6 +485,25 @@ describe("Sector A15 Layer 1 — Anti-Substitution & Browser Engine Integration 
     );
     expect(afterFails).toHaveLength(0);
     expect(afterPasses).toHaveLength(47);
+    expect(afterState.unmatchedTuRows).toHaveLength(5);
+
+    // Verify CSV export includes both 47 paired rows and 5 unmatched TU rows (1 header + 52 rows = 53 lines)
+    const csvExportFn = (multiVerifier as { exportAlignmentMatrixCsv: (s: unknown) => string }).exportAlignmentMatrixCsv;
+    const fullCsvLines = csvExportFn(afterState).trim().split("\n");
+    expect(fullCsvLines).toHaveLength(53);
+
+    // Verify full Preset 1 capsule roundtrip preserves all 5 unmatchedTuRows and passes OPSEC cleanly (no float false-positive)
+    const fullPresetCapsule = await cryptoShare.createSignedDiagnosticCapsule(afterState);
+    expect(fullPresetCapsule.zk_diagnostic_graph.opsec_redaction_proof.opsec_clean).toBe(true);
+    expect(fullPresetCapsule.zk_diagnostic_graph.opsec_redaction_proof.leaked_pii_tokens_remaining).toBe(0);
+    const verifiedPresetCapsule = await cryptoShare.decryptAndVerifyDiagnosticCapsule(
+      fullPresetCapsule.share_url,
+      { passphrase: fullPresetCapsule.generatedSecret }
+    );
+    expect(verifiedPresetCapsule.opsec_clean).toBe(true);
+    expect(verifiedPresetCapsule.verdict).toBe("PASSED");
+    expect(verifiedPresetCapsule.zk_diagnostic_graph.alignedRows).toHaveLength(47);
+    expect(verifiedPresetCapsule.zk_diagnostic_graph.unmatchedTuRows).toHaveLength(5);
   });
 
   it("Sector A02.2: tools-engine.js compute() returns 0 when all sources are disabled and 44 in baseline state", () => {

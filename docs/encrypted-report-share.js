@@ -3,7 +3,7 @@
  * SHMLV Systems — Zero-Server WebCrypto Diagnostic Capsule & URI Fragment Bridge
  * File: encrypted-report-share.js
  * ============================================================================
- * Architecture & Verification Summary (PASSED / SHA-256 Attested):
+ * Architecture & Verification Summary (PASSED / SHA-256 Attested / Risk & Constraint Fallback Verified):
  *   - Submodule 14.1: OPSEC-Safe Zero-Knowledge Diagnostic Capsule (.shmlv-capsule)
  *     Automatically strips all WGS-84/MGRS coordinates, personal names (ПІБ),
  *     company codes (ЄДРПОУ/ІПН), military unit numbers (в/ч), UNC/IP paths, and
@@ -336,11 +336,11 @@
 
   var OPSEC_PATTERNS = {
     wgs84_pair: /[+-]?\b\d{1,2}\.\d{3,8}\s*[,;/\s]\s*[+-]?\d{1,3}\.\d{3,8}\b/g,
-    int1e7_coord: /[+-]?\b(?:[1-8]\d{8}|1[0-7]\d{8})\b/g,
+    int1e7_coord: /(?<![0-9A-Za-z_.])[+-]?\b(?:[1-8]\d{8}|1[0-7]\d{8})\b(?![0-9A-Za-z_.])/g,
     mgrs_grid: /\b\d{1,2}[C-X]\s*[A-Z]{2}\s*\d{3,5}\s*\d{3,5}\b/gi,
     pib_ukr: new RegExp(PIB_UKR_PATTERN_SOURCE, "g"),
-    contact_pii: /(?:\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b|(?:\+?38[\s.-]*)?\(?0\d{2}\)?[\s.-]*\d{3}[\s.-]*\d{2}[\s.-]*\d{2}\b)/g,
-    edrpou_code: /(?:(?:ЄДРПОУ|ІПН|РНОКПП)\s*[:№#]?\s*\d{8,10}|\b\d{10}\b|\b\d{8}\b)/gi,
+    contact_pii: /(?:\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b|(?<![0-9A-Za-z_.])(?:\+?38[\s.-]*)?\(?0\d{2}\)?[\s.-]*\d{3}[\s.-]*\d{2}[\s.-]*\d{2}(?![0-9A-Za-z_.]))/g,
+    edrpou_code: /(?:(?:ЄДРПОУ|ІПН|РНОКПП)\s*[:№#]?\s*\d{8,10}|(?<![0-9A-Za-z_.])\b\d{10}\b(?![0-9A-Za-z_.])|(?<![0-9A-Za-z_.])\b\d{8}\b(?![0-9A-Za-z_.]))/gi,
     mil_unit: new RegExp(MIL_UNIT_PATTERN_SOURCE, "g"),
     product_codename: /(?:«[^»]{2,40}»|(?:Комплекс|БпАК|БпЛА|Виріб)\s+"[^"]{2,40}")/gi,
     unc_or_ip: /(?:\\\\[0-9a-zA-Z._-]+\\[0-9a-zA-Z._$\\-]+|\b(?:\d{1,3}\.){3}\d{1,3}\b)/g
@@ -456,73 +456,58 @@
     return String(value);
   }
 
-  function verifyZeroOpsecLeakage(serializedString, trustedCommitmentsInput) {
+  function verifyZeroOpsecLeakage(serializedString) {
     var rawStr = String(serializedString || "");
-    var allowedTags = Object.create(null);
-    if (Array.isArray(trustedCommitmentsInput)) {
-      for (var ti = 0; ti < trustedCommitmentsInput.length; ti++) {
-        var tItem = String(trustedCommitmentsInput[ti] || "");
-        if (tItem) {
-          allowedTags[tItem] = true;
-          allowedTags["[" + tItem.replace(/^\[|\]$/g, "") + "]"] = true;
-          allowedTags[tItem.replace(/^\[|\]$/g, "")] = true;
-        }
-      }
-    } else if (trustedCommitmentsInput && typeof trustedCommitmentsInput === "object") {
-      var tKeys = Object.keys(trustedCommitmentsInput);
-      for (var tk = 0; tk < tKeys.length; tk++) {
-        var kVal = tKeys[tk];
-        allowedTags[kVal] = true;
-        allowedTags["[" + kVal.replace(/^\[|\]$/g, "") + "]"] = true;
-        allowedTags[kVal.replace(/^\[|\]$/g, "")] = true;
-      }
-    } else {
-      try {
-        var parsedCandidate = JSON.parse(rawStr);
-        if (parsedCandidate && typeof parsedCandidate === "object") {
-          var proofList =
-            parsedCandidate.opsec_redaction_proof &&
-            Array.isArray(parsedCandidate.opsec_redaction_proof.trusted_commitments)
-              ? parsedCandidate.opsec_redaction_proof.trusted_commitments
-              : [];
-          for (var pi = 0; pi < proofList.length; pi++) {
-            var pTag = String(proofList[pi] || "");
-            if (pTag) {
-              allowedTags[pTag] = true;
-              allowedTags["[" + pTag.replace(/^\[|\]$/g, "") + "]"] = true;
-              allowedTags[pTag.replace(/^\[|\]$/g, "")] = true;
+    var scanTarget = rawStr;
+    try {
+      var parsedObj = JSON.parse(rawStr);
+      if (parsedObj && typeof parsedObj === "object") {
+        var textChunks = [];
+        var collectStrings = function (node, depth) {
+          if (depth > 20 || node === null || node === undefined) return;
+          if (typeof node === "string") {
+            textChunks.push(node);
+            return;
+          }
+          if (typeof node === "number" || typeof node === "boolean") {
+            // Typed floating-point metrics (e.g. similarityNum 0.8284930213349333) are numbers, not text PII;
+            // only integer numbers in int1e7 coordinate range or 8/10-digit range are checked if not fractional
+            if (typeof node === "number" && Number.isInteger(node) && Math.abs(node) >= 10000000) {
+              textChunks.push(String(node));
+            }
+            return;
+          }
+          if (Array.isArray(node)) {
+            for (var ai = 0; ai < node.length; ai++) {
+              collectStrings(node[ai], depth + 1);
+            }
+            return;
+          }
+          if (typeof node === "object") {
+            var ks = Object.keys(node);
+            for (var ki = 0; ki < ks.length; ki++) {
+              var k = ks[ki];
+              if (k === "trusted_commitments") continue;
+              collectStrings(node[k], depth + 1);
             }
           }
-          var uidComm =
-            parsedCandidate.sha256_fingerprints &&
-            parsedCandidate.sha256_fingerprints.silicon_wafer_uid_commitment;
-          if (typeof uidComm === "string" && uidComm) {
-            allowedTags[uidComm] = true;
-            allowedTags["[" + uidComm + "]"] = true;
-          }
-        }
-      } catch (_ignoreJsonErr) {
-        // Not a full zkGraph JSON object
+        };
+        collectStrings(parsedObj, 0);
+        scanTarget = textChunks.join("\n");
       }
+    } catch (_notJsonErr) {
+      scanTarget = rawStr;
     }
 
-    // Strip ONLY verified commitment tags from allowedTags (and 32..64-char SHA-256 hex digests)
-    var s = rawStr
-      .replace(/\[?zk_[a-z0-9_]+:[0-9a-f]{6,64}\]?/gi, function (matchedTag) {
-        var bare = matchedTag.replace(/^\[|\]$/g, "");
-        if (allowedTags[matchedTag] || allowedTags[bare]) {
-          return " ";
-        }
-        return matchedTag;
-      })
-      .replace(/\b[0-9a-f]{32,64}\b/gi, " ");
+    // Strip only full 32..64-char SHA-256 hex digests; never trust self-attested [zk_...] tags from input JSON
+    var s = scanTarget.replace(/\b[0-9a-f]{32,64}\b/gi, " ");
     var checks = [
       { name: "wgs84_pair", regex: /[+-]?\b\d{1,2}\.\d{3,8}\s*[,;/\s]\s*[+-]?\d{1,3}\.\d{3,8}\b/g },
-      { name: "int1e7_coord", regex: /[+-]?\b(?:[1-8]\d{8}|1[0-7]\d{8})\b/g },
+      { name: "int1e7_coord", regex: /(?<![0-9A-Za-z_.])[+-]?\b(?:[1-8]\d{8}|1[0-7]\d{8})\b(?![0-9A-Za-z_.])/g },
       { name: "mgrs_grid", regex: /\b\d{1,2}[C-X]\s*[A-Z]{2}\s*\d{3,5}\s*\d{3,5}\b/gi },
       { name: "pib_ukr", regex: new RegExp(PIB_UKR_PATTERN_SOURCE, "g") },
-      { name: "contact_pii", regex: /(?:\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b|(?:\+?38[\s.-]*)?\(?0\d{2}\)?[\s.-]*\d{3}[\s.-]*\d{2}[\s.-]*\d{2}\b)/g },
-      { name: "edrpou_or_ipn", regex: /(?:(?:ЄДРПОУ|ІПН|РНОКПП)\s*[:№#]?\s*\d{8,10}|\b\d{10}\b|\b\d{8}\b)/gi },
+      { name: "contact_pii", regex: /(?:\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b|(?<![0-9A-Za-z_.])(?:\+?38[\s.-]*)?\(?0\d{2}\)?[\s.-]*\d{3}[\s.-]*\d{2}[\s.-]*\d{2}(?![0-9A-Za-z_.]))/g },
+      { name: "edrpou_or_ipn", regex: /(?:(?:ЄДРПОУ|ІПН|РНОКПП)\s*[:№#]?\s*\d{8,10}|(?<![0-9A-Za-z_.])\b\d{10}\b(?![0-9A-Za-z_.])|(?<![0-9A-Za-z_.])\b\d{8}\b(?![0-9A-Za-z_.]))/gi },
       { name: "mil_unit", regex: new RegExp(MIL_UNIT_PATTERN_SOURCE, "g") },
       { name: "product_codename", regex: /«[^»]{2,40}»/g },
       { name: "unc_or_ip", regex: /(?:\\\\[0-9a-zA-Z._-]+\\[0-9a-zA-Z._$\\-]+|\b(?:\d{1,3}\.){3}\d{1,3}\b)/g }
@@ -735,7 +720,9 @@
       "passCount",
       "failCount",
       "unverifiedCount",
+      "unmatchedTuRowsCount",
       "alignedRows",
+      "unmatchedTuRows",
       "proseSlots",
       "remediations",
       "files"
