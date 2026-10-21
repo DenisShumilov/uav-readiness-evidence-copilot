@@ -506,7 +506,7 @@ describe("Sector A15 Layer 1 — Anti-Substitution & Browser Engine Integration 
     expect(verifiedPresetCapsule.zk_diagnostic_graph.unmatchedTuRows).toHaveLength(5);
   });
 
-  it("Sector A02.2: tools-engine.js compute() returns 0 when all sources are disabled and 44 in baseline state", () => {
+  it("Sector A02.2 & Document Semantics Regression: tools-engine.js compute() returns 0/44 and both engines reject text mismatch ('червоний' vs 'синій'), 3D dimension vector mismatch ('260.6 × 113.7 × 138.4 мм' vs '260.6 × 999 × 138.4 мм'), and flag incomplete multi-condition ('100 Вт ... 82 Вт' vs '100 Вт') as UNVERIFIED", async () => {
     const toolsEngineSrc = readFileSync(join(process.cwd(), "docs", "tools-engine.js"), "utf8");
     const extractBalanced = (start: RegExp, open: string, close: string): string => {
       const m = toolsEngineSrc.match(start);
@@ -539,5 +539,68 @@ describe("Sector A15 Layer 1 — Anti-Substitution & Browser Engine Integration 
     expect(zeroResult.v).toBe(0);
     expect(zeroResult.p).toBe(0);
     expect(zeroResult.score).toBe(0);
+
+    await import(pathToFileURL(join(process.cwd(), "docs", "tools-engine.js")).href);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const g = globalThis as any;
+    const compareSpecPair = g.compareSpecPair || g.window?.compareSpecPair;
+    expect(typeof compareSpecPair).toBe("function");
+
+    // 1. Route A: multi-file-verifier-bundle.js (runNeuroSymbolicCrossAlignment)
+    const negTu = [
+      { paramName: "Колір корпусу", rawValue: "червоний", normRef: "w:tr 1", sourceFile: "tu.docx" },
+      { paramName: "Габарити коробки", rawValue: "260.6 × 113.7 × 138.4 мм", normRef: "w:tr 2", sourceFile: "tu.docx" },
+      {
+        paramName: "Потужність зарядки",
+        rawValue: "Загальна потужність 100 Вт, додатково не більше 82 Вт на кожен порт за вказаних умов",
+        normRef: "w:tr 3",
+        sourceFile: "tu.docx"
+      }
+    ];
+    const negPmv = [
+      { paramName: "Колір корпусу", rawValue: "синій", factRef: "C1", sourceFile: "pmv.xlsx" },
+      { paramName: "Габарити коробки", rawValue: "260.6 × 999 × 138.4 мм", factRef: "C2", sourceFile: "pmv.xlsx" },
+      { paramName: "Потужність зарядки", rawValue: "100 Вт", factRef: "C3", sourceFile: "pmv.xlsx" }
+    ];
+    const negAligned = multiVerifier.runNeuroSymbolicCrossAlignment(negTu, negPmv).alignedRows as Array<{
+      tuParam: string;
+      status: string;
+    }>;
+    expect(negAligned).toHaveLength(3);
+    expect(negAligned.find((r) => r.tuParam === "Колір корпусу")?.status).toBe("FAIL_VALUE_CONFLICT");
+    expect(negAligned.find((r) => r.tuParam === "Габарити коробки")?.status).toBe("FAIL_VALUE_CONFLICT");
+    expect(negAligned.find((r) => r.tuParam === "Потужність зарядки")?.status).toBe("UNVERIFIED");
+
+    // Positive controls on Route A
+    const posPmv = [
+      { paramName: "Колір корпусу", rawValue: "червоний", factRef: "C1", sourceFile: "pmv.xlsx" },
+      { paramName: "Габарити коробки", rawValue: "26.06 × 11.37 × 13.84 см", factRef: "C2", sourceFile: "pmv.xlsx" }
+    ];
+    const posAligned = multiVerifier.runNeuroSymbolicCrossAlignment(negTu.slice(0, 2), posPmv).alignedRows as Array<{
+      tuParam: string;
+      status: string;
+    }>;
+    expect(posAligned.find((r) => r.tuParam === "Колір корпусу")?.status).toBe("PASS");
+    expect(posAligned.find((r) => r.tuParam === "Габарити коробки")?.status).toBe("UNIT_CONVERTED_PASS");
+
+    // 2. Route B: tools-engine.js (compareSpecPair)
+    expect(compareSpecPair("Колір корпусу", "червоний", "синій", ["tu.docx", "pmv.xlsx"]).status).toBe("FAIL");
+    expect(compareSpecPair("Колір корпусу", "червоний", "червоний", ["tu.docx", "pmv.xlsx"]).status).toBe("PASS");
+    expect(
+      compareSpecPair("Габарити коробки", "260.6 × 113.7 × 138.4 мм", "260.6 × 999 × 138.4 мм", ["tu.docx", "pmv.xlsx"])
+        .status
+    ).toBe("FAIL");
+    expect(
+      compareSpecPair("Габарити коробки", "260.6 × 113.7 × 138.4 мм", "26.06 × 11.37 × 13.84 см", ["tu.docx", "pmv.xlsx"])
+        .status
+    ).toBe("PASS");
+    expect(
+      compareSpecPair(
+        "Потужність зарядки",
+        "Загальна потужність 100 Вт, додатково не більше 82 Вт на кожен порт за вказаних умов",
+        "100 Вт",
+        ["tu.docx", "pmv.xlsx"]
+      ).status
+    ).toBe("UNVERIFIED");
   });
 });

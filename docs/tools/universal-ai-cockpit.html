@@ -900,7 +900,7 @@
                 ? r.remediationHint.requiredValue
                 : (r.nextActionUk || (isLocked
                     ? "ЗАБЛОКОВАНО (відсутній доказ / джерело) — додати первинний протокол або сертифікат"
-                    : (rowPass ? "Підтверджено за нормою SI — додаткових дій інженера не потрібно" : "Інженер має звірити оригінал протоколу та узгодити розбіжність")));
+                    : (rowPass ? "Збіг за перевіреним правилом SI (в межах автоматизованого профілю)" : "Інженер має звірити оригінал протоколу та узгодити розбіжність")));
 
               var excerptPayload = r.sourceExcerpt || (
                 "Параметр: " + paramTitle +
@@ -1194,7 +1194,7 @@
               remediationHint: remForRow || matched.remediationHint || null,
               nextActionUk: remForRow
                 ? remForRow.requiredValue
-                : "Підтверджено за сканом ПМВ (" + r.deltaStatus + ") — додаткових дій інженера не потрібно"
+                : "Збіг за сканом ПМВ (" + r.deltaStatus + ") у межах шаблону таблиці"
             };
           });
 
