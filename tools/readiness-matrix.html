@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' blob: data:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none';" />
+    <title>06. Матриця готовності пакету доказів (0–100) — shmlv systems</title>
+    <meta name="description" content="Оцінка повноти комплекту доказів постачальника БпЛА (BOM, настанови, акти ВТК, протоколи ПМВ) за шкалою 0–100 із правилом стелі конфлікту 49/100." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="shmlv systems" />
+    <meta property="og:locale" content="uk_UA" />
+    <meta property="og:title" content="06. Матриця готовності пакету доказів (0–100) — shmlv systems" />
+    <meta property="og:description" content="Оцінка повноти комплекту доказів постачальника БпЛА (BOM, настанови, акти ВТК, протоколи ПМВ) за шкалою 0–100 із правилом стелі конфлікту 49/100." />
+    <meta property="og:url" content="https://denisshumilov.github.io/uav-readiness-evidence-copilot/tools/readiness-matrix.html" />
+    <meta property="og:image" content="https://denisshumilov.github.io/uav-readiness-evidence-copilot/social-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="06. Матриця готовності пакету доказів (0–100) — shmlv systems" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="06. Матриця готовності пакету доказів (0–100) — shmlv systems" />
+    <meta name="twitter:description" content="Оцінка повноти комплекту доказів постачальника БпЛА (BOM, настанови, акти ВТК, протоколи ПМВ) за шкалою 0–100 із правилом стелі конфлікту 49/100." />
+    <meta name="twitter:image" content="https://denisshumilov.github.io/uav-readiness-evidence-copilot/social-card.png" />
+    <meta name="twitter:image:alt" content="06. Матриця готовності пакету доказів (0–100) — shmlv systems" />
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+
+  <body data-page-tool="readiness">
+    <header class="topbar-wrap">
+      <div class="wrap topbar">
+        <a class="brand" href="../index.html">
+          <span class="brand-dot"></span>
+          <span>shmlv systems</span>
+          <span class="brand-sub">Інструмент 06 із 08</span>
+        </a>
+        <a class="header-cta" href="mailto:shmlvofficial@gmail.com">
+          Зв'язатися
+        </a>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="product-view">
+        <div class="back-bar">
+          <a class="back-btn" href="../index.html">
+            ← Назад до каталогу (усі 8 інструментів)
+          </a>
+          <a class="back-btn" href="universal-ai-cockpit.html">
+            🚀 08. Єдине вікно комплексної перевірки →
+          </a>
+        </div>
+
+        <div class="product-hero-card">
+          <div class="product-illustration">
+            <svg viewBox="0 0 280 150" xmlns="http://www.w3.org/2000/svg">
+              <rect x="18" y="22" width="244" height="106" rx="12" fill="#ffffff" stroke="#93c5fd" stroke-width="2"/>
+              <circle cx="84" cy="75" r="32" fill="#fef3f2" stroke="#fca5a5" stroke-width="2"/>
+              <text x="84" y="79" text-anchor="middle" fill="#d92d20" font-family="sans-serif" font-size="14" font-weight="800">49/100</text>
+              <text x="140" y="79" text-anchor="middle" fill="#0022ff" font-family="sans-serif" font-size="16" font-weight="800">→</text>
+              <circle cx="196" cy="75" r="32" fill="#ecfdf3" stroke="#abefc6" stroke-width="2"/>
+              <text x="196" y="79" text-anchor="middle" fill="#067647" font-family="sans-serif" font-size="14" font-weight="800">100/100</text>
+            </svg>
+          </div>
+          <div class="product-hero-body">
+            <span class="product-badge">Інструмент 06 · Оцінка повноти комплекту доказів (0–100)</span>
+            <h1 class="product-main-title">Матриця готовності пакету доказів (0–100)</h1>
+            <div class="explain-list">
+              <div class="explain-item">
+                <strong>Що перевіряє та яку проблему знаходить</strong>
+                Інструмент перевіряє повноту та взаємну узгодженість усього пакету документів на БпЛА (відомість комплектації BOM у <code>.csv / .xlsx</code>, Технічні умови, настанови з експлуатації, акти ВТК, протоколи випробувань ПМВ та польотні логи) за прозорою шкалою від 0 до 100 балів.
+              </div>
+              <div class="explain-item">
+                <strong>Який результат дає та як працює стеля конфлікту (49/100)</strong>
+                Якщо між документами виявлено хоча б одну пряму числову або нормативну суперечність, система автоматично обмежує підсумковий бал жорсткою стелею <b>49/100</b> (<code>CONFLICT_CEILING = 49</code>, тоді як базовий неповний комплект без колізій оцінюється у <b>44/100</b>) і формує чіткий список кроків для виходу на <b>100/100</b>.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <h3>Як це працює (3 прості кроки)</h3>
+          <div class="steps-grid">
+            <div class="step-box">
+              <span class="step-num">1</span>
+              <h4>Перевірка наявності обов'язкових документів</h4>
+              <p>Система звіряє наявність і повноту кожної обов'язкової позиції: відомості комплектації BOM, настанов з експлуатації, протоколів ПМВ та актів ВТК.</p>
+            </div>
+            <div class="step-box">
+              <span class="step-num">2</span>
+              <h4>Правило стелі конфлікту (CONFLICT_CEILING = 49)</h4>
+              <p>Будь-яка пряма суперечність між документами обмежує оцінку на рівні не вище 49/100 (базовий пакет із незакритими доказами без колізій отримує 44/100).</p>
+            </div>
+            <div class="step-box">
+              <span class="step-num">3</span>
+              <h4>Готовий чекліст для інженера (HTML / Markdown / CSV)</h4>
+              <p>Формує зрозумілу відомість прогалин із вказівкою конкретних позицій, які треба додати чи виправити, та проект «Повідомлення про зміну» за ДСТУ ГОСТ 2.503:2006.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="tool-Try-card">
+          <div class="tool-try-head">
+            <h3>Інтерактивна перевірка: перетягніть таблицю комплектації BOM.csv або перемкніть сценарій</h3>
+            <span class="local-pill">🟢 Працює локально у браузері (0 байт у хмару)</span>
+          </div>
+
+          <label class="dropzone" id="dropZoneArea" for="localFileInput" tabindex="0">
+            <input type="file" id="localFileInput" multiple accept=".pdf,.zip,.docx,.xlsx,.csv,.tsv,.json,.yaml,.yml,.param,.parm,.waypoints,.plan,.hex,.elf,.bin,.ulg,.tlog,.ubx,.nmea,.p7s,.txt,.md" />
+            <div class="dropzone-title">📂 Перетягніть сюди файл специфікації доказів (BOM.csv / .md / .json)</div>
+            <p class="dropzone-sub">Система автоматично порахує індекс готовності 0–100 і застосує правило стелі конфлікту (49/100):</p>
+          </label>
+
+          <div class="try-actions">
+            <button type="button" class="btn-action primary" id="btnReadyBase">⚡ Базовий пакет (44/100)</button>
+            <button type="button" class="btn-action" id="btnReadyConflict">⚡ Пакет із конфліктом (Стеля 49/100)</button>
+            <button type="button" class="btn-action" id="btnReadyAligned">⚡ Повністю узгоджений пакет (100/100)</button>
+          </div>
+
+          <div class="open-data-banner">
+            <div class="open-data-head">
+              <span class="open-data-title">🏛️ Перевірка на реальних відкритих даних</span>
+              <span class="provenance-pill">Джерело: відкриті публічні дані Prozorro / u-blox</span>
+            </div>
+            <p class="open-data-desc">Оцініть індекс готовності на реальній матриці комплектації та доказів БпЛА, сформованій із відкритих публічних тендерів Prozorro (<code>.csv</code>):</p>
+            <div class="open-data-actions">
+              <button type="button" class="btn-action open-data-btn" data-real-sample="matrix-real-prozorro-bom">🏛️ Реальна матриця комплекту БпЛА з тендерів Prozorro (.csv)</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="dl-real-bom-csv">📥 Завантажити приклад матриці комплектації BOM (.csv)</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="sample-full-package-15files">📊 Повна перевірка всього комплекту з 15 реальних файлів (документи, скани, КЕП та логи)</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="sample-engineering-action-plan">📋 План дій для інженера: що перевірити вручну і що виправити автоматично</button>
+            </div>
+          </div>
+
+          <div class="live-output" id="localCheckResult" aria-live="polite"></div>
+
+          <details class="tech-collapse" style="margin-top: 14px;">
+            <summary class="tech-collapse-summary">📄 Показати вхідний текстовий буфер та сирі дані перевірки ▾</summary>
+            <div class="tech-collapse-body">
+              <p style="margin: 0; font-size: 12.5px; color: var(--muted);">
+                Розрахунок індексу готовності (0–100) виконується детерміновано: кожна обов'язкова категорія доказів додає вагу до базового індексу (<code>44/100</code> для стартового неповного пакета), але за наявності хоча б одного міждокументного конфлікту застосовується правило <code>CONFLICT_CEILING = 49</code> (максимум <code>49/100</code> до усунення розбіжності).
+              </p>
+            </div>
+          </details>
+        </div>
+
+        <div class="tool-pager">
+          <a class="back-btn" href="opsec-sanitizer.html">← Попередній: 05. Очищення координат і реквізитів</a>
+          <a class="back-btn" href="zero-trust-sandbox.html">Наступний: 07. Zero-Trust пісочниця та КЕП →</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap footer-inner">
+        <div><b>shmlv systems</b> — Інструмент 06: Матриця готовності пакету доказів</div>
+        <div><a href="universal-ai-cockpit.html">08. Єдине вікно</a> &nbsp;·&nbsp; <a href="../index.html">← Усі 8 інструментів каталогу</a></div>
+      </div>
+    </footer>
+    <script src="../real-samples-bundle.js"></script>
+    <script src="../browser-isolation-runtime.js"></script>
+    <script src="../encrypted-report-share.js"></script>
+    <script src="../pdf-scan-ocr-engine.js"></script>
+    <script src="../multi-file-verifier-bundle.js"></script>
+    <script src="../tools-engine.js"></script>
+  </body>
+</html>

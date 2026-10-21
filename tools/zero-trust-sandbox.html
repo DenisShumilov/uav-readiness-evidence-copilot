@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' blob: data:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none';" />
+    <title>07. Zero-Trust пісочниця коду та перевірка КЕП — shmlv systems</title>
+    <meta name="description" content="Ізольована перевірка коду підрядників на приховані мережеві закладки та геобомби, а також локальна верифікація підписів КЕП / Дія.Підпис (.p7s)." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="shmlv systems" />
+    <meta property="og:locale" content="uk_UA" />
+    <meta property="og:title" content="07. Zero-Trust пісочниця коду та перевірка КЕП — shmlv systems" />
+    <meta property="og:description" content="Ізольована перевірка коду підрядників на приховані мережеві закладки та геобомби, а також локальна верифікація підписів КЕП / Дія.Підпис (.p7s)." />
+    <meta property="og:url" content="https://denisshumilov.github.io/uav-readiness-evidence-copilot/tools/zero-trust-sandbox.html" />
+    <meta property="og:image" content="https://denisshumilov.github.io/uav-readiness-evidence-copilot/social-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="07. Zero-Trust пісочниця коду та перевірка КЕП — shmlv systems" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="07. Zero-Trust пісочниця коду та перевірка КЕП — shmlv systems" />
+    <meta name="twitter:description" content="Ізольована перевірка коду підрядників на приховані мережеві закладки та геобомби, а також локальна верифікація підписів КЕП / Дія.Підпис (.p7s)." />
+    <meta name="twitter:image" content="https://denisshumilov.github.io/uav-readiness-evidence-copilot/social-card.png" />
+    <meta name="twitter:image:alt" content="07. Zero-Trust пісочниця коду та перевірка КЕП — shmlv systems" />
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+
+  <body data-page-tool="sandbox">
+    <header class="topbar-wrap">
+      <div class="wrap topbar">
+        <a class="brand" href="../index.html">
+          <span class="brand-dot"></span>
+          <span>shmlv systems</span>
+          <span class="brand-sub">Інструмент 07 із 08</span>
+        </a>
+        <a class="header-cta" href="mailto:shmlvofficial@gmail.com">
+          Зв'язатися
+        </a>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="product-view">
+        <div class="back-bar">
+          <a class="back-btn" href="../index.html">
+            ← Назад до каталогу (усі 8 інструментів)
+          </a>
+          <a class="back-btn" href="universal-ai-cockpit.html">
+            🚀 08. Єдине вікно комплексної перевірки →
+          </a>
+        </div>
+
+        <div class="product-hero-card">
+          <div class="product-illustration">
+            <svg viewBox="0 0 280 150" xmlns="http://www.w3.org/2000/svg">
+              <rect x="18" y="22" width="244" height="106" rx="12" fill="#ffffff" stroke="#93c5fd" stroke-width="2"/>
+              <rect x="36" y="44" width="96" height="62" rx="8" fill="#eef2ff" stroke="#0022ff" stroke-width="1.5"/>
+              <text x="84" y="72" text-anchor="middle" fill="#0022ff" font-family="sans-serif" font-size="11.5" font-weight="700">RAM Пісочниця</text>
+              <text x="84" y="90" text-anchor="middle" fill="#526077" font-family="sans-serif" font-size="10">0 байт на диску</text>
+
+              <rect x="148" y="44" width="96" height="62" rx="8" fill="#ecfdf3" stroke="#067647" stroke-width="1.5"/>
+              <text x="196" y="72" text-anchor="middle" fill="#067647" font-family="sans-serif" font-size="11.5" font-weight="700">КЕП / Дія (.p7s)</text>
+              <text x="196" y="90" text-anchor="middle" fill="#526077" font-family="sans-serif" font-size="10">Локальна звірка</text>
+            </svg>
+          </div>
+          <div class="product-hero-body">
+            <span class="product-badge">Інструмент 07 · Безпека коду підрядників та електронних підписів</span>
+            <h1 class="product-main-title">Zero-Trust пісочниця коду та перевірка КЕП</h1>
+            <div class="explain-list">
+              <div class="explain-item">
+                <strong>Що перевіряє та яку проблему знаходить</strong>
+                Інструмент перевіряє отриманий від зовнішнього розробника програмний код (<code>.py</code>, <code>.js</code>, <code>.sh</code>, <code>.cpp</code>) виключно в оперативній пам'яті та локально розбирає файли кваліфікованого електронного підпису Дія.Підпис / КЕП (<code>.p7s</code> за ДСТУ 4145-2002). Він виявляє приховані спроби відправки даних у мережу, «геобомби» (блокування за координатами) та дозволяє перевірити реквізити КЕП без завантаження закритих файлів на сторонні сайти.
+              </div>
+              <div class="explain-item">
+                <strong>Який результат дає інженеру</strong>
+                Формує висновок безпеки коду (0 байт слідів на диску), показує ПІБ підписанта, ЄДРПОУ, мітку часу й сертифікат КНЕДП із файла <code>.p7s</code>, а також генерує таблицю контрольних сум <code>SHA-256</code> і зашифроване посилання на звіт.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <h3>Як це працює (3 прості кроки)</h3>
+          <div class="steps-grid">
+            <div class="step-box">
+              <span class="step-num">1</span>
+              <h4>Локальний розбір підпису КЕП (.p7s)</h4>
+              <p>Інспектор прямо у браузері читає структуру файла КЕП за ДСТУ 4145-2002 (ПІБ підписанта, РНОКПП/ЄДРПОУ, час підписання та видавця сертифіката КНЕДП).</p>
+            </div>
+            <div class="step-box">
+              <span class="step-num">2</span>
+              <h4>Перевірка коду в оперативній пам'яті</h4>
+              <p>Скрипти підрядника перевіряються без запису на диск: правила безпеки миттєво виявляють спроби мережевого витоку даних, обфускацію та координатні обмеження.</p>
+            </div>
+            <div class="step-box">
+              <span class="step-num">3</span>
+              <h4>Контрольні суми (SHA-256) та захищене посилання</h4>
+              <p>Формується перелік хешів усіх перевірених файлів і за потреби створюється зашифроване посилання (<code>AES-256-GCM</code>, 0 байт на сервері) для передачі висновку колезі.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="tool-Try-card">
+          <div class="tool-try-head">
+            <h3>Інтерактивна перевірка: перетягніть файл коду (.py, .js, .sh, .cpp) або підпис КЕП / Дія.Підпис (.p7s)</h3>
+            <span class="local-pill">🟢 Працює локально у браузері (0 байт у хмару)</span>
+          </div>
+
+          <label class="dropzone" id="dropZoneArea" for="localFileInput" tabindex="0">
+            <input type="file" id="localFileInput" multiple accept=".py,.js,.sh,.cpp,.c,.h,.pdf,.zip,.docx,.xlsx,.csv,.tsv,.json,.yaml,.yml,.param,.parm,.waypoints,.plan,.hex,.elf,.bin,.ulg,.tlog,.ubx,.nmea,.p7s,.txt,.md" />
+            <div class="dropzone-title">📂 Перетягніть сюди код підрядника (.py / .js / .sh / .cpp) або файл електронного підпису (.p7s)</div>
+            <p class="dropzone-sub">Перевіряє вихідний код проти прихованого витоку даних та геобомб або локально розбирає контейнер підпису КЕП (.p7s):</p>
+          </label>
+
+          <div class="try-actions">
+            <button type="button" class="btn-action primary" id="btnSandboxBadCode">⚡ Тест 1: Скрипт із прихованою геобомбою та витоком</button>
+            <button type="button" class="btn-action" id="btnSandboxCleanCode">⚡ Тест 2: Чистий інженерний скрипт</button>
+            <button type="button" class="btn-action" id="btnSandboxKep">⚡ Тест 3: Перевірити підпис КЕП / Дія.Підпис (.p7s)</button>
+          </div>
+
+          <div class="open-data-banner">
+            <div class="open-data-head">
+              <span class="open-data-title">🏛️ Перевірка на реальних відкритих даних</span>
+              <span class="provenance-pill">Джерело: відкриті публічні дані Prozorro</span>
+            </div>
+            <p class="open-data-desc">Перевірте локальний розбір реального кваліфікованого електронного підпису КЕП (<code>.p7s</code> за стандартом ДСТУ 4145-2002), завантаженого з публічного тендеру Prozorro, та протестуйте мережеву ізоляцію браузера:</p>
+            <div class="open-data-actions">
+              <button type="button" class="btn-action open-data-btn" data-real-sample="sandbox-real-prozorro-kep">🏛️ Перевірити реальний підпис КЕП із тендеру Prozorro (.p7s)</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="dl-real-kep-p7s">📥 Завантажити оригінал файла підпису КЕП (.p7s)</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="sample-browser-isolation-audit">🛡️ Перевірка автономної роботи та мережевої ізоляції браузера (0 байт у мережу)</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="sample-encrypted-diag-capsule">🔐 Створити захищене посилання на звіт (AES-256-GCM, 0 байт на сервері)</button>
+            </div>
+          </div>
+
+          <div class="live-output" id="localCheckResult" aria-live="polite"></div>
+
+          <details class="tech-collapse" style="margin-top: 14px;">
+            <summary class="tech-collapse-summary">📄 Показати вхідний текстовий буфер та сирі дані перевірки ▾</summary>
+            <div class="tech-collapse-body">
+              <p style="margin: 0; font-size: 12.5px; color: var(--muted);">
+                Пісочниця виконує статичний AST/регулярний аналіз вихідного коду в оперативній пам'яті, локальний розбір ASN.1 DER структур CMS SignedData (<code>.p7s</code> за ДСТУ 4145-2002 / RFC 5652) та перевірку активних політик <code>Content-Security-Policy</code> і <code>ServiceWorker</code>.
+              </p>
+            </div>
+          </details>
+        </div>
+
+        <div class="tool-pager">
+          <a class="back-btn" href="readiness-matrix.html">← Попередній: 06. Матриця готовності (0–100)</a>
+          <a class="back-btn" href="universal-ai-cockpit.html">Наступний: 08. Єдине вікно перевірки →</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap footer-inner">
+        <div><b>shmlv systems</b> — Інструмент 07: Zero-Trust пісочниця коду та перевірка КЕП</div>
+        <div><a href="universal-ai-cockpit.html">08. Єдине вікно</a> &nbsp;·&nbsp; <a href="../index.html">← Усі 8 інструментів каталогу</a></div>
+      </div>
+    </footer>
+    <script src="../real-samples-bundle.js"></script>
+    <script src="../browser-isolation-runtime.js"></script>
+    <script src="../encrypted-report-share.js"></script>
+    <script src="../pdf-scan-ocr-engine.js"></script>
+    <script src="../multi-file-verifier-bundle.js"></script>
+    <script src="../tools-engine.js"></script>
+  </body>
+</html>
