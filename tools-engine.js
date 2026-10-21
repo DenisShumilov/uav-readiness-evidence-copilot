@@ -340,7 +340,7 @@
             highlightsHtml +
             actionsHtml +
           '</div>' +
-          '<details class="tech-collapse"><summary class="tech-collapse-summary">' + escHtml(collapseLabel) + '</summary><div class="tech-collapse-body">' +
+          '<details class="tech-collapse"' + (cfg.defaultOpen ? ' open' : '') + '><summary class="tech-collapse-summary">' + escHtml(collapseLabel) + '</summary><div class="tech-collapse-body">' +
             (detailedBodyHtml || "") +
           '</div></details>'
         );
@@ -6796,13 +6796,10 @@ __globalRoot.runRealOpenDataSample = async function (action) {
         { param: "Дальність відеоканалу", expected: ">= 15.0 км", actual: "16.4 км", status: "PASS", loc: "pmv_sample.xlsx (sheet1!C4)" }
       ]
     };
-    var packed = await capsuleEngine.packDiagnosticCapsule(auditStatePayload, "");
+    var packed = await capsuleEngine.packDiagnosticCapsule(auditStatePayload, { demoMode: true });
     var tokenStr = packed.token || (packed.urlHash ? packed.urlHash.replace(/^#diag=/, "") : "");
-    if (tokenStr.indexOf("shmlv-capsule-v1") !== 0) {
-      tokenStr = "shmlv-capsule-v1." + tokenStr;
-    }
     var fullShareUrl = (typeof window !== "undefined" && window.location ? (window.location.origin + window.location.pathname) : "https://uav-systems-verification.local/tools/doc-auditor.html") + "#diag=" + tokenStr;
-    var unpackedCheck = await capsuleEngine.unpackDiagnosticCapsule("#diag=" + tokenStr);
+    var unpackedCheck = await capsuleEngine.unpackDiagnosticCapsule("#diag=" + tokenStr, { demoMode: true });
     var sdpOffer = typeof capsuleEngine.generateWebRtcLoopbackOffer === "function"
       ? capsuleEngine.generateWebRtcLoopbackOffer(packed.sha256)
       : "v=0\r\no=- 0 2 IN IP4 127.0.0.1\r\ns=SHMLV-AirGap-P2P\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel";
@@ -6850,6 +6847,7 @@ __globalRoot.runRealOpenDataSample = async function (action) {
         '</div>';
       box.innerHTML = wrapWithTwoLevelDisclosure({
         status: "PASS",
+        defaultOpen: true,
         badgeText: "КАПСУЛА AES-256-GCM · СТИСНЕННЯ -65.9% · 0 БАЙТІВ НА СЕРВЕР",
         title: "Генерація зашифрованої діагностичної капсули у URL-фрагменті (#diag=) без серверної інфраструктури",
         summaryText: "Звіт перевірки очищено за шаблонами від 17 чутливих реквізитів визначених категорій OPSEC (координати, ПІБ, контакти, ЄДРПОУ, номери в/ч; перед зовнішньою передачею рекомендовано перегляд людиною), стиснуто на 65.9% (5 095 B → 1 738 B) та зашифровано алгоритмом AES-256-GCM із контрольним підписом HMAC-SHA256. Оскільки корисне навантаження розміщується у фрагменті URL після символу '#' (RFC 3986 Section 3.5), жоден байт звіту не передається по мережі на сервер.",
@@ -6978,6 +6976,7 @@ __globalRoot.runRealOpenDataSample = async function (action) {
 
     var docx06bRecs = (docx06bOut && docx06bOut.records) ? docx06bOut.records.length : 0;
     var docx06bParas = (docx06bOut && docx06bOut.paragraphs) ? docx06bOut.paragraphs.length : 0;
+    var docx06bApp = (docx06bOut && docx06bOut.forensics && docx06bOut.forensics.application) ? docx06bOut.forensics.application : "невідомо";
 
     var xlsx07Recs = (xlsx07Out && xlsx07Out.records) ? xlsx07Out.records.length : 0;
     var xlsx07Cells = (xlsx07Out && xlsx07Out.forensics) ? xlsx07Out.forensics.cellCount : 0;
@@ -6986,6 +6985,7 @@ __globalRoot.runRealOpenDataSample = async function (action) {
     var xlsx07aRecs = (xlsx07aOut && xlsx07aOut.records) ? xlsx07aOut.records.length : 0;
     var xlsx07aFormulas = (xlsx07aOut && xlsx07aOut.forensics) ? xlsx07aOut.forensics.formulaCount : 0;
     var xlsx07aHdrRow = (xlsx07aOut && xlsx07aOut.forensics) ? xlsx07aOut.forensics.detectedHeaderRow : 0;
+    var xlsx07aAbsPath = (xlsx07aOut && xlsx07aOut.forensics && xlsx07aOut.forensics.absPath) ? xlsx07aOut.forensics.absPath : "";
 
     var p7sValid = Boolean(p7s08Out && p7s08Out.validPkcs7);
     var p7sCerts = (p7s08Out && typeof p7s08Out.certificatesCount === "number") ? p7s08Out.certificatesCount : 0;
@@ -7010,28 +7010,42 @@ __globalRoot.runRealOpenDataSample = async function (action) {
       : [];
     var cross14Fails = cross14FailRows.length;
 
-    // Row-by-row content comparison between 06_Matrice_4T.docx and 06a_Matrice_4T_Tender2.docx
+    // Parameter-keyed content comparison between 06_Matrice_4T.docx and 06a_Matrice_4T_Tender2.docx (order-independent)
     var cross15MatchedRows = 0;
     var cross15ValueDiffs = 0;
     var r06Arr = (docx06Out && docx06Out.records) ? docx06Out.records : [];
     var r06aArr = (docx06aOut && docx06aOut.records) ? docx06aOut.records : [];
-    var minRecLen15 = Math.min(r06Arr.length, r06aArr.length);
-    for (var r15 = 0; r15 < minRecLen15; r15++) {
-      var cA = (r06Arr[r15] && r06Arr[r15].cells) ? r06Arr[r15].cells : [];
-      var cB = (r06aArr[r15] && r06aArr[r15].cells) ? r06aArr[r15].cells : [];
-      var pA = String(cA[0] || "").trim();
+    var r06aBuckets = Object.create(null);
+    for (var b15 = 0; b15 < r06aArr.length; b15++) {
+      var cB = (r06aArr[b15] && r06aArr[b15].cells) ? r06aArr[b15].cells : [];
       var pB = String(cB[0] || "").trim();
-      var vA = String(cA.slice(1).join(" | ") || "").trim();
       var vB = String(cB.slice(1).join(" | ") || "").trim();
-      if (pA && pA === pB && vA === vB) {
-        cross15MatchedRows++;
+      if (pB) {
+        if (!r06aBuckets[pB]) r06aBuckets[pB] = [];
+        r06aBuckets[pB].push(vB);
+      }
+    }
+    for (var r15 = 0; r15 < r06Arr.length; r15++) {
+      var cA = (r06Arr[r15] && r06Arr[r15].cells) ? r06Arr[r15].cells : [];
+      var pA = String(cA[0] || "").trim();
+      var vA = String(cA.slice(1).join(" | ") || "").trim();
+      var bucket = pA ? r06aBuckets[pA] : null;
+      if (bucket && bucket.length > 0) {
+        var matchIdx = bucket.indexOf(vA);
+        if (matchIdx >= 0) {
+          bucket.splice(matchIdx, 1);
+          cross15MatchedRows++;
+        } else {
+          bucket.shift();
+          cross15ValueDiffs++;
+        }
       } else {
         cross15ValueDiffs++;
       }
     }
-    if (r06Arr.length !== r06aArr.length) {
-      cross15ValueDiffs += Math.abs(r06Arr.length - r06aArr.length);
-    }
+    Object.keys(r06aBuckets).forEach(function (k) {
+      cross15ValueDiffs += r06aBuckets[k].length;
+    });
     var cross15ComparedTotal = cross15MatchedRows + cross15ValueDiffs;
     var cross15RsidDelta = Math.abs(docx06aRsids - docx06Rsids);
 
@@ -7105,7 +7119,7 @@ __globalRoot.runRealOpenDataSample = async function (action) {
         id: "08",
         file: "06b_Prozorro_UAV_TTX_DJI_Mavic_3T.docx (повний 1:1 із PROVENANCE.json)",
         baselineDesc: "124 записи ТТХ, 31 абзац (LibreOffice)",
-        fullParse: docx06bRecs + " записи ТТХ · " + docx06bParas + " абзаців · генератор: LibreOffice 7.4.5.1",
+        fullParse: docx06bRecs + " записи ТТХ · " + docx06bParas + " абзаців · генератор: " + docx06bApp,
         domainVerdict: docx06bRecs === 124 ? "PASS (витягнуто 124 записи специфікації Mavic 3T)" : "FAIL (неповний розбір .docx)",
         baselineOk: Boolean(docx06bRecs === 124 && docx06bParas === 31)
       },
@@ -7125,8 +7139,10 @@ __globalRoot.runRealOpenDataSample = async function (action) {
         id: "10",
         file: "07a_Prozorro_Real_Tender_Attachment_104.xlsx (повний 1:1 із PROVENANCE.json)",
         baselineDesc: "88 записів, шапка у рядку 7, 81 формула",
-        fullParse: xlsx07aRecs + " записів · шапка: рядок " + xlsx07aHdrRow + " · формул Excel: " + xlsx07aFormulas,
-        domainVerdict: (xlsx07aRecs === 88 && xlsx07aFormulas === 81) ? "WARN (81 формула Excel потребує перевірки кешу; у метаданих виявлено локальний шлях C:\\Users\\TENDER\\...)" : "FAIL (помилка розбору таблиці)",
+        fullParse: xlsx07aRecs + " записів · шапка: рядок " + xlsx07aHdrRow + " · формул Excel: " + xlsx07aFormulas + (xlsx07aAbsPath ? (" · x15ac:absPath=" + xlsx07aAbsPath) : ""),
+        domainVerdict: (xlsx07aRecs === 88 && xlsx07aFormulas === 81)
+          ? ("WARN (" + xlsx07aFormulas + " формула Excel потребує перевірки кешу" + (xlsx07aAbsPath ? ("; у метаданих виявлено локальний шлях " + xlsx07aAbsPath) : "") + ")")
+          : "FAIL (помилка розбору таблиці)",
         baselineOk: Boolean(xlsx07aRecs === 88 && xlsx07aHdrRow === 7 && xlsx07aFormulas === 81)
       },
       {
@@ -7233,7 +7249,7 @@ __globalRoot.runRealOpenDataSample = async function (action) {
           '</div>' +
         '</div>' +
         '<div style="margin-bottom:10px;padding:8px 12px;background:#f8fafc;border-left:4px solid #0284c7;border-radius:6px;font-size:12.5px">' +
-          '<b>ℹ️ Прозоре обчислення без зашитих рядків:</b> кожен показник у колонках <b>«Живий розбір у браузері»</b>, <b>«Предметний вердикт входу»</b> та <b>«Звірка з еталоном (Тест)»</b> обчислюється динамічно під час прогону реальних парсерів без підміни відсутніх файлів (<code>fallback</code>). Для <code>#11 (.p7s)</code> перевіряється лише структура ASN.1 DER та <code>SignerInfo.sid</code> (криптографічний підпис має статус <code>UNVERIFIED</code>).' +
+          '<b>ℹ️ Живий прогін парсерів у браузері:</b> кількісні показники (кількість витягнутих записів, абзаців, сесій <code>w:rsid</code>, формул Excel, метаданих <code>docProps/app.xml</code>, пар SI та розбіжностей) і предметні вердикти обчислюються під час виконання парсерів на вхідних файлах без підміни відсутніх даних (<code>fallback</code>). Для <code>#11 (.p7s)</code> перевіряється лише структура ASN.1 DER та <code>SignerInfo.sid</code> (криптографічний підпис має статус <code>UNVERIFIED</code>).' +
         '</div>' +
         '<div class="table-wrap"><table class="clean-table"><thead><tr><th>№</th><th>Контрольний сценарій (файл із PROVENANCE.json / крос-звірка)</th><th>Очікуваний еталон</th><th>Живий розбір у браузері (обчислено під час прогону)</th><th>Предметний вердикт входу</th><th>Звірка з еталоном (Тест)</th></tr></thead><tbody>' + bRowsHtml + '</tbody></table></div>';
       box.innerHTML = wrapWithTwoLevelDisclosure({
@@ -7376,7 +7392,7 @@ async function restoreDiagCapsuleFromHash(rawHash) {
   if (!box) return false;
   var capsuleEngine = __globalRoot.SHMLV_CRYPTO_CAPSULE;
   if (!capsuleEngine || typeof capsuleEngine.unpackDiagnosticCapsule !== "function") return false;
-  var unpacked = await capsuleEngine.unpackDiagnosticCapsule(hashStr);
+  var unpacked = await capsuleEngine.unpackDiagnosticCapsule(hashStr, { demoMode: true });
   if (!unpacked || unpacked.valid === false || !unpacked.payload) {
     var errCapsuleDetailedHtml =
       '<div class="live-status-bar">' +

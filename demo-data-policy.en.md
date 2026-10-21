@@ -9,9 +9,9 @@ This document defines the provenance, labeling, and safety rules for all sample 
 1. **Synthetic Training Bundles (`examples/demo-*`):**
    - fully fictional 4-file bundles (`BOM.csv`, `demo_manual.md`, `test_log.csv`, `qa_notes.md`) authored to deterministically test readiness scoring rules (`44/100`, `80/100`, `49/100`);
    - every synthetic demo folder is explicitly labeled `Synthetic demo data only. Not operationally valid.`
-2. **Verbatim Public Reference Artifacts (`docs/real-samples/`, documented via `origin`, `sha256`, and `notes` fields in `PROVENANCE.json`):**
+2. **Verbatim Public Reference Artifacts (`docs/real-samples/`, documented via `id`, `file`, `role`, `sha256`, `bytes`, `Origin_Type`, `authenticity`, `sourceOrg`, `sourceStandard`, `sourceUrl`, and `descriptionUk` fields in `PROVENANCE.json`):**
    - unmodified public files from open Prozorro procurement tenders (`06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx`, `06a_Prozorro_UAV_TechVymogy_DJI_Matrice_4T_Tender2.docx`, `06b_Prozorro_UAV_TTX_DJI_Mavic_3T.docx`, `07a_Prozorro_Real_Tender_Attachment_104.xlsx`, `08_Prozorro_Real_KEP_Sign.p7s`) and official open-source autopilot/GNSS test suites (`ArduPilot`, `PX4`, `pyubx2`, `NMEA`).
-3. **Derived Control Fixtures with Injected Discrepancies (`docs/real-samples/`, detailed in the `notes` field of each `PROVENANCE.json` entry):**
+3. **Derived Control Fixtures with Injected Discrepancies (`docs/real-samples/`, detailed in the `Origin_Type`, `authenticity`, and `descriptionUk` fields of each `PROVENANCE.json` entry):**
    - `07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx` — a control test protocol derived from `06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx` with 2 intentionally injected discrepancies: `Standard Battery Voltage` in cell `C31` (`15.4 V` vs `14.76 V`, `Δ = +0.64 V`) and `Operating Temperature` in cell `C48` (`from -10° to 40° C` vs `from -20°C to 50°C`) to demonstrate cross-document conflict detection (alongside a live post-remediation check yielding `47/47 PASS, 0 FAIL`);
    - `09_Real_UAV_Readiness_Matrix_BOM.csv` — a control BOM table with 2 intentionally injected revision conflicts (`CONFLICT`);
    - `10_Stamped_PMV_Protocol_Scan_VP_MOU.pdf` — a synthetic raster protocol template (`560 × 220 px`) with a simulated wet blue stamp overlay used to test chromatic stamp drop-out.
