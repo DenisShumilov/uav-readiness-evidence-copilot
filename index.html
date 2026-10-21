@@ -43,32 +43,41 @@
     <main class="wrap">
       <div class="catalog-hero">
         <h1>
-          Миттєва перевірка <span>документації та польотних даних БпЛА</span>
+          Автоматична звірка <span>документації (ТУ ⇄ ПМВ) та польотних логів БпЛА</span>
         </h1>
-        <blockquote style="margin: 12px 0 12px; padding: 14px 18px; background: #ffffff; border-left: 4px solid var(--blue); border-radius: 10px; font-size: 15px; line-height: 1.58; color: var(--ink); box-shadow: var(--shadow-sm);">
-          <strong>Автоматизую перевірку комплектів технічної документації під процеси вашої компанії.</strong><br />
-          Розробляю локальні інструменти для звірки технічних документів і таблиць. Вони знаходять розбіжності, показують джерела висновків та окремо позначають те, що не вдалося перевірити. Починаємо з одного вашого процесу й узгодженого набору файлів.
-        </blockquote>
-        <p>
-          Знаходьте розбіжності у таблицях, перевіряйте цілісність польотних логів і готуйте документи до приймання локально на вашому комп'ютері.
+        <p style="max-width: 780px; margin: 10px auto 18px; font-size: 16.5px; line-height: 1.55; color: #334155;">
+          Локальні інженерні інструменти, які за лічені секунди знаходять розбіжності в числах і одиницях вимірювання між документами (<code>.docx</code>, <code>.xlsx</code>, <code>.csv</code>, скани з печаткою) та перевіряють польотну телеметрію (<code>.bin</code>, <code>.ulg</code>, <code>.tlog</code>, <code>.ubx</code>) прямо у вашому браузері — без передачі файлів у хмару.
         </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin: 0 0 18px; text-align: left;">
+          <div style="background: #ffffff; border: 1px solid #dbe3ef; border-left: 4px solid var(--blue); border-radius: 12px; padding: 12px 15px; box-shadow: var(--shadow-sm);">
+            <div style="font-size: 13px; font-weight: 800; color: var(--blue); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 4px;">1. Документи та таблиці</div>
+            <div style="font-size: 14px; line-height: 1.48; color: #0f172a;">Звіряє ТТХ між ТУ (<code>.docx</code>), Протоколом ПМВ (<code>.xlsx</code>) і BOM (<code>.csv</code>), переводить одиниці SI (<code>г ⇄ кг</code>, <code>км/год ⇄ м/с</code>) і підсвічує точну комірку помилки.</div>
+          </div>
+          <div style="background: #ffffff; border: 1px solid #dbe3ef; border-left: 4px solid #059669; border-radius: 12px; padding: 12px 15px; box-shadow: var(--shadow-sm);">
+            <div style="font-size: 13px; font-weight: 800; color: #059669; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 4px;">2. Польотні логи та РЕБ</div>
+            <div style="font-size: 14px; line-height: 1.48; color: #0f172a;">Розбирає бінарні логи <code>ArduPilot .bin</code>, <code>PX4 .ulg</code>, <code>MAVLink .tlog</code> та <code>u-blox .ubx</code>: просадка живлення, вібрації, втрата навігації й ознаки РЕБ.</div>
+          </div>
+          <div style="background: #ffffff; border: 1px solid #dbe3ef; border-left: 4px solid #0f172a; border-radius: 12px; padding: 12px 15px; box-shadow: var(--shadow-sm);">
+            <div style="font-size: 13px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 4px;">3. OPSEC-захист та КЕП</div>
+            <div style="font-size: 14px; line-height: 1.48; color: #0f172a;">Вирізає координати полігонів і ПІБ перед відправкою підрядникам, читає реквізити підпису КЕП (<code>.p7s</code>) і працює на 100% локально.</div>
+          </div>
+        </div>
       </div>
 
       <div class="open-data-banner">
         <div class="open-data-head">
-          <span class="provenance-pill">Єдине вікно комплексної перевірки · Усі файли виробу в один клік · v2.5.0</span>
-          <span class="local-pill">🔒 У цьому перевіреному сценарії не спостерігалося передавання вмісту тестових файлів (спостережено 0 видимих звернень до інших origin за PerformanceResourceTiming)</span>
+          <span class="provenance-pill">⚡ Жива демонстрація в 1 клік · Відкритий тендерний пакет DJI Matrice 4T</span>
+          <span class="local-pill">🔒 100% локально у вашому браузері (без зовнішніх серверів)</span>
         </div>
-        <div class="open-data-title" style="font-size: 19px; margin: 6px 0 8px;">Комплексна звірка пакета документів та телеметрії</div>
-        <p class="open-data-desc" style="font-size: 14.5px; line-height: 1.58; margin-bottom: 10px;">
-          Завантажте разом текстові документи, таблиці специфікацій, скани та польотні логи. Система зіставить характеристики у системі одиниць SI, підсвітить розбіжності з адресою комірки та чесно позначить неперевірені позиції (<code>UNVERIFIED</code>).
-        </p>
-        <p style="font-size: 12.8px; line-height: 1.5; color: #334155; margin: 0 0 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px;">
-          <strong>Про походження головного демо-прикладу (<code>PROVENANCE.json</code>):</strong> файл <code>06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx</code> є відкритим тендерним документом Prozorro (1:1), а таблиця <code>07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx</code> — контрольним прикладом із двома внесеними розбіжностями (<code>14.76 В vs 15.4 В</code> у комірці <code>C31</code> та <code>-20…+50 °C vs -10…+40 °C</code> у <code>C48</code>) для наочної демонстрації виявлення помилок.
+        <div class="open-data-title" style="font-size: 19px; margin: 6px 0 6px;">Подивіться, як система знаходить 2 приховані помилки за 1 секунду</div>
+        <p class="open-data-desc" style="font-size: 14.5px; line-height: 1.55; margin-bottom: 12px;">
+          Натисніть кнопку нижче: система миттєво звірить 47 характеристик між документом вимог (<code>.docx</code>) та протоколом випробувань (<code>.xlsx</code>), покаже розбіжність напруги у комірці <code>C31</code> (<code>14.76 В vs 15.4 В</code>) і температури у <code>C48</code> (<code>-20…+50 °C vs -10…+40 °C</code>), або дозволить завантажити ваші власні файли.
         </p>
         <div class="open-data-actions" style="display: flex; flex-wrap: wrap; gap: 10px;">
-          <a class="btn-action primary" href="tools/universal-ai-cockpit.html#wow11AlignmentTable">🔍 Показати дві розбіжності між вимогами й протоколом →</a>
-          <a class="btn-action" href="tools/universal-ai-cockpit.html">Відкрити єдине вікно перевірки →</a>
+          <a class="btn-action primary" href="tools/universal-ai-cockpit.html#wow11AlignmentTable">🔍 Показати 2 помилки між ТУ (.docx) і протоколом (.xlsx) →</a>
+          <a class="btn-action" href="tools/universal-ai-cockpit.html?preset=fixed">✅ Показати пакет після виправлення (47/47 PASS) →</a>
+          <a class="btn-action" href="tools/universal-ai-cockpit.html">📂 Відкрити Єдине вікно перевірки своїх файлів →</a>
         </div>
       </div>
 
@@ -415,118 +424,117 @@
 
       <section class="section-card" aria-labelledby="scopeCalibrationTitle" style="margin-top: 28px; margin-bottom: 12px; padding: 24px 26px; background: #ffffff; border: 1px solid #dbe3ef; border-radius: 18px; box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);">
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 8px;">
-          <span class="provenance-pill">⚖️ Інженерна прозорість · Scope &amp; Calibration Matrix · v2.5.0</span>
-          <span class="local-pill">🔧 Інженерний пілот на одному узгодженому процесі</span>
+          <span class="provenance-pill">🔧 Адаптація під ваше КБ · Інженерний пілот на одному узгодженому процесі</span>
+          <span class="local-pill">🔒 Робота на знеособлених файлах у вашому контурі</span>
         </div>
         <h2 id="scopeCalibrationTitle" style="font-size: 20px; font-weight: 800; color: #0f172a; margin: 6px 0 8px; letter-spacing: -0.015em;">
-          Межі публічного веб-стенду та індивідуальне калібрування під КБ (Інженерний пілот на одному узгодженому процесі)
+          Як налаштувати перевірку під шаблони таблиць або логи вашої компанії
         </h2>
-        <p style="font-size: 14.5px; line-height: 1.58; color: #475569; margin: 0 0 18px;">
-          <em>Публічний стенд демонструє роботу базового рушія прямо в браузері на відкритих файлах. Для промислової експлуатації правила парсингу калібруються під шаблони, прошивки та бланки вашого підприємства у форматі: Інженерний пілот на одному узгодженому процесі.</em>
+        <p style="font-size: 14.5px; line-height: 1.58; color: #475569; margin: 0 0 16px;">
+          Публічний стенд демонструє роботу базового рушія прямо в браузері на відкритих файлах. Для ваших внутрішніх шаблонів ТУ, специфікацій BOM чи польотних логів правила розбору калібруються у 3 зрозумілі кроки:
         </p>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px;">
-            <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
-              1. Власні 90-сторінкові шаблони ТУ та складні таблиці
-            </div>
-            <p style="font-size: 13.5px; line-height: 1.55; color: #334155; margin: 0;">
-              Базовий стенд відмінно читає типові таблиці ТТХ та прозу Prozorro, а складні багаторівневі об'єднані комірки чи міжсторінкові формули Excel чесно переводить у «Потребує перевірки» (<code>UNVERIFIED</code>). Під шаблони вашого КБ правила розбору налаштовуються через Інженерний пілот на одному узгодженому процесі.
-            </p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; margin-bottom: 16px;">
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px;">
+            <div style="font-size: 14px; font-weight: 800; color: var(--blue); margin-bottom: 4px;">Крок 1. Безкоштовна перевірка 1 зразка</div>
+            <p style="font-size: 13.5px; line-height: 1.5; color: #334155; margin: 0;">Надсилаєте 1 знеособлений шаблон документа або лог — показую знайдені розбіжності й одразу кажу, що підтримується з коробки, а що потребує калібрування.</p>
           </div>
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px;">
-            <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
-              2. Скани з мокрою печаткою vs адаптація під бланки КБ
-            </div>
-            <p style="font-size: 13.5px; line-height: 1.55; color: #334155; margin: 0;">
-              У демо підтримується конкретний табличний шаблон (<code>560 × 220 px</code>), на якому WebAssembly-модуль відділяє синій відбиток печатки від цифр. Адаптацію до ваших бланків та розгортання локального офлайн-конвеєра OCR перевіряємо в межах пілоту.
-            </p>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px;">
+            <div style="font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">Крок 2. Калібрування під 1 процес</div>
+            <p style="font-size: 13.5px; line-height: 1.5; color: #334155; margin: 0;">Фіксуємо правила допусків, одиниць SI та структуру ваших таблиць і перевіряємо точність на контрольному наборі файлів (Hold-out set).</p>
           </div>
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px;">
-            <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
-              3. Живий розбір телеметрії vs стендові моделі РЕБ
-            </div>
-            <p style="font-size: 13.5px; line-height: 1.55; color: #334155; margin: 0;">
-              Висота, швидкість, спектр супутників <code>u-blox</code>, прапорці РЕБ та контрольні суми <code>.bin/.ulg/.tlog/.ubx/.nmea</code> рахуються в реальному часі з вашого файлу, а 3D-триангуляція постановника завад (<code>419.97 м</code>) та моделювання уводу <code>CUSUM NIS</code> наведені як еталонні стендові кейси. Калібрування під вашу раму, ІНС та кастомні пакети MAVLink виконується як Інженерний пілот на одному узгодженому процесі.
-            </p>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px;">
+            <div style="font-size: 14px; font-weight: 800; color: #059669; margin-bottom: 4px;">Крок 3. Передача автономного інструмента</div>
+            <p style="font-size: 13.5px; line-height: 1.5; color: #334155; margin: 0;">Ви отримуєте готовий локальний модуль з автотестами та інструкцією, який працює на комп'ютерах ваших інженерів без інтернету.</p>
           </div>
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px;">
-            <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
-              4. Поля контейнера КЕП (<code>.p7s</code>) та шаблонна OPSEC-санація
-            </div>
-            <p style="font-size: 13.5px; line-height: 1.55; color: #334155; margin: 0;">
-              Поля контейнера <code>.p7s</code> (ПІБ, ЄДРПОУ, мітка часу за <code>SignerInfo.sid</code>) читаються у браузері без інтернету; криптографічний підпис у цьому режимі не перевіряється (<code>cryptoStatus: UNVERIFIED</code>). Санація OPSEC забезпечує автоматичне приховування визначених категорій даних за шаблонами (потребує перегляду людиною перед передачею).
-            </p>
-          </div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+          <a class="btn-action primary" href="mailto:shmlvofficial@gmail.com?subject=%D0%9F%D0%B5%D1%80%D0%B5%D0%B2%D1%96%D1%80%D0%BA%D0%B0%201%20%D0%B7%D0%BD%D0%B5%D0%BE%D1%81%D0%BE%D0%B1%D0%BB%D0%B5%D0%BD%D0%BE%D0%B3%D0%BE%20%D1%84%D0%B0%D0%B9%D0%BB%D1%83%20(shmlv%20systems)" style="text-decoration: none;">✉️ Надіслати 1 знеособлений файл на перевірку →</a>
+          <a class="btn-action" href="https://github.com/DenisShumilov/uav-readiness-evidence-copilot" style="text-decoration: none;">Вихідний код та документація на GitHub →</a>
         </div>
 
-        <!-- ЗАВЕРШЕНИЙ ПРИКЛАД ОДНОГО ЦИКЛУ ПЕРЕВІРКИ -->
-        <div style="margin-top: 22px; padding: 18px 20px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 14px;">
-          <h3 style="margin: 0 0 12px; font-size: 16px; font-weight: 800; color: #0f172a;">
-            Завершений приклад одного циклу перевірки (від вхідних файлів до повторного прогону після виправлення C31 і C48)
-          </h3>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; font-size: 13.5px; line-height: 1.55; color: #1e293b;">
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
-              <strong>1. Вхідні файли:</strong> Відкритий документ вимог <code>06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx</code> (Prozorro 1:1, 52 табличні записи ТТХ) та контрольний протокол <code>07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx</code> (51 рядок даних за <code>PROVENANCE.json</code>, 47 зіставлених пар).
+        <details style="margin-top: 18px; border-top: 1px solid #e2e8f0; padding-top: 14px;">
+          <summary style="cursor: pointer; font-size: 13.8px; font-weight: 700; color: #334155; user-select: none;">
+            📋 Розгорнути технічний паспорт стенду v2.5.0: межі верифікації, походження тестових файлів (PROVENANCE.json), 6 етапів та 4 метрики пілоту
+          </summary>
+          <div style="margin-top: 14px;">
+            <p style="font-size: 12.8px; line-height: 1.5; color: #334155; margin: 0 0 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px;">
+              <strong>Про походження головного демо-прикладу (<code>PROVENANCE.json</code>) та ізоляцію:</strong> файл <code>06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx</code> є відкритим тендерним документом Prozorro (1:1), а таблиця <code>07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx</code> — контрольним прикладом із двома внесеними розбіжностями (<code>14.76 В vs 15.4 В</code> у комірці <code>C31</code> та <code>-20…+50 °C vs -10…+40 °C</code> у <code>C48</code>). У цьому перевіреному сценарії не спостерігалося передавання вмісту тестових файлів (спостережено 0 видимих звернень до інших origin за PerformanceResourceTiming).
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px;">
+                <div style="font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 5px;">
+                  1. Власні 90-сторінкові шаблони ТУ та складні таблиці
+                </div>
+                <p style="font-size: 13px; line-height: 1.5; color: #334155; margin: 0;">
+                  Базовий стенд читає типові таблиці ТТХ та прозу Prozorro, а складні багаторівневі об'єднані комірки чи міжсторінкові формули Excel чесно переводить у «Потребує перевірки» (<code>UNVERIFIED</code>).
+                </p>
+              </div>
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px;">
+                <div style="font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 5px;">
+                  2. Скани з мокрою печаткою vs адаптація під бланки КБ
+                </div>
+                <p style="font-size: 13px; line-height: 1.5; color: #334155; margin: 0;">
+                  У демо підтримується табличний шаблон (<code>560 × 220 px</code>), на якому WebAssembly-модуль відділяє синій відбиток печатки від цифр. Адаптацію до ваших бланків перевіряємо в межах пілоту.
+                </p>
+              </div>
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px;">
+                <div style="font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 5px;">
+                  3. Живий розбір телеметрії vs стендові моделі РЕБ
+                </div>
+                <p style="font-size: 13px; line-height: 1.5; color: #334155; margin: 0;">
+                  Висота, швидкість, спектр супутників <code>u-blox</code>, прапорці РЕБ та контрольні суми <code>.bin/.ulg/.tlog/.ubx/.nmea</code> рахуються в реальному часі з вашого файлу, а 3D-триангуляція постановника завад (<code>419.97 м</code>) та моделювання уводу <code>CUSUM NIS</code> наведені як еталонні стендові кейси.
+                </p>
+              </div>
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px;">
+                <div style="font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 5px;">
+                  4. Поля контейнера КЕП (<code>.p7s</code>) та шаблонна OPSEC-санація
+                </div>
+                <p style="font-size: 13px; line-height: 1.5; color: #334155; margin: 0;">
+                  Поля контейнера <code>.p7s</code> (ПІБ, ЄДРПОУ, мітка часу за <code>SignerInfo.sid</code>) читаються у браузері без інтернету; криптографічний підпис у цьому режимі не перевіряється (<code>cryptoStatus: UNVERIFIED</code>). Санація OPSEC приховує визначені категорії даних за шаблонами (потребує перегляду людиною перед передачею).
+                </p>
+              </div>
             </div>
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
-              <strong>2. Початкова звірка (До виправлення):</strong> У пам'яті браузера зіставлено <code>47</code> пар характеристик у системі SI: <code>45 PASS</code> (зокрема <code>1420 г = 1.42 кг</code>, <code>75.6 км/год = 21 м/с</code>, <code>0 UNVERIFIED</code> у парах) та <code>2 FAIL</code>.
+
+            <div style="margin-top: 16px; padding: 14px 16px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px;">
+              <h3 style="margin: 0 0 8px; font-size: 14.5px; font-weight: 800; color: #0f172a;">
+                Завершений приклад одного циклу перевірки (від вхідних файлів до повторного прогону після виправлення C31 і C48)
+              </h3>
+              <p style="margin: 0 0 8px; font-size: 13px; line-height: 1.55; color: #334155;">
+                1) Вхідні файли: <code>06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx</code> (52 записи ТТХ) та <code>07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx</code> (51 рядок за <code>PROVENANCE.json</code>, 47 зіставлених пар). 2) До виправлення: <code>45 PASS</code> (<code>1420 г = 1.42 кг</code>, <code>75.6 км/год = 21 м/с</code>) та <code>2 FAIL</code> у <code>таблиця 2, w:tr 36 (запис #31)</code> ⇄ <code>C31</code> (<code>14.76 В vs 15.4 В</code>) і <code>таблиця 2, w:tr 56 (запис #48)</code> ⇄ <code>C48</code> (<code>-20..+50 °C vs -10..+40 °C</code>), плюс <code>5</code> не зіставлених автоматично вимог ТУ у <code>unmatchedTuRows</code> (<code>UNVERIFIED</code>). 3) Після коригування комірок <code>C31</code> і <code>C48</code> повторний прогін підтверджує <code>47/47 PASS</code> та <code>0 FAIL</code>.
+              </p>
             </div>
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
-              <strong>3. Точні координати 2 розбіжностей:</strong> <code>таблиця 2, w:tr 36 (запис #31)</code> ⇄ комірка <code>C31</code> (<code>Стандартна напруга: 14.76 В vs 15.4 В</code>, <code>Δ = +0.64 В</code>) та <code>таблиця 2, w:tr 56 (запис #48)</code> ⇄ комірка <code>C48</code> (<code>Робоча температура: -20..+50 °C vs -10..+40 °C</code>).
-            </div>
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
-              <strong>4. Позиції ТУ поза автоматичним зіставленням (<code>UNVERIFIED</code>):</strong> <code>5</code> вимог ТУ з <code>.docx</code>, які не зіставлено автоматично (<code>DJI Matrice 4T — 55 комплект</code> у <code>таблиця 1, w:tr 2</code> та 4 рядки — <code>Еквівалентна фокусна відстань</code>, <code>Експозиція</code>, <code>Час роботи</code>, <code>Кількість супутників</code>), виводяться в окремому блоці <code>unmatchedTuRows</code> для ручної перевірки.
-            </div>
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
-              <strong>5. Виправлення інженером:</strong> Після звірки з первинним актом випробувань інженер коригує комірки <code>C31</code> (<code>15.4 В → 14.76 В</code>) та <code>C48</code> (<code>від -10°C до 40°C → від -20°C до 50°C</code>) у <code>07_Prozorro_UAV_Protocol_DJI_Matrice_4T_FIXED.xlsx</code>.
-            </div>
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px;">
-              <strong>6. Повторний прогін (Після виправлення):</strong> Повторна перевірка виправленого пакета у браузері підтверджує <strong><code>47/47 PASS</code> та <code>0 FAIL</code></strong> за зіставленими парами (із збереженням списку 5 не зіставлених автоматично позицій ТУ у звіті та <code>#diag=</code>).
+
+            <div style="margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
+              <div style="padding: 14px 16px; background: #f8faff; border: 1px solid #c7d2fe; border-radius: 12px;">
+                <h3 style="margin: 0 0 8px; font-size: 14.5px; font-weight: 800; color: #0f172a;">
+                  6 фіксованих етапів інженерного пілоту
+                </h3>
+                <ol style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.55; color: #1e293b;">
+                  <li><strong>Один процес</strong> (ТУ ↔ ПМВ ↔ BOM).</li>
+                  <li><strong>Погоджені входи</strong> (на знеособлених зразках).</li>
+                  <li><strong>Правила</strong> (допуски SI та умови <code>FAIL</code> / <code>LOCKED</code> / <code>UNVERIFIED</code>).</li>
+                  <li><strong>Потрібний вихід</strong> (звіт, матриця та <code>#diag=</code>).</li>
+                  <li><strong>Перевірка на відкладеному контрольному наборі (Hold-out set)</strong>.</li>
+                  <li><strong>Передача коду, тестів та інструкції</strong> команді замовника.</li>
+                </ol>
+              </div>
+              <div style="padding: 14px 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px;">
+                <h3 style="margin: 0 0 8px; font-size: 14.5px; font-weight: 800; color: #0f172a;">
+                  4 чесні метрики оцінювання пілоту
+                </h3>
+                <ol style="margin: 0 0 8px; padding-left: 18px; font-size: 13px; line-height: 1.55; color: #1e293b;">
+                  <li><strong>Повнота виявлення розбіжностей (Recall)</strong>: <code>TP / (TP + FN)</code></li>
+                  <li><strong>Частка хибних спрацювань (False Discovery Rate)</strong>: <code>FP / (TP + FP)</code></li>
+                  <li><strong>Частка неперевіреного (Unverified Rate)</strong>: <code>UNVERIFIED / Total</code></li>
+                  <li><strong>Повний час роботи інженера (<code>T_before</code> vs <code>T_after</code>)</strong>: порівняння часу ручної звірки (<code>T_before</code>) та часу роботи з інструментом включно з переглядом людиною (<code>T_after</code>).</li>
+                </ol>
+                <p style="margin: 0; font-size: 12.2px; color: #475569;">
+                  <em>Якщо знаменник будь-якої метрики дорівнює 0 (наприклад, TP + FN = 0), метрика позначається як "не визначено на цьому наборі" і не інтерпретується як 100% або 0%. Час і вартість визначаються після перегляду знеособлених зразків.</em>
+                </p>
+              </div>
             </div>
           </div>
-          <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 10px;">
-            <a class="btn-action" href="tools/universal-ai-cockpit.html" style="text-decoration: none;">
-              🔍 Відкрити до виправлення (45 PASS / 2 FAIL у C31, C48)
-            </a>
-            <a class="btn-action primary" href="tools/universal-ai-cockpit.html?preset=fixed" style="text-decoration: none;">
-              ✅ Відкрити після виправлення C31 і C48 (47/47 PASS, 0 FAIL)
-            </a>
-          </div>
-        </div>
-
-        <!-- 6 ФІКСОВАНИХ ЕТАПІВ ПІЛОТУ (СЕКТОР A18) -->
-        <div style="margin-top: 22px; padding: 18px 20px; background: #f8faff; border: 1px solid #c7d2fe; border-radius: 14px;">
-          <h3 style="margin: 0 0 12px; font-size: 16px; font-weight: 800; color: #0f172a;">
-            Інженерний пілот на одному узгодженому процесі — 6 фіксованих етапів
-          </h3>
-          <ol style="margin: 0 0 12px; padding-left: 20px; font-size: 13.8px; line-height: 1.62; color: #1e293b;">
-            <li><strong>Один процес</strong>: вибір однієї конкретної інженерної звірки (наприклад, ТУ ↔ ПМВ ↔ специфікація BOM).</li>
-            <li><strong>Погоджені входи</strong>: фіксація підтримуваних форматів і структури таблиць на знеособлених зразках.</li>
-            <li><strong>Правила</strong>: формалізація допусків, одиниць SI та умов блокування (<code>FAIL</code> / <code>LOCKED</code> / <code>UNVERIFIED</code>).</li>
-            <li><strong>Потрібний вихід</strong>: узгодження формату звіту, матриці трасованості та криптокапсули <code>#diag=</code>.</li>
-            <li><strong>Перевірка на відкладеному контрольному наборі (Hold-out set)</strong>: тестування на файлах, які не використовувалися під час налаштування правил.</li>
-            <li><strong>Передача коду, тестів та інструкції</strong>: передача автономного пакета з автотестами команді замовника.</li>
-          </ol>
-          <p style="margin: 0; font-size: 13.5px; color: #334155;">
-            <em>Час і вартість визначаються після перегляду знеособлених зразків і меж задачі.</em>
-          </p>
-        </div>
-
-        <!-- 4 ЧЕСНІ МЕТРИКИ ОЦІНЮВАННЯ ПІЛОТУ (СЕКТОР A19) -->
-        <div style="margin-top: 16px; padding: 18px 20px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px;">
-          <h3 style="margin: 0 0 12px; font-size: 16px; font-weight: 800; color: #0f172a;">
-            4 чесні метрики оцінювання пілоту
-          </h3>
-          <ol style="margin: 0 0 12px; padding-left: 20px; font-size: 13.8px; line-height: 1.62; color: #1e293b;">
-            <li><strong>Повнота виявлення розбіжностей (Recall)</strong>: <code>TP / (TP + FN)</code></li>
-            <li><strong>Частка хибних спрацювань (False Discovery Rate)</strong>: <code>FP / (TP + FP)</code></li>
-            <li><strong>Частка неперевіреного (Unverified Rate)</strong>: <code>UNVERIFIED / Total</code></li>
-            <li><strong>Повний час роботи інженера (<code>T_before</code> vs <code>T_after</code>)</strong>: порівняння повного часу ручної звірки пакета до впровадження (<code>T_before</code>) та часу роботи з інструментом включно з переглядом і верифікацією звіту людиною (<code>T_after</code>).</li>
-          </ol>
-          <p style="margin: 0; font-size: 13.5px; color: #334155;">
-            <em>Якщо знаменник будь-якої метрики дорівнює 0 (наприклад, TP + FN = 0), метрика позначається як "не визначено на цьому наборі" і не інтерпретується як 100% або 0%.</em>
-          </p>
-        </div>
+        </details>
       </section>
     </main>
 
