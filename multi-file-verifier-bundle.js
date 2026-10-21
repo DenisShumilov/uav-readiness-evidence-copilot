@@ -2539,7 +2539,7 @@
         targetRole: dst.item.sourceRole,
         siDimension: src.phys.dimLabel,
         similarityPct: (asg.similarity * 100).toFixed(1) + "%",
-        similarityNum: asg.similarity,
+        similarityNum: Number(asg.similarity.toFixed(4)),
         status: status,
         deltaExplain: deltaExplain,
         remediationHint: remediationHint
@@ -2558,7 +2558,7 @@
           tuRef: uSrc.item.normRef || uSrc.item.cellRef || null,
           siDimension: uSrc.phys.dimLabel,
           status: "UNVERIFIED_UNPAIRED_TU_ROW",
-          reasonUk: "Односторонній запис у вимогах ТУ без парного рядка у протоколі випробувань (поза " + alignedRows.length + " зіставленими парами — потребує окремої перевірки людиною)"
+          reasonUk: "Вимогу ТУ не зіставлено автоматично (поза " + alignedRows.length + " прийнятими парами) — потрібна ручна перевірка інженером"
         });
       }
     }
@@ -2705,6 +2705,8 @@
       readinessStatus = "UNVERIFIED";
     }
 
+    var unmatchedTuRows = (analysisState && Array.isArray(analysisState.unmatchedTuRows)) ? analysisState.unmatchedTuRows : [];
+
     var remediationSummary = {
       filesEvaluated: fileCount,
       parametersChecked: slotCount,
@@ -2713,6 +2715,7 @@
       passRowsCount: passRowsCount,
       failRowsCount: failRowsCount,
       unverifiedRowsCount: unverifiedRowsCount,
+      unmatchedTuRowsCount: unmatchedTuRows.length,
       verificationMode: verificationMode,
       standardsCompliance: ["ДСТУ ГОСТ 2.503:2006", "STANAG 4586"],
       readinessStatus: readinessStatus
@@ -2734,6 +2737,8 @@
       }),
       proseSlotsExtractedCount: (analysisState && analysisState.proseSlots) ? analysisState.proseSlots.length : 0,
       crossDocumentMatchesCount: rows.length,
+      unmatchedTuRowsCount: unmatchedTuRows.length,
+      unmatchedTuRows: unmatchedTuRows,
       physicsBlockedHallucinationsCount: (analysisState && analysisState.blockedByPhysicsSamples) ? analysisState.blockedByPhysicsSamples.length : 0,
       remediationRecipe: remediations,
       remediationSummary: remediationSummary
@@ -3596,8 +3601,9 @@
   }
 
   function exportAlignmentMatrixCsv(state) {
-    var st = state || CURRENT_COCKPIT_STATE || { alignedRows: [] };
+    var st = state || CURRENT_COCKPIT_STATE || { alignedRows: [], unmatchedTuRows: [] };
     var sorted = sortAlignmentRowsByPriority(st.alignedRows || []);
+    var unmatched = Array.isArray(st.unmatchedTuRows) ? st.unmatchedTuRows : [];
     var header = ["Параметр", "Результат / статус", "Джерела", "Наступна дія"].map(sanitizeCsvCell).join(",");
     var lines = [header];
     for (var i = 0; i < sorted.length; i++) {
@@ -3611,6 +3617,19 @@
         sanitizeCsvCell(statusCell),
         sanitizeCsvCell(sourceCell),
         sanitizeCsvCell(nextAction)
+      ].join(","));
+    }
+    for (var u = 0; u < unmatched.length; u++) {
+      var ur = unmatched[u];
+      var uParamCell = (ur.tuParam || "") + " [ТУ: " + (ur.tuValue || "—") + " | Факт: — (не зіставлено автоматично)]";
+      var uStatusCell = (ur.status || "UNVERIFIED_UNPAIRED_TU_ROW") + " — " + (ur.reasonUk || "Вимогу ТУ не зіставлено автоматично — потрібна ручна перевірка");
+      var uSourceCell = (ur.tuSource || "—") + (ur.tuRef ? (" (" + ur.tuRef + ")") : "") + " ↔ —";
+      var uNextAction = "Перевірити вручну за первинною документацією";
+      lines.push([
+        sanitizeCsvCell(uParamCell),
+        sanitizeCsvCell(uStatusCell),
+        sanitizeCsvCell(uSourceCell),
+        sanitizeCsvCell(uNextAction)
       ].join(","));
     }
     return lines.join("\n");
@@ -3789,13 +3808,13 @@
 
       var unmatchedTuList = (state && Array.isArray(state.unmatchedTuRows)) ? state.unmatchedTuRows : [];
       var unmatchedTuHtml = "";
-      if (unmatchedTuList.length > 0 && !isRestoredCapsuleOnly) {
+      if (unmatchedTuList.length > 0) {
         var uItemsHtml = unmatchedTuList.map(function (u, uIdx) {
           return "<li><b>#" + (uIdx + 1) + " " + escHtml(u.tuParam) + "</b>: <code>" + escHtml(u.tuValue) + "</code> · <span style='color:#475467'>" + escHtml(u.tuSource || "ТУ") + (u.tuRef ? (" (<code>" + escHtml(u.tuRef) + "</code>)") : "") + "</span> — <i>" + escHtml(u.reasonUk) + "</i></li>";
         }).join("");
         unmatchedTuHtml =
           "<details style='margin-top:8px;font-size:12.5px;color:#7c2d12;background:#fffbeb;border:1px solid #fde68a;padding:7px 10px;border-radius:6px'>" +
-          "<summary style='cursor:pointer;font-weight:600'>📋 Односторонні позиції з вимог ТУ без парного рядка у протоколі випробувань (UNVERIFIED: " + unmatchedTuList.length + " записів поза " + sortedRows.length + " зіставленими парами)</summary>" +
+          "<summary style='cursor:pointer;font-weight:600'>📋 Позиції з вимог ТУ, які не зіставлено автоматично — потрібна ручна перевірка (UNVERIFIED: " + unmatchedTuList.length + " записів поза " + sortedRows.length + " зіставленими парами)</summary>" +
           "<ul style='margin:6px 0 2px 18px;padding:0;line-height:1.45'>" + uItemsHtml + "</ul>" +
           "</details>";
       }
@@ -3807,7 +3826,7 @@
         "Збігається (PASS): <b style='color:#067647'>" + passCnt + "</b> (переведено одиниці SI: <b>" + convCnt + "</b>) · ",
         "Розбіжностей (FAIL): <b style='color:#d92d20'>" + failCnt + "</b> · ",
         "Неперевірено у парах (UNVERIFIED): <b style='color:#b54708'>" + unverifiedCnt + "</b> · ",
-        "Односторонніх позицій ТУ без пари (UNVERIFIED): <b style='color:#b54708'>" + unmatchedTuList.length + "</b> · ",
+        "Не зіставлено автоматично з ТУ (UNVERIFIED, ручна перевірка): <b style='color:#b54708'>" + unmatchedTuList.length + "</b> · ",
         "Відсіяно несумісних величин SI: <b style='color:#0022ff'>" + ((state && state.blockedByPhysicsSamples) ? state.blockedByPhysicsSamples.length : 0) + "</b>",
         hiddenPassNotice,
         "</div>",
@@ -4104,6 +4123,9 @@
       btnDownloadFix.addEventListener("click", function () {
         if (!CURRENT_COCKPIT_STATE || !CURRENT_COCKPIT_STATE.timeSaver) return;
         var ts = CURRENT_COCKPIT_STATE.timeSaver;
+        var unmatchedRowsForMd = Array.isArray(CURRENT_COCKPIT_STATE.unmatchedTuRows)
+          ? CURRENT_COCKPIT_STATE.unmatchedTuRows
+          : (ts.diagCapsule && Array.isArray(ts.diagCapsule.unmatchedTuRows) ? ts.diagCapsule.unmatchedTuRows : []);
         var mdLines = [
           "# Звіт перевірки документації та список питань для інженера",
           "",
@@ -4111,17 +4133,33 @@
           "- **Режим виконання**: `" + ts.diagCapsule.executionMode + "`",
           "- **Режим верифікації**: `" + (ts.diagCapsule.verificationMode || "CROSS_DOCUMENT") + "`",
           "- **Кількість порівняних пар характеристик**: `" + ts.diagCapsule.crossDocumentMatchesCount + "`",
+          "- **Не зіставлено автоматично з вимог ТУ (потрібна ручна перевірка, UNVERIFIED)**: `" + unmatchedRowsForMd.length + "`",
           "- **Знайдено характеристик у суцільному тексті**: `" + ts.diagCapsule.proseSlotsExtractedCount + "`",
           "",
           "## План дій за результатами перевірки (перевірка людиною проти авто-налаштувань)",
           ""
         ];
+        if (ts.remediations.length === 0) {
+          mdLines.push("- У зіставлених парах характеристик розбіжностей не виявлено (`0 FAIL`).");
+          mdLines.push("");
+        }
         for (var i = 0; i < ts.remediations.length; i++) {
           var r = ts.remediations[i];
           mdLines.push("### " + (i + 1) + ". [" + r.severity + "] `" + r.targetFile + "` → " + r.location);
           mdLines.push("- **Зафіксовано у файлі**: `" + r.currentValue + "`");
           mdLines.push("- **Рекомендована інженерна дія**: `" + r.requiredValue + "`");
           mdLines.push("- **Пояснення простою мовою**: " + r.reasonUk);
+          mdLines.push("");
+        }
+        if (unmatchedRowsForMd.length > 0) {
+          mdLines.push("## Вимоги ТУ поза автоматичним зіставленням (потрібна ручна перевірка інженером, UNVERIFIED)");
+          mdLines.push("");
+          for (var ui = 0; ui < unmatchedRowsForMd.length; ui++) {
+            var uRow = unmatchedRowsForMd[ui];
+            mdLines.push(
+              "- **#" + (ui + 1) + " `" + (uRow.tuParam || "") + "`** (`" + (uRow.tuValue || "") + "`, джерело: `" + (uRow.tuSource || "ТУ") + "`" + (uRow.tuRef ? ", `" + uRow.tuRef + "`" : "") + ") — " + (uRow.reasonUk || "Потрібна ручна перевірка інженером")
+            );
+          }
           mdLines.push("");
         }
         mdLines.push("## Технічний дамп перевірки (JSON)");
