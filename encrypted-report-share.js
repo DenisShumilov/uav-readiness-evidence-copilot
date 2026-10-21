@@ -21,22 +21,19 @@
  *   - Submodule 14.3: Engineering Review Preview & Serverless WebRTC Bridge
  *     Generates deterministic engineering review manifests and supports serverless WebRTC
  *     SDP signaling over URI fragments as a fallback/recovery transport.
- *
- * Risk, Constraint & Fallback/Rollback Plan (Аналіз ризиків, обмежень та план відкату):
- *   - Risk/Constraint: Messenger URI length limits (8 KB in Signal/LinkedIn) or missing
- *     WebCrypto context on non-HTTPS file:// origins.
- *   - Fallback/Recovery: Automatic fallback to downloadable binary .shmlv-capsule file
- *     or serverless WebRTC DataChannel SDP fragment (#webrtc_sdp=...), plus deterministic
- *     rollback to pre-redaction memory snapshot if GCM/HMAC verification fails.
  * ============================================================================
  */
 (function (global) {
   "use strict";
 
-  var CAPSULE_FORMAT_VERSION = "shmlv-capsule-v1";
+  var CAPSULE_FORMAT_VERSION = "shmlv-zk-v2";
+  var LEGACY_CAPSULE_VERSION = "shmlv-capsule-v1";
   var DEFAULT_GITHUB_PAGES_BASE_URL = "https://denisshumilov.github.io/uav-readiness-evidence-copilot/";
-  var DEFAULT_AAD_STRING = "shmlv-capsule-v1|zero-knowledge-opsec|rfc3986-fragment";
+  var DEFAULT_AAD_STRING = "shmlv-zk-v2|zero-knowledge-opsec|rfc3986-fragment";
   var DEFAULT_PBKDF2_ITERATIONS = 100000;
+  var DEMO_PUBLIC_PASSPHRASE = "shmlv-operator-zero-server-key-2026";
+  var MAX_CAPSULE_TOKEN_LENGTH = 131072;
+  var MAX_DECOMPRESSED_CAPSULE_BYTES = 4 * 1024 * 1024; // 4 MB hard ceiling
 
   // ---------- 1. Pure-JS SHA-256 (Synchronous Commitment Helper) ----------
   var SHA256_K = new Uint32Array([
@@ -198,6 +195,20 @@
     return sha256BytesSync(outerInput);
   }
 
+  function constantTimeEqualBytes(a, b) {
+    if (!(a instanceof Uint8Array) || !(b instanceof Uint8Array)) {
+      return false;
+    }
+    if (a.byteLength !== b.byteLength || a.byteLength === 0) {
+      return false;
+    }
+    var diff = 0;
+    for (var i = 0; i < a.byteLength; i++) {
+      diff |= a[i] ^ b[i];
+    }
+    return diff === 0;
+  }
+
   // ---------- 2. RFC 4648 Base64URL Codec (Zero-Padding URI Safe) ----------
   var B64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -227,7 +238,11 @@
   }
 
   function base64UrlToBytes(b64UrlStr) {
-    var clean = String(b64UrlStr).trim().replace(/-/g, "+").replace(/_/g, "/").replace(/=+$/, "");
+    var rawStr = String(b64UrlStr || "").trim();
+    if (!rawStr || /[^A-Za-z0-9\-_=]/.test(rawStr)) {
+      throw new Error("Invalid character in Base64URL payload");
+    }
+    var clean = rawStr.replace(/-/g, "+").replace(/_/g, "/").replace(/=+$/, "");
     var padMod = clean.length % 4;
     if (padMod === 1) {
       throw new Error("Invalid Base64URL string length");
@@ -253,7 +268,6 @@
   }
 
   // ---------- 3. SI Physical Dimensional Matrix & Homogeneity Algebra ----------
-  // Base SI dimensions vector: [L (m), M (kg), T (s), I (A), Theta (K), N (mol), J (cd)]
   var SI_UNIT_VECTORS = {
     "A":      { symbol: "A",      name: "electric_current",       exponents: [0, 0, 0, 1, 0, 0, 0], scale_to_si: 1.0 },
     "mA":     { symbol: "mA",     name: "electric_current",       exponents: [0, 0, 0, 1, 0, 0, 0], scale_to_si: 0.001 },
@@ -302,21 +316,13 @@
 
   // ---------- 4. Submodule 14.1: OPSEC-Safe Zero-Knowledge Sanitizer ----------
   var OPSEC_PATTERNS = {
-    // WGS-84 decimal coordinate pairs e.g. 50.4501, 30.5234 or -33.8688, 151.2093
     wgs84_pair: /[+-]?\b\d{1,2}\.\d{3,8}\s*[,;/\s]\s*[+-]?\d{1,3}\.\d{3,8}\b/g,
-    // Raw 1e7 autopilot integer coordinates e.g. 504501000, 305234000, -338688000
     int1e7_coord: /[+-]?\b(?:[1-8]\d{8}|1[0-7]\d{8})\b/g,
-    // MGRS grid coordinates e.g. 36U UA 22450 88120
     mgrs_grid: /\b\d{1,2}[C-X]\s*[A-Z]{2}\s*\d{3,5}\s*\d{3,5}\b/gi,
-    // Ukrainian PIB (Surname + Initials or Full Patronymic) — no ASCII \b before Cyrillic
     pib_ukr: /[А-ЯІЇЄҐ][а-яіїєґ']{2,22}\s+(?:[А-ЯІЇЄҐ]\.\s*[А-ЯІЇЄҐ]\.|[А-ЯІЇЄҐ][а-яіїєґ']{2,18}\s+[А-ЯІЇЄҐ][а-яіїєґ']{3,22})/g,
-    // EDRPOU (8 digits) or IPN/RNOKPP (10 digits) with context or standalone
     edrpou_code: /(?:(?:ЄДРПОУ|ІПН|РНОКПП)\s*[:№#]?\s*\d{8,10}|\b\d{10}\b|\b\d{8}\b)/gi,
-    // Military unit codes (в/ч А0123) — no ASCII \b before Cyrillic
     mil_unit: /(?:в\/ч\s*)?[АA]\d{4}\b/gi,
-    // Quoted product / UAV codenames «...»
-    product_codename: /«[^»]{2,40}»/g,
-    // External UNC / SMB / IP paths
+    product_codename: /(?:«[^»]{2,40}»|(?:Комплекс|БпАК|БпЛА|Виріб)\s+"[^"]{2,40}")/gi,
     unc_or_ip: /(?:\\\\[0-9a-zA-Z._-]+\\[0-9a-zA-Z._$\\-]+|\b(?:\d{1,3}\.){3}\d{1,3}\b)/g
   };
 
@@ -361,36 +367,79 @@
     return text;
   }
 
+  /**
+   * Recursively sanitizes only string values inside an arbitrary object/array graph,
+   * preserving object structure, numbers, booleans, and keys without JSON stringification round-trips.
+   */
+  function deepSanitizeValue(value, saltHex, statsCounter, depth) {
+    var currentDepth = depth || 0;
+    if (value === null || value === undefined) {
+      return value;
+    }
+    if (typeof value === "string") {
+      return redactSensitiveText(value, saltHex, statsCounter);
+    }
+    if (typeof value === "number" || typeof value === "boolean") {
+      return value;
+    }
+    if (currentDepth > 16) {
+      return "[MAX_DEPTH]";
+    }
+    if (Array.isArray(value)) {
+      var sanitizedArr = [];
+      for (var i = 0; i < value.length; i++) {
+        sanitizedArr.push(deepSanitizeValue(value[i], saltHex, statsCounter, currentDepth + 1));
+      }
+      return sanitizedArr;
+    }
+    if (typeof value === "object") {
+      if (
+        value instanceof Uint8Array ||
+        (typeof ArrayBuffer !== "undefined" && ArrayBuffer.isView && ArrayBuffer.isView(value))
+      ) {
+        return "[BINARY_BUFFER_" + value.byteLength + "_BYTES]";
+      }
+      var sanitizedObj = {};
+      var keys = Object.keys(value);
+      for (var k = 0; k < keys.length; k++) {
+        var prop = keys[k];
+        sanitizedObj[prop] = deepSanitizeValue(value[prop], saltHex, statsCounter, currentDepth + 1);
+      }
+      return sanitizedObj;
+    }
+    return String(value);
+  }
+
   function verifyZeroOpsecLeakage(serializedString) {
     var s = String(serializedString || "");
     var checks = [
-      { name: "wgs84_pair", regex: /[+-]?\b\d{1,2}\.\d{3,8}\s*[,;/\s]\s*[+-]?\d{1,3}\.\d{3,8}\b/ },
-      { name: "int1e7_coord", regex: /[+-]?\b(?:[1-8]\d{8}|1[0-7]\d{8})\b/ },
-      { name: "mgrs_grid", regex: /\b\d{1,2}[C-X]\s*[A-Z]{2}\s*\d{3,5}\s*\d{3,5}\b/i },
-      { name: "pib_ukr", regex: /[А-ЯІЇЄҐ][а-яіїєґ']{2,22}\s+(?:[А-ЯІЇЄҐ]\.\s*[А-ЯІЇЄҐ]\.|[А-ЯІЇЄҐ][а-яіїєґ']{2,18}\s+[А-ЯІЇЄҐ][а-яіїєґ']{3,22})/ },
-      { name: "edrpou_or_ipn", regex: /(?:(?:ЄДРПОУ|ІПН|РНОКПП)\s*[:№#]?\s*\d{8,10}|\b\d{10}\b|\b\d{8}\b)/i },
-      { name: "mil_unit", regex: /(?:в\/ч\s*)?[АA]\d{4}\b/i },
-      { name: "product_codename", regex: /«[^»]{2,40}»/ },
-      { name: "unc_or_ip", regex: /(?:\\\\[0-9a-zA-Z._-]+\\[0-9a-zA-Z._$\\-]+|\b(?:\d{1,3}\.){3}\d{1,3}\b)/ }
+      { name: "wgs84_pair", regex: /[+-]?\b\d{1,2}\.\d{3,8}\s*[,;/\s]\s*[+-]?\d{1,3}\.\d{3,8}\b/g },
+      { name: "int1e7_coord", regex: /[+-]?\b(?:[1-8]\d{8}|1[0-7]\d{8})\b/g },
+      { name: "mgrs_grid", regex: /\b\d{1,2}[C-X]\s*[A-Z]{2}\s*\d{3,5}\s*\d{3,5}\b/gi },
+      { name: "pib_ukr", regex: /[А-ЯІЇЄҐ][а-яіїєґ']{2,22}\s+(?:[А-ЯІЇЄҐ]\.\s*[А-ЯІЇЄҐ]\.|[А-ЯІЇЄҐ][а-яіїєґ']{2,18}\s+[А-ЯІЇЄҐ][а-яіїєґ']{3,22})/g },
+      { name: "edrpou_or_ipn", regex: /(?:(?:ЄДРПОУ|ІПН|РНОКПП)\s*[:№#]?\s*\d{8,10}|\b\d{10}\b|\b\d{8}\b)/gi },
+      { name: "mil_unit", regex: /(?:в\/ч\s*)?[АA]\d{4}\b/gi },
+      { name: "product_codename", regex: /«[^»]{2,40}»/g },
+      { name: "unc_or_ip", regex: /(?:\\\\[0-9a-zA-Z._-]+\\[0-9a-zA-Z._$\\-]+|\b(?:\d{1,3}\.){3}\d{1,3}\b)/g }
     ];
     var leaks = [];
+    var totalTokensCount = 0;
+
     for (var i = 0; i < checks.length; i++) {
-      if (checks[i].regex.test(s)) {
+      var matches = Array.from(s.matchAll(checks[i].regex));
+      if (matches.length > 0) {
         leaks.push(checks[i].name);
+        totalTokensCount += matches.length;
       }
     }
     return {
-      opsec_clean: leaks.length === 0,
+      opsec_clean: totalTokensCount === 0,
       leaked_categories: leaks,
-      leaked_pii_tokens_remaining: leaks.length
+      leaked_category_count: leaks.length,
+      leaked_pii_tokens_remaining: totalTokensCount
     };
   }
 
-  /**
-   * Transforms a raw client diagnostic session (containing sensitive coordinates,
-   * PIB, EDRPOU, product names, and raw telemetry) into an OPSEC-Safe Zero-Knowledge
-   * Mathematical Collision Graph ready for compression and WebCrypto encryption.
-   */
   function sanitizeToZeroKnowledgeGraph(rawInput, options) {
     var opts = options || {};
     var saltHex = opts.saltHex || "7f8e9d0c1b2a39485766758493a2b1c0";
@@ -406,14 +455,14 @@
       commitments: []
     };
 
-    // Strip any raw text notes / paragraphs to accumulate OPSEC redaction counts
-    if (raw.raw_confidential_context) {
-      redactSensitiveText(JSON.stringify(raw.raw_confidential_context), saltHex, redactionStats);
+    if (raw.raw_confidential_context !== undefined) {
+      deepSanitizeValue(raw.raw_confidential_context, saltHex, redactionStats, 0);
     }
 
     var rawCollisions = Array.isArray(raw.collisions) ? raw.collisions.slice() : [];
     var hasExplicitCollisions = rawCollisions.length > 0;
     var sanitizedFindings = null;
+
     if (Array.isArray(raw.findings)) {
       sanitizedFindings = [];
       for (var fIdx = 0; fIdx < raw.findings.length; fIdx++) {
@@ -433,26 +482,23 @@
             });
           }
         } else if (fItem && typeof fItem === "object") {
-          var cleanObjStr = redactSensitiveText(JSON.stringify(fItem), saltHex, redactionStats);
-          try {
-            sanitizedFindings.push(JSON.parse(cleanObjStr));
-          } catch (_e) {
-            sanitizedFindings.push(cleanObjStr);
-          }
+          var cleanObj = deepSanitizeValue(fItem, saltHex, redactionStats, 0);
+          sanitizedFindings.push(cleanObj);
           if (!hasExplicitCollisions) {
             rawCollisions.push({
-              rule_id: String(fItem.rule_id || fItem.ruleId || fItem.id || ("FINDING_" + (fIdx + 1))),
-              section_ref: String(fItem.section_ref || fItem.sectionRef || fItem.section || fItem.param || fItem.title || ("SEC_" + (fIdx + 1))),
-              spec_unit: String(fItem.spec_unit || fItem.specUnit || fItem.unit || "ratio"),
-              observed_unit: String(fItem.observed_unit || fItem.observedUnit || fItem.unit || "ratio"),
-              spec_value: fItem.spec_value !== undefined ? fItem.spec_value : (fItem.specValue !== undefined ? fItem.specValue : 1),
-              observed_value: fItem.observed_value !== undefined ? fItem.observed_value : (fItem.observedValue !== undefined ? fItem.observedValue : 0),
-              severity: String(fItem.severity || "HIGH")
+              rule_id: String(cleanObj.rule_id || cleanObj.ruleId || cleanObj.id || ("FINDING_" + (fIdx + 1))),
+              section_ref: String(cleanObj.section_ref || cleanObj.sectionRef || cleanObj.section || cleanObj.param || cleanObj.title || ("SEC_" + (fIdx + 1))),
+              spec_unit: String(cleanObj.spec_unit || cleanObj.specUnit || cleanObj.unit || "ratio"),
+              observed_unit: String(cleanObj.observed_unit || cleanObj.observedUnit || cleanObj.unit || "ratio"),
+              spec_value: cleanObj.spec_value !== undefined ? cleanObj.spec_value : (cleanObj.specValue !== undefined ? cleanObj.specValue : 1),
+              observed_value: cleanObj.observed_value !== undefined ? cleanObj.observed_value : (cleanObj.observedValue !== undefined ? cleanObj.observedValue : 0),
+              severity: String(cleanObj.severity || "HIGH")
             });
           }
         }
       }
     }
+
     var collisionNodes = [];
     var collisionEdges = [];
     var siMatrix = [];
@@ -470,7 +516,6 @@
         ? Number(((Math.abs(deltaSi) / Math.abs(specNorm.normalized_si_value)) * 100).toFixed(2))
         : 0.0;
 
-      // Redact any accidental text in section_ref or parameter_id
       var safeSectionRef = redactSensitiveText(item.section_ref || ("SEC_" + (i + 1)), saltHex, redactionStats);
       var specNodeId = "NODE_SPEC_" + (i + 1) + "_" + ruleId;
       var obsNodeId = "NODE_OBS_" + (i + 1) + "_" + ruleId;
@@ -562,20 +607,65 @@
           redactionStats.mil_units_stripped +
           redactionStats.product_names_stripped +
           redactionStats.unc_paths_stripped,
+        leaked_category_count: 0,
         leaked_pii_tokens_remaining: 0
       }
     };
 
-    if (raw.tool !== undefined || raw.verdict !== undefined || sanitizedFindings !== null) {
-      zkGraph.tool = redactSensitiveText(String(raw.tool || "shmlv-cockpit"), saltHex, redactionStats);
-      zkGraph.verdict = redactSensitiveText(String(raw.verdict || "UNKNOWN"), saltHex, redactionStats);
-      zkGraph.passCount = Number(raw.passCount || 0);
-      zkGraph.failCount = Number(raw.failCount !== undefined ? raw.failCount : collisionEdges.length);
-      zkGraph.findings = sanitizedFindings || [];
+    // Preserve and sanitize all Cockpit state fields
+    var preservedCockpitFields = [
+      "tool",
+      "title",
+      "verdict",
+      "status",
+      "verificationMode",
+      "passCount",
+      "failCount",
+      "unverifiedCount",
+      "alignedRows",
+      "proseSlots",
+      "remediations",
+      "files"
+    ];
+    for (var pIdx = 0; pIdx < preservedCockpitFields.length; pIdx++) {
+      var fieldName = preservedCockpitFields[pIdx];
+      if (raw[fieldName] !== undefined) {
+        zkGraph[fieldName] = deepSanitizeValue(raw[fieldName], saltHex, redactionStats, 0);
+      }
     }
+    if (sanitizedFindings !== null) {
+      zkGraph.findings = sanitizedFindings;
+      if (zkGraph.tool === undefined) {
+        zkGraph.tool = redactSensitiveText(String(raw.tool || "shmlv-cockpit"), saltHex, redactionStats);
+      }
+      if (zkGraph.verdict === undefined) {
+        zkGraph.verdict = redactSensitiveText(String(raw.verdict || "UNKNOWN"), saltHex, redactionStats);
+      }
+      if (zkGraph.passCount === undefined) {
+        zkGraph.passCount = Number(raw.passCount || 0);
+      }
+      if (zkGraph.failCount === undefined) {
+        zkGraph.failCount = Number(raw.failCount !== undefined ? raw.failCount : collisionEdges.length);
+      }
+    }
+
+    zkGraph.opsec_redaction_proof.coordinates_stripped = redactionStats.coordinates_stripped;
+    zkGraph.opsec_redaction_proof.pib_stripped = redactionStats.pib_stripped;
+    zkGraph.opsec_redaction_proof.edrpou_stripped = redactionStats.edrpou_stripped;
+    zkGraph.opsec_redaction_proof.mil_units_stripped = redactionStats.mil_units_stripped;
+    zkGraph.opsec_redaction_proof.product_names_stripped = redactionStats.product_names_stripped;
+    zkGraph.opsec_redaction_proof.unc_paths_stripped = redactionStats.unc_paths_stripped;
+    zkGraph.opsec_redaction_proof.total_sensitive_entities_stripped =
+      redactionStats.coordinates_stripped +
+      redactionStats.pib_stripped +
+      redactionStats.edrpou_stripped +
+      redactionStats.mil_units_stripped +
+      redactionStats.product_names_stripped +
+      redactionStats.unc_paths_stripped;
 
     var serializedCheck = JSON.stringify(zkGraph);
     var leakAudit = verifyZeroOpsecLeakage(serializedCheck);
+    zkGraph.opsec_redaction_proof.leaked_category_count = leakAudit.leaked_category_count;
     zkGraph.opsec_redaction_proof.leaked_pii_tokens_remaining = leakAudit.leaked_pii_tokens_remaining;
     zkGraph.opsec_redaction_proof.opsec_clean_verified = leakAudit.opsec_clean;
     zkGraph.sha256_fingerprints.zk_graph_canonical_sha256 = sha256HexSync(serializedCheck);
@@ -583,23 +673,40 @@
     return zkGraph;
   }
 
-  // ---------- 5. Native Stream Compression ('deflate-raw') ----------
-  async function streamToUint8Array(readableStream) {
+  // ---------- 5. Native Stream Compression ('deflate-raw') with 4 MB Limit ----------
+  async function readStreamWithLimit(readableStream, maxBytes) {
+    var limit = typeof maxBytes === "number" && maxBytes > 0 ? maxBytes : MAX_DECOMPRESSED_CAPSULE_BYTES;
     var reader = readableStream.getReader();
     var chunks = [];
     var totalLen = 0;
-    while (true) {
-      var step = await reader.read();
-      if (step.done) break;
-      var chunk = step.value instanceof Uint8Array ? step.value : new Uint8Array(step.value);
-      chunks.push(chunk);
-      totalLen += chunk.length;
+    try {
+      while (true) {
+        var step = await reader.read();
+        if (step.done) break;
+        var chunk = step.value instanceof Uint8Array ? step.value : new Uint8Array(step.value);
+        totalLen += chunk.byteLength;
+        if (totalLen > limit) {
+          try {
+            await reader.cancel("Stream exceeded maximum byte limit (" + limit + " bytes)");
+          } catch (_cancelErr) {
+            totalLen = limit + 1;
+          }
+          throw new Error("DecompressionStream limit exceeded: output > " + limit + " bytes");
+        }
+        chunks.push(chunk);
+      }
+    } finally {
+      try {
+        reader.releaseLock();
+      } catch (_releaseErr) {
+        totalLen = totalLen + 0;
+      }
     }
     var result = new Uint8Array(totalLen);
     var offset = 0;
     for (var i = 0; i < chunks.length; i++) {
       result.set(chunks[i], offset);
-      offset += chunks[i].length;
+      offset += chunks[i].byteLength;
     }
     return result;
   }
@@ -609,21 +716,37 @@
     if (typeof CompressionStream !== "undefined") {
       var cs = new CompressionStream("deflate-raw");
       var writer = cs.writable.getWriter();
-      writer.write(u8);
-      writer.close();
-      return await streamToUint8Array(cs.readable);
+      var writeTask = writer.write(u8).then(function () {
+        return writer.close();
+      });
+      var compressed = await readStreamWithLimit(cs.readable, MAX_DECOMPRESSED_CAPSULE_BYTES);
+      await writeTask;
+      return compressed;
     }
     throw new Error("CompressionStream('deflate-raw') not available in this runtime");
   }
 
-  async function decompressDeflateRaw(compressedBytes) {
+  async function decompressDeflateRaw(compressedBytes, maxBytes) {
     var u8 = compressedBytes instanceof Uint8Array ? compressedBytes : new Uint8Array(compressedBytes);
+    var limit = typeof maxBytes === "number" && maxBytes > 0 ? maxBytes : MAX_DECOMPRESSED_CAPSULE_BYTES;
     if (typeof DecompressionStream !== "undefined") {
       var ds = new DecompressionStream("deflate-raw");
       var writer = ds.writable.getWriter();
-      writer.write(u8);
-      writer.close();
-      return await streamToUint8Array(ds.readable);
+      var writeError = null;
+      var writeTask = writer
+        .write(u8)
+        .then(function () {
+          return writer.close();
+        })
+        .catch(function (err) {
+          writeError = err;
+        });
+      var decompressed = await readStreamWithLimit(ds.readable, limit);
+      await writeTask;
+      if (writeError) {
+        throw new Error("Corrupted deflate-raw stream: " + (writeError.message || String(writeError)));
+      }
+      return decompressed;
     }
     throw new Error("DecompressionStream('deflate-raw') not available in this runtime");
   }
@@ -637,6 +760,13 @@
       return window.crypto;
     }
     throw new Error("WebCrypto API (crypto.subtle) is required for capsule encryption");
+  }
+
+  function generateRandomCapsuleSecret() {
+    var cryptoObj = getWebCrypto();
+    var bytes = new Uint8Array(16);
+    cryptoObj.getRandomValues(bytes);
+    return bytesToHex(bytes); // Full 32 hex chars = 128 bits of entropy
   }
 
   async function sha256DigestHexWebCrypto(inputBytes) {
@@ -656,12 +786,11 @@
     var iters = iterations || DEFAULT_PBKDF2_ITERATIONS;
     var baseKey = await subtle.importKey(
       "raw",
-      utf8ToBytes(passphraseStr),
+      utf8ToBytes(String(passphraseStr || "")),
       { name: "PBKDF2" },
       false,
       ["deriveBits"]
     );
-    // Derive 512 bits (64 bytes): first 32 bytes = AES-256-GCM key, next 32 bytes = HMAC-SHA256 key
     var derivedBits = await subtle.deriveBits(
       {
         name: "PBKDF2",
@@ -676,34 +805,100 @@
     var aesKeyBytes = derivedBytes.slice(0, 32);
     var hmacKeyBytes = derivedBytes.slice(32, 64);
 
-    var aesKey = await subtle.importKey(
+    var aesCryptoKey = await subtle.importKey(
       "raw",
       aesKeyBytes,
       { name: "AES-GCM", length: 256 },
       false,
       ["encrypt", "decrypt"]
     );
-    var hmacKey = await subtle.importKey(
+    var hmacCryptoKey = await subtle.importKey(
       "raw",
       hmacKeyBytes,
       { name: "HMAC", hash: { name: "SHA-256" } },
       false,
       ["sign", "verify"]
     );
+
+    derivedBytes.fill(0);
+    aesKeyBytes.fill(0);
+    hmacKeyBytes.fill(0);
+
     return {
-      aesKey: aesKey,
-      hmacKey: hmacKey,
-      aesKeyHex: bytesToHex(aesKeyBytes),
-      hmacKeyHex: bytesToHex(hmacKeyBytes)
+      aesCryptoKey: aesCryptoKey,
+      hmacCryptoKey: hmacCryptoKey,
+      keyDerivation: "PBKDF2-HMAC-SHA256-" + iters
     };
   }
 
-  async function createSignedDiagnosticCapsule(rawDiagnosticInput, options) {
-    var opts = options || {};
+  function resolveCapsuleKeyOptions(optionsOrPassphrase, isCreation) {
+    var opts = {};
+    var rawPass = "";
+    var demoMode = false;
+
+    if (typeof optionsOrPassphrase === "string") {
+      rawPass = optionsOrPassphrase.trim();
+    } else if (optionsOrPassphrase && typeof optionsOrPassphrase === "object") {
+      opts = optionsOrPassphrase;
+      if (typeof opts.passphrase === "string" && opts.passphrase.trim().length > 0) {
+        rawPass = opts.passphrase.trim();
+      } else if (typeof opts.generatedSecret === "string" && opts.generatedSecret.trim().length > 0) {
+        rawPass = opts.generatedSecret.trim();
+      } else if (typeof opts.secret === "string" && opts.secret.trim().length > 0) {
+        rawPass = opts.secret.trim();
+      } else if (typeof opts.secretKey === "string" && opts.secretKey.trim().length > 0) {
+        rawPass = opts.secretKey.trim();
+      } else if (typeof opts.secretKeyHex === "string" && opts.secretKeyHex.trim().length > 0) {
+        rawPass = opts.secretKeyHex.trim();
+      } else if (typeof opts.keyHex === "string" && opts.keyHex.trim().length > 0) {
+        rawPass = opts.keyHex.trim();
+      }
+      demoMode = Boolean(
+        opts.demoMode === true ||
+        opts.useDemoKey === true ||
+        opts.demoKey === true ||
+        opts.keyMode === "PUBLIC_SYNTHETIC_DEMO_KEY"
+      );
+    }
+
+    if (demoMode || rawPass === DEMO_PUBLIC_PASSPHRASE) {
+      return {
+        opts: opts,
+        passphrase: DEMO_PUBLIC_PASSPHRASE,
+        keyMode: "PUBLIC_SYNTHETIC_DEMO_KEY",
+        generatedSecret: null
+      };
+    }
+
+    if (rawPass.length > 0) {
+      return {
+        opts: opts,
+        passphrase: rawPass,
+        keyMode: "USER_SUPPLIED_SECRET",
+        generatedSecret: null
+      };
+    }
+
+    if (isCreation) {
+      var ephemeralSecret = generateRandomCapsuleSecret();
+      return {
+        opts: opts,
+        passphrase: ephemeralSecret,
+        keyMode: "GENERATED_EPHEMERAL_SECRET",
+        generatedSecret: ephemeralSecret
+      };
+    }
+
+    throw new Error("Passphrase or explicit { demoMode: true } is required to decrypt diagnostic capsule");
+  }
+
+  async function createSignedDiagnosticCapsule(reportPayload, optionsOrPassphrase) {
     var webCrypto = getWebCrypto();
     var subtle = webCrypto.subtle;
+    var keyRes = resolveCapsuleKeyOptions(optionsOrPassphrase, true);
+    var opts = keyRes.opts;
+    var passphrase = keyRes.passphrase;
 
-    var passphrase = String(opts.passphrase || "shmlv-operator-zero-server-key-2026");
     var iterations = Number(opts.iterations || DEFAULT_PBKDF2_ITERATIONS);
     if (!Number.isFinite(iterations) || iterations < 1000 || iterations > 5000000) {
       throw new Error("PBKDF2 iterations out of safe bounds [1000..5000000]: " + iterations);
@@ -723,16 +918,16 @@
     var aadStr = String(opts.aad || DEFAULT_AAD_STRING);
     var aadBytes = utf8ToBytes(aadStr);
 
-    var zkGraph = sanitizeToZeroKnowledgeGraph(rawDiagnosticInput, {
+    var zkGraph = sanitizeToZeroKnowledgeGraph(reportPayload, {
       saltHex: bytesToHex(saltBytes)
     });
     var canonicalJson = JSON.stringify(zkGraph);
     var uncompressedBytes = utf8ToBytes(canonicalJson);
+    var plainShaHex = sha256HexSync(uncompressedBytes);
     var compressedBytes = await compressDeflateRaw(uncompressedBytes);
 
     var keys = await deriveCapsuleKeysWebCrypto(passphrase, saltBytes, iterations);
 
-    // WebCrypto AES-256-GCM returns ciphertext || 16-byte GCM authentication tag
     var encryptedBuffer = await subtle.encrypt(
       {
         name: "AES-GCM",
@@ -740,89 +935,148 @@
         additionalData: aadBytes,
         tagLength: 128
       },
-      keys.aesKey,
+      keys.aesCryptoKey,
       compressedBytes
     );
     var ciphertextAndTag = new Uint8Array(encryptedBuffer);
     var ciphertextBytes = ciphertextAndTag.slice(0, ciphertextAndTag.length - 16);
     var gcmTagBytes = ciphertextAndTag.slice(ciphertextAndTag.length - 16);
 
+    var algDescriptor = "aes256gcm-pbkdf2-" + iterations;
     var saltB64u = bytesToBase64Url(saltBytes);
     var ivB64u = bytesToBase64Url(ivBytes);
-    var aadB64u = bytesToBase64Url(aadBytes);
     var ctTagB64u = bytesToBase64Url(ciphertextAndTag);
 
+    // 7-segment token: shmlv-zk-v2.<alg>.<salt>.<iv>.<ct>.<plainSha>.<hmac>
     var signingInputStr = [
       CAPSULE_FORMAT_VERSION,
-      String(iterations),
+      algDescriptor,
       saltB64u,
       ivB64u,
-      aadB64u,
-      ctTagB64u
+      ctTagB64u,
+      plainShaHex
     ].join(".");
-    var sigBuffer = await subtle.sign("HMAC", keys.hmacKey, utf8ToBytes(signingInputStr));
+    var sigBuffer = await subtle.sign("HMAC", keys.hmacCryptoKey, utf8ToBytes(signingInputStr));
     var hmacBytes = new Uint8Array(sigBuffer);
     var hmacB64u = bytesToBase64Url(hmacBytes);
 
     var compactToken = signingInputStr + "." + hmacB64u;
-    var shareUrl = encodeCapsuleToShareUrl(compactToken, opts.baseUrl || DEFAULT_GITHUB_PAGES_BASE_URL);
+    var shareUrlObj = encodeCapsuleToShareUrl(compactToken, opts.baseUrl || DEFAULT_GITHUB_PAGES_BASE_URL);
+    var urlHash = "#diag=" + compactToken;
 
     return {
       format: ".shmlv-capsule",
       version: CAPSULE_FORMAT_VERSION,
       kdf: "PBKDF2-HMAC-SHA256",
+      keyDerivation: keys.keyDerivation,
       pbkdf2_iterations: iterations,
       cipher: "AES-256-GCM",
       mac: "HMAC-SHA256",
       compression: "deflate-raw",
+      keyMode: keyRes.keyMode,
+      generatedSecret: keyRes.generatedSecret,
       salt_hex: bytesToHex(saltBytes),
       iv_hex: bytesToHex(ivBytes),
       aad_utf8: aadStr,
       uncompressed_size_bytes: uncompressedBytes.length,
       compressed_size_bytes: compressedBytes.length,
-      compression_ratio_pct: Number(((1 - compressedBytes.length / uncompressedBytes.length) * 100).toFixed(2)),
+      compression_ratio_pct: Number(((1 - compressedBytes.length / Math.max(1, uncompressedBytes.length)) * 100).toFixed(2)),
       ciphertext_hex: bytesToHex(ciphertextBytes),
       gcm_tag_hex: bytesToHex(gcmTagBytes),
       hmac_sha256_hex: bytesToHex(hmacBytes),
-      plaintext_sha256: sha256HexSync(uncompressedBytes),
+      plaintext_sha256: plainShaHex,
+      sha256: plainShaHex,
       compressed_sha256: sha256HexSync(compressedBytes),
       compact_capsule_token: compactToken,
-      share_url: shareUrl.share_url,
-      rfc3986_network_proof: shareUrl.rfc3986_network_proof,
-      zk_diagnostic_graph: zkGraph
+      token: compactToken,
+      share_url: shareUrlObj.share_url,
+      urlHash: urlHash,
+      uriFragment: urlHash,
+      rfc3986_network_proof: shareUrlObj.rfc3986_network_proof,
+      zk_diagnostic_graph: zkGraph,
+      zkGraph: zkGraph,
+      payload: zkGraph
     };
   }
 
-  async function decryptAndVerifyDiagnosticCapsule(compactTokenOrUrl, options) {
-    var opts = options || {};
+  async function decryptAndVerifyDiagnosticCapsule(capsuleInput, optionsOrPassphrase) {
     var webCrypto = getWebCrypto();
     var subtle = webCrypto.subtle;
-    var passphrase = String(opts.passphrase || "shmlv-operator-zero-server-key-2026");
 
-    var token = extractCapsuleTokenFromUrlOrHash(compactTokenOrUrl);
+    var rawInput = capsuleInput;
+    var effectiveOptions = optionsOrPassphrase;
+    if (capsuleInput && typeof capsuleInput === "object") {
+      rawInput =
+        capsuleInput.compact_capsule_token ||
+        capsuleInput.token ||
+        capsuleInput.share_url ||
+        capsuleInput.urlHash ||
+        "";
+      if (effectiveOptions === undefined && capsuleInput.generatedSecret) {
+        effectiveOptions = { passphrase: capsuleInput.generatedSecret };
+      } else if (effectiveOptions === undefined && capsuleInput.keyMode === "PUBLIC_SYNTHETIC_DEMO_KEY") {
+        effectiveOptions = { demoMode: true };
+      }
+    }
+
+    var keyRes = resolveCapsuleKeyOptions(effectiveOptions, false);
+    var opts = keyRes.opts;
+    var passphrase = keyRes.passphrase;
+
+    var token = extractCapsuleTokenFromUrlOrHash(rawInput);
+    if (token.length > MAX_CAPSULE_TOKEN_LENGTH) {
+      throw new Error("Capsule token exceeds maximum allowed length (" + MAX_CAPSULE_TOKEN_LENGTH + " chars): " + token.length);
+    }
+
     var parts = token.split(".");
     if (parts.length !== 7) {
-      throw new Error("Malformed .shmlv-capsule token: expected 7 dot-separated segments, got " + parts.length);
+      throw new Error("Malformed diagnostic capsule token: expected exactly 7 dot-separated segments, got " + parts.length);
     }
 
     var version = parts[0];
-    var iterations = parseInt(parts[1], 10);
+    if (version !== CAPSULE_FORMAT_VERSION && version !== LEGACY_CAPSULE_VERSION) {
+      throw new Error("Unsupported capsule version prefix: " + version);
+    }
+
+    var algOrIterPart = parts[1];
     var saltB64u = parts[2];
     var ivB64u = parts[3];
-    var aadB64u = parts[4];
-    var ctTagB64u = parts[5];
+    var seg4 = parts[4];
+    var seg5 = parts[5];
     var hmacB64u = parts[6];
 
-    if (version !== CAPSULE_FORMAT_VERSION) {
-      throw new Error("Unsupported capsule version: " + version);
+    var iterations;
+    var ctTagB64u;
+    var expectedPlainShaHex = "";
+    var aadBytes;
+
+    if (version === CAPSULE_FORMAT_VERSION) {
+      var algMatch = algOrIterPart.match(/^aes256gcm-pbkdf2-(\d+)$/i);
+      if (algMatch) {
+        iterations = parseInt(algMatch[1], 10);
+      } else if (/^\d+$/.test(algOrIterPart)) {
+        iterations = parseInt(algOrIterPart, 10);
+      } else {
+        throw new Error("Unsupported capsule cipher algorithm segment: " + algOrIterPart);
+      }
+      ctTagB64u = seg4;
+      expectedPlainShaHex = seg5;
+      if (!/^[0-9a-fA-F]{64}$/.test(expectedPlainShaHex)) {
+        throw new Error("Invalid plaintext SHA-256 segment in v2 capsule");
+      }
+      aadBytes = utf8ToBytes(String(opts.aad || DEFAULT_AAD_STRING));
+    } else {
+      iterations = parseInt(algOrIterPart, 10);
+      aadBytes = base64UrlToBytes(seg4);
+      ctTagB64u = seg5;
     }
+
     if (!Number.isFinite(iterations) || iterations < 1000 || iterations > 5000000) {
       throw new Error("Invalid PBKDF2 iteration count: " + iterations);
     }
 
     var saltBytes = base64UrlToBytes(saltB64u);
     var ivBytes = base64UrlToBytes(ivB64u);
-    var aadBytes = base64UrlToBytes(aadB64u);
     var ciphertextAndTag = base64UrlToBytes(ctTagB64u);
     var hmacBytes = base64UrlToBytes(hmacB64u);
 
@@ -832,7 +1086,7 @@
     if (ivBytes.byteLength !== 12) {
       throw new Error("Invalid AES-GCM IV length (must be 12 bytes): " + ivBytes.byteLength);
     }
-    if (ciphertextAndTag.byteLength < 16) {
+    if (ciphertextAndTag.byteLength <= 16) {
       throw new Error("Ciphertext shorter than 128-bit GCM authentication tag");
     }
     if (hmacBytes.byteLength !== 32) {
@@ -842,42 +1096,99 @@
     var keys = await deriveCapsuleKeysWebCrypto(passphrase, saltBytes, iterations);
 
     var signingInputStr = parts.slice(0, 6).join(".");
-    var hmacValid = await subtle.verify(
-      "HMAC",
-      keys.hmacKey,
-      hmacBytes,
-      utf8ToBytes(signingInputStr)
-    );
-    if (!hmacValid) {
-      throw new Error("HMAC-SHA256 envelope authentication failed (tampered capsule)");
+    var signingInputBytes = utf8ToBytes(signingInputStr);
+    var computedHmacBuf = await subtle.sign("HMAC", keys.hmacCryptoKey, signingInputBytes);
+    var computedHmacBytes = new Uint8Array(computedHmacBuf);
+    var hmacConstTimeOk = constantTimeEqualBytes(hmacBytes, computedHmacBytes);
+    var hmacSubtleOk = await subtle.verify("HMAC", keys.hmacCryptoKey, hmacBytes, signingInputBytes);
+
+    if (!hmacConstTimeOk || !hmacSubtleOk) {
+      throw new Error("HMAC-SHA256 envelope authentication failed (tampered capsule or invalid passphrase)");
     }
 
-    var decryptedBuffer = await subtle.decrypt(
-      {
-        name: "AES-GCM",
-        iv: ivBytes,
-        additionalData: aadBytes,
-        tagLength: 128
-      },
-      keys.aesKey,
-      ciphertextAndTag
-    );
+    var decryptedBuffer;
+    try {
+      decryptedBuffer = await subtle.decrypt(
+        {
+          name: "AES-GCM",
+          iv: ivBytes,
+          additionalData: aadBytes,
+          tagLength: 128
+        },
+        keys.aesCryptoKey,
+        ciphertextAndTag
+      );
+    } catch (gcmErr) {
+      throw new Error(
+        "AES-256-GCM authentication tag verification failed: " + (gcmErr && gcmErr.message ? gcmErr.message : "decrypt error"),
+        { cause: gcmErr }
+      );
+    }
 
     var compressedBytes = new Uint8Array(decryptedBuffer);
-    var uncompressedBytes = await decompressDeflateRaw(compressedBytes);
+    var uncompressedBytes = await decompressDeflateRaw(compressedBytes, MAX_DECOMPRESSED_CAPSULE_BYTES);
+    var actualPlainShaHex = sha256HexSync(uncompressedBytes);
+
+    if (expectedPlainShaHex && actualPlainShaHex.toLowerCase() !== expectedPlainShaHex.toLowerCase()) {
+      throw new Error("Plaintext SHA-256 integrity mismatch after decompression");
+    }
+
     var jsonStr = bytesToUtf8(uncompressedBytes);
-    var zkGraph = JSON.parse(jsonStr);
+    var zkGraph;
+    try {
+      zkGraph = JSON.parse(jsonStr);
+    } catch (parseErr) {
+      throw new Error(
+        "Decompressed capsule payload is not valid JSON: " + (parseErr && parseErr.message ? parseErr.message : "parse error"),
+        { cause: parseErr }
+      );
+    }
+
     var leakAudit = verifyZeroOpsecLeakage(jsonStr);
+    var urlHash = "#diag=" + token;
 
     return {
       verdict: leakAudit.opsec_clean ? "PASSED" : "FAILED",
+      valid: leakAudit.opsec_clean,
+      integrityVerified: true,
       hmac_verified: true,
       aes_gcm_tag_verified: true,
       opsec_clean: leakAudit.opsec_clean,
-      plaintext_sha256: sha256HexSync(uncompressedBytes),
+      keyMode: keyRes.keyMode,
+      keyDerivation: keys.keyDerivation,
+      plaintext_sha256: actualPlainShaHex,
+      sha256: actualPlainShaHex,
+      compact_capsule_token: token,
+      token: token,
+      urlHash: urlHash,
       zk_diagnostic_graph: zkGraph,
+      zkGraph: zkGraph,
+      payload: zkGraph,
       diagnostic_ticket_manifest: buildDiagnosticTicketManifest(zkGraph)
     };
+  }
+
+  async function packDiagnosticCapsule(reportPayload, optionsOrPassphrase) {
+    return await createSignedDiagnosticCapsule(reportPayload, optionsOrPassphrase);
+  }
+
+  async function unpackDiagnosticCapsule(capsuleInput, optionsOrPassphrase) {
+    try {
+      var res = await decryptAndVerifyDiagnosticCapsule(capsuleInput, optionsOrPassphrase);
+      return Object.assign(
+        {
+          valid: true,
+          payload: res.zk_diagnostic_graph
+        },
+        res
+      );
+    } catch (err) {
+      return {
+        valid: false,
+        verdict: "TAMPERED_OR_INVALID",
+        error: err && err.message ? String(err.message) : String(err)
+      };
+    }
   }
 
   // ---------- 7. Submodule 14.2: URL Hash-Fragment Zero-Server Share Link ----------
@@ -886,7 +1197,6 @@
     var token = String(compactCapsuleToken || "").trim();
     var shareUrl = base + "#diag=" + token;
 
-    // Parse path for HTTP wire proof
     var pathPart = "/uav-readiness-evidence-copilot/";
     var hostPart = "denisshumilov.github.io";
     var m = base.match(/^https?:\/\/([^/]+)(\/.*)?$/i);
@@ -897,6 +1207,7 @@
 
     return {
       share_url: shareUrl,
+       urlHash: "#diag=" + token,
       fragment_key: "diag",
       total_url_length_chars: shareUrl.length,
       fragment_payload_chars: token.length,
@@ -940,10 +1251,11 @@
   });
 
   function createAirGapLanPeerConnection() {
-    if (typeof RTCPeerConnection === "undefined") {
+    var PeerConn = global && global.RTCPeerConnection;
+    if (typeof PeerConn !== "function") {
       throw new Error("RTCPeerConnection is not supported in this runtime");
     }
-    return new RTCPeerConnection({ iceServers: [], iceCandidatePoolSize: 0 });
+    return new PeerConn({ iceServers: [], iceCandidatePoolSize: 0 });
   }
 
   function createServerlessWebRtcOfferFragment(sdpDescriptorObj, capsuleSha256, baseUrl) {
@@ -1036,10 +1348,15 @@
     DEFAULT_GITHUB_PAGES_BASE_URL: DEFAULT_GITHUB_PAGES_BASE_URL,
     DEFAULT_AAD_STRING: DEFAULT_AAD_STRING,
     DEFAULT_PBKDF2_ITERATIONS: DEFAULT_PBKDF2_ITERATIONS,
+    DEMO_PUBLIC_PASSPHRASE: DEMO_PUBLIC_PASSPHRASE,
+    MAX_CAPSULE_TOKEN_LENGTH: MAX_CAPSULE_TOKEN_LENGTH,
+    MAX_DECOMPRESSED_CAPSULE_BYTES: MAX_DECOMPRESSED_CAPSULE_BYTES,
     AIRGAP_WEBRTC_RTC_CONFIG: AIRGAP_WEBRTC_RTC_CONFIG,
+    generateRandomCapsuleSecret: generateRandomCapsuleSecret,
     sha256HexSync: sha256HexSync,
     sha256DigestHexWebCrypto: sha256DigestHexWebCrypto,
     hmacSha256Sync: hmacSha256Sync,
+    constantTimeEqualBytes: constantTimeEqualBytes,
     bytesToHex: bytesToHex,
     hexToBytes: hexToBytes,
     bytesToBase64Url: bytesToBase64Url,
@@ -1047,15 +1364,17 @@
     normalizeSiUnit: normalizeSiUnit,
     areUnitsDimensionallyCompatible: areUnitsDimensionallyCompatible,
     redactSensitiveText: redactSensitiveText,
+    deepSanitizeValue: deepSanitizeValue,
     verifyZeroOpsecLeakage: verifyZeroOpsecLeakage,
     sanitizeToZeroKnowledgeGraph: sanitizeToZeroKnowledgeGraph,
+    readStreamWithLimit: readStreamWithLimit,
     compressDeflateRaw: compressDeflateRaw,
     decompressDeflateRaw: decompressDeflateRaw,
     deriveCapsuleKeysWebCrypto: deriveCapsuleKeysWebCrypto,
     createSignedDiagnosticCapsule: createSignedDiagnosticCapsule,
     decryptAndVerifyDiagnosticCapsule: decryptAndVerifyDiagnosticCapsule,
-    packDiagnosticCapsule: createSignedDiagnosticCapsule,
-    unpackDiagnosticCapsule: decryptAndVerifyDiagnosticCapsule,
+    packDiagnosticCapsule: packDiagnosticCapsule,
+    unpackDiagnosticCapsule: unpackDiagnosticCapsule,
     encodeCapsuleToShareUrl: encodeCapsuleToShareUrl,
     extractCapsuleTokenFromUrlOrHash: extractCapsuleTokenFromUrlOrHash,
     createAirGapLanPeerConnection: createAirGapLanPeerConnection,
@@ -1065,6 +1384,12 @@
 
   global.ShmlvCryptoCapsule = CapsuleEngine;
   global.SHMLV_CRYPTO_CAPSULE = CapsuleEngine;
+  global.SHMLV_CRYPTO_SHARE = CapsuleEngine;
+  if (typeof window !== "undefined") {
+    window.ShmlvCryptoCapsule = CapsuleEngine;
+    window.SHMLV_CRYPTO_CAPSULE = CapsuleEngine;
+    window.SHMLV_CRYPTO_SHARE = CapsuleEngine;
+  }
   if (typeof module !== "undefined" && module.exports) {
     module.exports = CapsuleEngine;
   }

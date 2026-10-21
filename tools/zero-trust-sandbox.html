@@ -95,7 +95,7 @@
             <div class="step-box">
               <span class="step-num">3</span>
               <h4>Контрольні суми (SHA-256) та захищене посилання</h4>
-              <p>Формується перелік хешів усіх перевірених файлів і за потреби створюється зашифроване посилання (<code>AES-256-GCM</code>, 0 байт на сервері) для передачі висновку колезі.</p>
+              <p>Формується перелік хешів усіх перевірених файлів і за потреби створюється зашифроване посилання (<code>AES-256-GCM</code>, локальна клієнтська обробкаі) для передачі висновку колезі.</p>
             </div>
           </div>
         </div>
@@ -103,7 +103,7 @@
         <div class="tool-Try-card">
           <div class="tool-try-head">
             <h3>Інтерактивна перевірка: перетягніть файл коду (.py, .js, .sh, .cpp) або підпис КЕП / Дія.Підпис (.p7s)</h3>
-            <span class="local-pill">🟢 Працює локально у браузері (0 байт у хмару)</span>
+            <span class="local-pill">🟢 Працює локально у браузері (без передачі на сервер)</span>
           </div>
 
           <label class="dropzone" id="dropZoneArea" for="localFileInput" tabindex="0">
@@ -128,7 +128,7 @@
               <button type="button" class="btn-action open-data-btn" data-real-sample="sandbox-real-prozorro-kep">🏛️ Перевірити реальний підпис КЕП із тендеру Prozorro (.p7s)</button>
               <button type="button" class="btn-action open-data-btn" data-real-sample="dl-real-kep-p7s">📥 Завантажити оригінал файла підпису КЕП (.p7s)</button>
               <button type="button" class="btn-action open-data-btn" data-real-sample="sample-browser-isolation-audit">🛡️ Перевірка автономної роботи та мережевої ізоляції браузера (0 байт у мережу)</button>
-              <button type="button" class="btn-action open-data-btn" data-real-sample="sample-encrypted-diag-capsule">🔐 Створити захищене посилання на звіт (AES-256-GCM, 0 байт на сервері)</button>
+              <button type="button" class="btn-action open-data-btn" data-real-sample="sample-encrypted-diag-capsule">🔐 Створити захищене посилання на звіт (AES-256-GCM, локальна клієнтська обробкаі)</button>
             </div>
           </div>
 

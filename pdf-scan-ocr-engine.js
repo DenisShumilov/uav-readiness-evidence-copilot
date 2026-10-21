@@ -30,21 +30,24 @@
   "use strict";
 
   var nodeZlib = null;
-  if (typeof require === "function") {
+  if (typeof process !== "undefined" && process && typeof process.getBuiltinModule === "function") {
     try {
-      nodeZlib = require("zlib");
+      nodeZlib = process.getBuiltinModule("zlib");
     } catch (_e) {
       nodeZlib = null;
     }
   }
 
+  function nowPerfMs() {
+    if (typeof performance !== "undefined" && typeof performance.now === "function") {
+      return performance.now();
+    }
+    return Date.now();
+  }
+
   // ============================================================================
   // 1. EMBEDDED COMPILED WEBASSEMBLY BINARY KERNEL (\0asm)
   // ============================================================================
-  // Hand-assembled valid WebAssembly binary module (version 1):
-  //   Memory: 4 pages (256 KB) exported as "memory"
-  //   Func 0: otsuThresholdSum(ptr: i32, len: i32) -> i32 (exported as "otsuThresholdSum")
-  //   Func 1: hammingDistance64(loA: i32, hiA: i32, loB: i32, hiB: i32) -> i32 (exported as "hammingDistance64")
   var WASM_KERNEL_BYTES = new Uint8Array([
     // Magic "\0asm" + Version 1
     0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00,
@@ -115,8 +118,7 @@
     0x0b                    // end func
   ]);
 
-  // Minimal WASM SIMD128 (0xfd prefix) validation module:
-  // Uses v128.const (0xfd 0x0c) + i32x4.extract_lane 0 (0xfd 0x1b 0x00)
+  // Minimal WASM SIMD128 (0xfd prefix) validation module
   var WASM_SIMD128_PROBE_BYTES = new Uint8Array([
     0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00,
     0x01, 0x05, 0x01, 0x60, 0x00, 0x01, 0x7f,
@@ -156,8 +158,8 @@
           wasmRuntime.simd128Supported = Boolean(WebAssembly.validate(WASM_SIMD128_PROBE_BYTES));
         } else {
           try {
-            new WebAssembly.Module(WASM_SIMD128_PROBE_BYTES);
-            wasmRuntime.simd128Supported = true;
+            var probeMod = new WebAssembly.Module(WASM_SIMD128_PROBE_BYTES);
+            wasmRuntime.simd128Supported = Boolean(probeMod);
           } catch (_simdErr) {
             wasmRuntime.simd128Supported = false;
           }
@@ -287,18 +289,12 @@
     return ((b << 16) | a) >>> 0;
   }
 
-  // Pure-JS RFC 1950 Zlib encoder using RFC 1951 Stored Blocks (or Node zlib when available)
-  // Wait: stored blocks are 100% RFC 1950 / 1951 compliant and decompress via BOTH
-  // Node's `zlib.inflateSync` AND our pure-JS `inflateZlibSync` in 0.2ms!
   function compressZlibSync(rawBytes) {
     var input = rawBytes instanceof Uint8Array ? rawBytes : new Uint8Array(rawBytes);
-    // Use stored blocks so both pure-JS browser runtime and Node.js zlib.inflateSync
-    // can decompress deterministically with zero external dependencies in browsers.
     var maxBlock = 65535;
     var numBlocks = Math.max(1, Math.ceil(input.length / maxBlock));
     var outLen = 2 + numBlocks * 5 + input.length + 4;
     var out = new Uint8Array(outLen);
-    // RFC 1950 header: CMF=0x78 (deflate, 32K window), FLG=0x01 (no dict, check bits valid: 0x7801 % 31 === 0)
     out[0] = 0x78;
     out[1] = 0x01;
     var pos = 2;
@@ -307,7 +303,7 @@
       var isLast = b === numBlocks - 1 ? 1 : 0;
       var blockLen = Math.min(maxBlock, input.length - offset);
       var nlen = (~blockLen) & 0xffff;
-      out[pos++] = isLast; // BFINAL=isLast, BTYPE=00 (stored)
+      out[pos++] = isLast;
       out[pos++] = blockLen & 0xff;
       out[pos++] = (blockLen >>> 8) & 0xff;
       out[pos++] = nlen & 0xff;
@@ -320,21 +316,21 @@
     out[pos++] = (adler >>> 24) & 0xff;
     out[pos++] = (adler >>> 16) & 0xff;
     out[pos++] = (adler >>> 8) & 0xff;
-    out[pos++] = adler & 0xff;
+    out[pos] = adler & 0xff;
     return out;
   }
 
-  // Pure-JS RFC 1950 / 1951 stored + Huffman fallback + Node.js zlib.inflateSync
-  function inflateStoredBlocksPureJs(buf, startOffset) {
+  function inflateStoredBlocksPureJs(buf, startOffset, verifyAdler) {
     var pos = startOffset;
     var chunks = [];
     var totalLen = 0;
+    var sawFinal = false;
     while (pos < buf.length) {
       var header = buf[pos++];
       var bfinal = header & 0x01;
       var btype = (header >>> 1) & 0x03;
       if (btype !== 0) {
-        return null; // Not a stored block stream
+        return null;
       }
       if (pos + 4 > buf.length) return null;
       var len = buf[pos] | (buf[pos + 1] << 8);
@@ -347,38 +343,54 @@
       chunks.push(buf.subarray(pos, pos + len));
       totalLen += len;
       pos += len;
-      if (bfinal === 1) break;
+      if (bfinal === 1) {
+        sawFinal = true;
+        break;
+      }
     }
+    if (!sawFinal) return null;
     var result = new Uint8Array(totalLen);
     var outOffset = 0;
     for (var i = 0; i < chunks.length; i++) {
       result.set(chunks[i], outOffset);
       outOffset += chunks[i].length;
     }
+    if (verifyAdler) {
+      if (pos + 4 > buf.length) return null;
+      var expectedAdler =
+        ((buf[pos] << 24) | (buf[pos + 1] << 16) | (buf[pos + 2] << 8) | buf[pos + 3]) >>> 0;
+      var actualAdler = computeAdler32(result);
+      if (expectedAdler !== actualAdler) {
+        return null;
+      }
+    }
     return result;
   }
 
   function decompressFlateStreamSync(compressedBytes) {
     var buf = compressedBytes instanceof Uint8Array ? compressedBytes : new Uint8Array(compressedBytes);
-    // 1. Try Node.js native zlib first if available (verifies full RFC 1950 / 1951 compliance)
+    if (buf.length < 6) {
+      throw new Error("Compressed /FlateDecode stream too short");
+    }
     if (nodeZlib) {
       try {
         return new Uint8Array(nodeZlib.inflateSync(buf));
       } catch (_e1) {
         try {
           return new Uint8Array(nodeZlib.inflateRawSync(buf));
-        } catch (_e2) {
-          // Fall through to pure-JS stored block parser
+        } catch (e2) {
+          throw new Error(
+            "Corrupted /FlateDecode stream: " + (e2 && e2.message ? e2.message : "zlib failure"),
+            { cause: e2 }
+          );
         }
       }
     }
-    // 2. Pure-JS RFC 1950 Zlib (2-byte header 0x78 ..) + RFC 1951 Stored Blocks
-    if (buf.length >= 6 && (buf[0] & 0x0f) === 8 && ((buf[0] << 8) + buf[1]) % 31 === 0) {
-      var parsedZlib = inflateStoredBlocksPureJs(buf, 2);
+    if ((buf[0] & 0x0f) === 8 && ((buf[0] << 8) + buf[1]) % 31 === 0) {
+      var parsedZlib = inflateStoredBlocksPureJs(buf, 2, true);
       if (parsedZlib) return parsedZlib;
     }
-    // 3. Raw RFC 1951 Stored Blocks without Zlib header
-    var parsedRaw = inflateStoredBlocksPureJs(buf, 0);
+    var parsedRaw = inflateStoredBlocksPureJs(buf, 0, false);
     if (parsedRaw) return parsedRaw;
 
     throw new Error("Unable to decompress /FlateDecode stream synchronously.");
@@ -394,37 +406,27 @@
     {
       parameter: "Маса БпЛА",
       normTu: "<= 13.5 кг",
-      factPmv: "13.9 кг",
-      deltaStatus: "DEVIATION (+0.4 кг)",
-      overlappedByWetStamp: false
+      factPmv: "13.9 кг"
     },
     {
       parameter: "Стандартна напруга",
       normTu: "14.76 В",
-      factPmv: "15.4 В",
-      deltaStatus: "DEVIATION (+0.64 В)",
-      overlappedByWetStamp: false
+      factPmv: "15.4 В"
     },
     {
       parameter: "Робоча температура",
       normTu: "-20..+50 °C",
-      factPmv: "-10..+40 °C",
-      deltaStatus: "NARROWER_RANGE (-10..+40 °C)",
-      overlappedByWetStamp: true
+      factPmv: "-10..+40 °C"
     },
     {
       parameter: "Макс. швидкість",
       normTu: ">= 21 м/с",
-      factPmv: "21 м/с",
-      deltaStatus: "NOMINAL (21 м/с)",
-      overlappedByWetStamp: true
+      factPmv: "21 м/с"
     },
     {
       parameter: "Час польоту",
       normTu: ">= 49 хв",
-      factPmv: "49 хв",
-      deltaStatus: "NOMINAL (49 хв)",
-      overlappedByWetStamp: true
+      factPmv: "49 хв"
     }
   ];
 
@@ -436,8 +438,6 @@
   var ROW_Y = [42, 68, 94, 120, 146];
   var FOOTER_Y = 182;
 
-  // Base visual 8x8 glyph templates for digits & symbols, plus deterministic unique
-  // 8x8 glyph generator for every Cyrillic/Latin character in our technical vocabulary.
   var BASE_GLYPH_ROWS = {
     " ": [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
     "0": [0x3c, 0x66, 0x6e, 0x76, 0x66, 0x66, 0x3c, 0x00],
@@ -499,14 +499,14 @@
       registerChar(c, BASE_GLYPH_ROWS[c]);
     }
 
-    // Collect all characters needed across header, footer, 5 protocol rows, and extra technical units
     var corpus =
       PROTOCOL_HEADER_TEXT +
       PROTOCOL_FOOTER_TEXT +
       "ГцАВмскгхвгод" +
       PROTOCOL_SPEC_ROWS.map(function (r) {
         return r.parameter + r.normTu + r.factPmv;
-      }).join("");
+      }).join("") +
+      "АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЬЮЯабвгґдеєжзиіїйклмнопрстуфхцчшщьюяABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz%№'’\"_[]{}*;&@!?~";
 
     for (var j = 0; j < corpus.length; j++) {
       var ch = corpus[j];
@@ -522,7 +522,7 @@
         var r4 = 0x7e ^ ((seed >>> 20) & 0x3c);
         var r5 = 0x42 | (((seed >>> 25) & 0x1e) << 1);
         var r6 = 0x3c | ((code & 0x03) << 1) | (((code >>> 2) & 0x01) << 6);
-        var r7 = (code & 0x7f) | 0x80; // row 7 encodes exact lower 7 bits + parity bit for 100% collision-free glyph identity
+        var r7 = (code & 0x7f) | 0x80;
         var candidateRows = [r0 & 0xff, r1 & 0xff, r2 & 0xff, r3 & 0xff, r4 & 0xff, r5 & 0xff, r6 & 0xff, r7 & 0xff];
         var packed = pack8x8To64(candidateRows);
         var key = packed.lo32 + ":" + packed.hi32;
@@ -550,12 +550,26 @@
   // ============================================================================
   // 4. SYNTHETIC STAMPED RASTER SCAN & PDF GENERATOR
   // ============================================================================
-  function renderStampedProtocolRgbBitmap() {
+  function resolveSpecRowsToRender(customSpecRows) {
+    var rows = [];
+    for (var i = 0; i < PROTOCOL_SPEC_ROWS.length; i++) {
+      var base = PROTOCOL_SPEC_ROWS[i];
+      var custom = Array.isArray(customSpecRows) && customSpecRows[i] ? customSpecRows[i] : null;
+      rows.push({
+        parameter: custom && custom.parameter !== undefined ? String(custom.parameter) : base.parameter,
+        normTu: custom && custom.normTu !== undefined ? String(custom.normTu) : base.normTu,
+        factPmv: custom && custom.factPmv !== undefined ? String(custom.factPmv) : base.factPmv
+      });
+    }
+    return rows;
+  }
+
+  function renderStampedProtocolRgbBitmap(customSpecRows) {
     var width = SCAN_WIDTH;
     var height = SCAN_HEIGHT;
     var rgb = new Uint8Array(width * height * 3);
-    // Track dark laser toner mask so multiplicative wet-stamp blending is exact
     var tonerMask = new Uint8Array(width * height);
+    var activeSpecRows = resolveSpecRowsToRender(customSpecRows);
 
     // 1. Fill warm paper background (R=248, G=248, B=245)
     for (var i = 0; i < width * height; i++) {
@@ -566,8 +580,9 @@
     }
 
     function drawGlyphString(text, startX, startY) {
-      for (var cIdx = 0; cIdx < text.length; cIdx++) {
-        var ch = text[cIdx];
+      var str = String(text || "");
+      for (var cIdx = 0; cIdx < str.length; cIdx++) {
+        var ch = str[cIdx];
         var glyph = GLYPH_DICTIONARY[ch] || GLYPH_DICTIONARY[" "];
         var cellX = startX + cIdx * 8;
         if (cellX + 8 > width) break;
@@ -581,7 +596,6 @@
               var pOffset = py * width + px;
               tonerMask[pOffset] = 1;
               var rgbIdx = pOffset * 3;
-              // Neutral dark laser toner: R=24, G=26, B=28
               rgb[rgbIdx] = 24;
               rgb[rgbIdx + 1] = 26;
               rgb[rgbIdx + 2] = 28;
@@ -593,8 +607,8 @@
 
     // 2. Render Header, 5 Table Rows (3 columns each), and Footer
     drawGlyphString(PROTOCOL_HEADER_TEXT, 16, HEADER_Y);
-    for (var r = 0; r < PROTOCOL_SPEC_ROWS.length; r++) {
-      var rowSpec = PROTOCOL_SPEC_ROWS[r];
+    for (var r = 0; r < activeSpecRows.length; r++) {
+      var rowSpec = activeSpecRows[r];
       var ry = ROW_Y[r];
       drawGlyphString(rowSpec.parameter, COL_X[0], ry);
       drawGlyphString(rowSpec.normTu, COL_X[1], ry);
@@ -602,15 +616,11 @@
     }
     drawGlyphString(PROTOCOL_FOOTER_TEXT, 16, FOOTER_Y);
 
-    // Helper to apply blue wet-stamp or pen ink with multiplicative blending on dark toner
     function paintBlueInkPixel(px, py, paperR, paperG, paperB) {
       if (px < 0 || px >= width || py < 0 || py >= height) return;
       var pOffset = py * width + px;
       var rgbIdx = pOffset * 3;
       if (tonerMask[pOffset] === 1) {
-        // Multiplicative ink overlap: dark laser toner + blue wet stamp ink
-        // Preserves low R/G (<75, <95) while elevating B so Chromatic Stamp-Drop-Out
-        // recognizes the underlying dark toner glyph!
         rgb[rgbIdx] = 18;
         rgb[rgbIdx + 1] = 45;
         rgb[rgbIdx + 2] = 130;
@@ -622,7 +632,6 @@
     }
 
     // 3. Render Concentric Circular Blue Wet Stamp ("Кругла печатка ВП МОУ")
-    // Overlaps Rows 4 (y=120..127) and Row 5 (y=146..153)
     var stampCx = 310;
     var stampCy = 136;
     var outerR = 38;
@@ -637,7 +646,6 @@
         var inOuterRing = Math.abs(dist - outerR) <= 2.2;
         var inInnerRing = Math.abs(dist - innerR) <= 1.6;
         var inCoreRing = Math.abs(dist - coreR) <= 1.3;
-        // Radial spoke ticks between innerR and outerR (simulating seal legend letters)
         var angle = Math.atan2(dy, dx);
         var radialSpoke =
           dist > innerR + 3 &&
@@ -652,7 +660,6 @@
     }
 
     // 4. Render High-Frequency Cursive Blue Signature ("Підпис представника ВП МОУ")
-    // Located at x = 385..515, y = 116..156 (overlapping Fact column of Rows 4 and 5)
     for (var sx = 388; sx <= 512; sx++) {
       var t = (sx - 388) / 124;
       var wave1 = Math.sin(t * Math.PI * 14) * (11 * (1 - 0.35 * t));
@@ -682,8 +689,8 @@
     return out;
   }
 
-  function buildStampedRasterScanPdfBytes() {
-    var rendered = renderStampedProtocolRgbBitmap();
+  function buildStampedRasterScanPdfBytes(customSpecRows) {
+    var rendered = renderStampedProtocolRgbBitmap(customSpecRows);
     var compressedStream = compressZlibSync(rendered.rgbBytes);
 
     var headerParts = [
@@ -701,7 +708,6 @@
         " >>\nstream\n"
     ];
 
-    // Page content stream invokes `/Im1 Do` ONLY — zero `BT`..`ET` text operators!
     var contentStreamBody = "q\n560 0 0 220 0 0 cm\n/Im1 Do\nQ\n";
     var tailParts = [
       "\nendstream\nendobj\n",
@@ -757,7 +763,6 @@
       }
       if (marker === 0xd9 || marker === 0xda) break;
       var segLen = (jpegBytes[pos + 2] << 8) | jpegBytes[pos + 3];
-      // SOF0 (0xC0), SOF1 (0xC1), SOF2 (0xC2)
       if (marker === 0xc0 || marker === 0xc1 || marker === 0xc2) {
         if (pos + 9 < jpegBytes.length) {
           info.bitsPerComponent = jpegBytes[pos + 4];
@@ -774,24 +779,26 @@
   }
 
   function countPdfTextOperators(latin1Text) {
-    // Count BT .. ET text blocks outside binary image streams
     var sanitized = latin1Text.replace(/stream[\s\S]*?endstream/g, function (match) {
       if (match.indexOf("/Subtype /Image") !== -1 || match.length > 2048) {
         return "";
       }
       return match;
     });
-    var matches = sanitized.match(/(?:^|[\s\[\]()<>\/])BT[\s\r\n]+[\s\S]*?[\s\r\n]+ET(?=[\s\[\]()<>\/]|$)/g);
+    var matches = sanitized.match(/(?:^|[\s[\]()<>/])BT[\s\r\n]+[\s\S]*?[\s\r\n]+ET(?=[\s[\]()<>/]|$)/g);
     return matches ? matches.length : 0;
   }
 
   function extractPdfRasterXObjects(pdfBytesInput) {
-    var pdfBytes = pdfBytesInput instanceof Uint8Array ? pdfBytesInput : new Uint8Array(pdfBytesInput);
+    var pdfBytes = pdfBytesInput instanceof Uint8Array ? pdfBytesInput : new Uint8Array(pdfBytesInput || 0);
     var fullLatin1 = bytesToLatin1String(pdfBytes, 0, pdfBytes.length);
     var textOperatorsCount = countPdfTextOperators(fullLatin1);
 
     var images = [];
+    var flateError = false;
+    var flateErrorMessage = "";
     var searchPos = 0;
+
     while (true) {
       var subtypeIdx = fullLatin1.indexOf("/Subtype /Image", searchPos);
       if (subtypeIdx === -1) break;
@@ -836,22 +843,43 @@
         }
       }
 
+      if (streamByteLength <= 0 || dataStart + streamByteLength > pdfBytes.length) {
+        flateError = true;
+        flateErrorMessage = "Truncated or invalid PDF XObject stream bounds";
+        break;
+      }
+
       var rawStreamBytes = pdfBytes.subarray(dataStart, dataStart + streamByteLength);
       var rgbBytes = null;
       var jpegMeta = null;
 
       if (filter === "/FlateDecode") {
-        var decompressed = decompressFlateStreamSync(rawStreamBytes);
-        if (colorSpace === "/DeviceGray") {
-          rgbBytes = new Uint8Array(width * height * 3);
-          for (var g = 0; g < width * height; g++) {
-            var v = decompressed[g];
-            rgbBytes[g * 3] = v;
-            rgbBytes[g * 3 + 1] = v;
-            rgbBytes[g * 3 + 2] = v;
+        try {
+          var decompressed = decompressFlateStreamSync(rawStreamBytes);
+          if (colorSpace === "/DeviceGray") {
+            if (decompressed.length < width * height) {
+              flateError = true;
+              flateErrorMessage = "Decompressed /DeviceGray buffer shorter than width * height";
+            } else {
+              rgbBytes = new Uint8Array(width * height * 3);
+              for (var g = 0; g < width * height; g++) {
+                var v = decompressed[g];
+                rgbBytes[g * 3] = v;
+                rgbBytes[g * 3 + 1] = v;
+                rgbBytes[g * 3 + 2] = v;
+              }
+            }
+          } else {
+            if (width > 0 && height > 0 && decompressed.length < width * height * 3) {
+              flateError = true;
+              flateErrorMessage = "Decompressed /DeviceRGB buffer shorter than width * height * 3";
+            } else {
+              rgbBytes = decompressed;
+            }
           }
-        } else {
-          rgbBytes = decompressed;
+        } catch (flateErr) {
+          flateError = true;
+          flateErrorMessage = flateErr && flateErr.message ? flateErr.message : "FlateDecode error";
         }
       } else if (filter === "/DCTDecode") {
         jpegMeta = parseJpegMarkers(rawStreamBytes);
@@ -876,8 +904,10 @@
     var firstImg = images[0] || null;
     return {
       textOperatorsCount: textOperatorsCount,
-      isScanOnlyPdf: textOperatorsCount === 0 && images.length > 0,
-      scanOnlyDetected: textOperatorsCount === 0 && images.length > 0,
+      isScanOnlyPdf: textOperatorsCount === 0 && images.length > 0 && !flateError,
+      scanOnlyDetected: textOperatorsCount === 0 && images.length > 0 && !flateError,
+      flateError: flateError,
+      flateErrorMessage: flateErrorMessage,
       imageXObjectsCount: images.length,
       images: images,
       xObjects: images,
@@ -898,7 +928,7 @@
     var min = Math.min(r, g, b);
     var d = max - min;
     if (d === 0) return 0;
-    var h = 0;
+    var h;
     if (max === r) {
       h = ((g - b) / d) % 6;
     } else if (max === g) {
@@ -919,6 +949,11 @@
     var s = max === 0 ? 0 : d / max;
     var v = max / 255;
     return { h: h, s: Number(s.toFixed(4)), v: Number(v.toFixed(4)) };
+  }
+
+  function isBlueWetStampPixel(r, g, b) {
+    var hue = rgbToHueDeg(r, g, b);
+    return b > r + 25 && b > g + 12 && hue >= 200 && hue <= 265;
   }
 
   function connectedComponentsBfs(binaryMask, width, height) {
@@ -995,7 +1030,6 @@
       }
     }
     var bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
-    // Check if caller passed raw PDF bytes ("%PDF-")
     if (bytes.length > 8 && bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46) {
       var extracted = extractPdfRasterXObjects(bytes);
       if (extracted.images.length > 0 && extracted.images[0].rgbBytes) {
@@ -1073,7 +1107,6 @@
     var sigMask = new Uint8Array(totalPixels);
     var sigPixelsCount = 0;
 
-    // Region separator between circular seal (center-left) and cursive signature (right)
     var signatureSplitX = 375;
 
     for (var py = 0; py < height; py++) {
@@ -1087,8 +1120,7 @@
         var lum = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
         naiveGrayBytes[pOffset] = lum;
 
-        var hue = rgbToHueDeg(r, g, b);
-        var isBlueChrominance = b > r + 25 && b > g + 12 && hue >= 200 && hue <= 265;
+        var isBlueChrominance = isBlueWetStampPixel(r, g, b);
         var isDarkOverlapToner = isBlueChrominance && r < 22 && g < 55;
         var isNeutralToner = Math.abs(r - g) <= 8 && Math.abs(g - b) <= 8 && lum < 175;
 
@@ -1112,9 +1144,6 @@
             sigPixelsCount++;
           }
 
-          // Chromatic Stamp-Drop-Out:
-          // Preserve dark toner where blue ink overlaps black toner [R < 75, G < 95] (specifically R < 22, G < 55),
-          // while restoring pure blue stamp/pen ink on paper to clean paper white (250).
           if (isDarkOverlapToner) {
             overlappedTonerPixelsCount++;
             cleanGrayBytes[pOffset] = 26;
@@ -1129,7 +1158,6 @@
       }
     }
 
-    // Compute circularityScore in [0.85, 0.99] by measuring concentric radial ring adherence
     var centerX = stampCount > 0 ? Math.round(stampSumX / stampCount) : 0;
     var centerY = stampCount > 0 ? Math.round(stampSumY / stampCount) : 0;
     var bboxW = stampCount > 0 ? stampMaxX - stampMinX + 1 : 0;
@@ -1156,7 +1184,6 @@
     var rawCircularity = 0.45 * sectorRatio + 0.35 * aspectSymmetry + 0.20 * radialAdherence;
     var circularityScore = stampCount > 100 ? Number(Math.min(0.99, Math.max(0.0, rawCircularity)).toFixed(4)) : 0;
 
-    // Count high-frequency cursive stroke transitions across the signature zone
     var strokeTransitions = 0;
     if (sigPixelsCount > 0) {
       for (var sy = sigMinY; sy <= sigMaxY; sy++) {
@@ -1238,7 +1265,7 @@
   function decodeCellLineViaWasmHamming(binaryMask, width, startX, startY, maxCells) {
     var chars = [];
     var totalHammingCalls = 0;
-    var exactZeroDistanceMatches = 0;
+    var confidenceSum = 0;
     var activeCells = 0;
 
     for (var c = 0; c < maxCells; c++) {
@@ -1263,18 +1290,21 @@
           if (dist === 0) break;
         }
       }
-      if (bestDist === 0) {
-        exactZeroDistanceMatches++;
+      if (bestDist <= 6) {
+        chars.push(bestChar);
+        confidenceSum += (64 - bestDist) / 64;
+      } else {
+        chars.push("#");
+        confidenceSum += Math.max(0, (32 - Math.min(32, bestDist)) / 64);
       }
-      // If a cell is heavily corrupted by wet stamp (in naive mode without drop-out), mark '#'
-      chars.push(bestDist <= 6 ? bestChar : "#");
     }
 
     var text = chars.join("").replace(/\s+$/g, "");
-    var confidence = activeCells > 0 ? Number((exactZeroDistanceMatches / activeCells).toFixed(4)) : 1.0;
+    var confidence = activeCells > 0 ? Number((confidenceSum / activeCells).toFixed(4)) : 0;
     return {
       text: text,
       wasmHammingCalls: totalHammingCalls,
+      activeCells: activeCells,
       confidence: confidence
     };
   }
@@ -1294,59 +1324,260 @@
     };
   }
 
-  function recognizeRasterSpecBitmap(rgbBytesInput, widthInput, heightInput) {
-    var norm = normalizeRasterInput(rgbBytesInput, widthInput, heightInput);
-    var rgbBytes = norm.rgbBytes;
-    var width = norm.width;
-    var height = norm.height;
-    if (width <= 0 || height <= 0 || !rgbBytes || rgbBytes.length < width * height * 3) {
+  /**
+   * Dynamically parses `normTu` and `factPmv` recognized strings to compute
+   * numerical delta, percentage delta, `deltaStatus`, and `status` ("PASS" / "FAIL" / "UNVERIFIED")
+   * without consulting any static table.
+   */
+  function evaluateRecognizedSpecRowDynamically(normText, factText) {
+    var normStr = String(normText || "").trim();
+    var factStr = String(factText || "").trim();
+
+    if (!normStr || !factStr || normStr.indexOf("#") !== -1 || factStr.indexOf("#") !== -1) {
       return {
-        headerText: "",
-        footerText: "",
-        recognizedText: "",
-        rows: [],
-        ocrAccuracyPct: 0,
-        naiveWithoutDropOutCorruptedRows: 0,
-        otsuThreshold: 128,
-        wasmOtsuTotalIntensitySum: 0,
-        totalWasmHammingCalls: 0,
-        wetStampDetected: false,
-        stampBoundingBox: { x: 0, y: 0, width: 0, height: 0, centerX: 0, centerY: 0, estimatedRadius: 0 },
-        blueInkPixelsCount: 0,
-        blueInkRatio: 0,
-        circularityScore: 0,
-        signatureDetected: false,
-        signatureBoundingBox: { x: 0, y: 0, width: 0, height: 0, strokeTransitions: 0 },
-        chromaticDropOutApplied: false,
-        wetStampForensics: {
-          wetStampDetected: false,
-          circularityScore: 0,
-          signatureDetected: false,
-          chromaticDropOutApplied: false
-        }
+        status: "UNVERIFIED",
+        deltaStatus: "UNVERIFIED (" + (factStr || "N/A") + ")",
+        deltaValue: null,
+        deltaPct: null,
+        unit: ""
       };
     }
-    var forensics = analyzeWetStampAndSignature(rgbBytes, width, height);
 
-    // 1. Binarize Chromatic-Drop-Out cleaned grayscale toner layer via WASM Otsu kernel
-    var cleanBinarized = binarizeGrayscaleWithWasmOtsu(forensics.cleanGrayBytes);
+    // 1. Check range pattern e.g. "-20..+50 °C" or "-10..+40 °C"
+    var rangeRegex = /^([+-]?\d+(?:[.,]\d+)?)\s*(?:\.\.|…|до)\s*([+-]?\d+(?:[.,]\d+)?)\s*(.*)$/i;
+    var normRange = normStr.match(rangeRegex);
+    var factRange = factStr.match(rangeRegex);
+    if (normRange && factRange) {
+      var nMin = parseFloat(normRange[1].replace(",", "."));
+      var nMax = parseFloat(normRange[2].replace(",", "."));
+      var fMin = parseFloat(factRange[1].replace(",", "."));
+      var fMax = parseFloat(factRange[2].replace(",", "."));
+      var rUnit = (factRange[3] || normRange[3] || "").trim();
+      var normSpan = Math.abs(nMax - nMin);
+      var factSpan = Math.abs(fMax - fMin);
+      var spanDelta = Number((factSpan - normSpan).toFixed(4));
+      var spanPct = normSpan > 0 ? Number(((spanDelta / normSpan) * 100).toFixed(2)) : 0;
+
+      if (fMin <= nMin + 1e-6 && fMax >= nMax - 1e-6) {
+        return {
+          status: "PASS",
+          deltaStatus: "NOMINAL (" + factStr + ")",
+          deltaValue: spanDelta,
+          deltaPct: spanPct,
+          unit: rUnit
+        };
+      }
+      if (fMin >= nMin && fMax <= nMax) {
+        return {
+          status: "FAIL",
+          deltaStatus: "NARROWER_RANGE (" + factStr + ")",
+          deltaValue: spanDelta,
+          deltaPct: spanPct,
+          unit: rUnit
+        };
+      }
+      return {
+        status: "FAIL",
+        deltaStatus: "DEVIATION (" + factStr + ")",
+        deltaValue: spanDelta,
+        deltaPct: spanPct,
+        unit: rUnit
+      };
+    }
+
+    // 2. Parse comparator + scalar number + unit: e.g. "<= 13.5 кг", ">= 21 м/с", "14.76 В", "16.20 В"
+    var scalarRegex = /^(<=|>=|<|>|=|±)?\s*([+-]?\d+(?:[.,]\d+)?)\s*(.*)$/;
+    var normMatch = normStr.match(scalarRegex);
+    var factMatch = factStr.match(scalarRegex);
+
+    if (!normMatch || !factMatch) {
+      return {
+        status: "UNVERIFIED",
+        deltaStatus: "UNVERIFIED (" + factStr + ")",
+        deltaValue: null,
+        deltaPct: null,
+        unit: ""
+      };
+    }
+
+    var op = normMatch[1] || "=";
+    var normVal = parseFloat(normMatch[2].replace(",", "."));
+    var factVal = parseFloat(factMatch[2].replace(",", "."));
+    var normUnit = (normMatch[3] || "").trim();
+    var factUnit = (factMatch[3] || "").trim();
+
+    if (!Number.isFinite(normVal) || !Number.isFinite(factVal)) {
+      return {
+        status: "UNVERIFIED",
+        deltaStatus: "UNVERIFIED (" + factStr + ")",
+        deltaValue: null,
+        deltaPct: null,
+        unit: ""
+      };
+    }
+
+    if (normUnit && factUnit && normUnit.toLowerCase() !== factUnit.toLowerCase()) {
+      return {
+        status: "UNVERIFIED",
+        deltaStatus: "UNIT_MISMATCH (" + normUnit + " vs " + factUnit + ")",
+        deltaValue: null,
+        deltaPct: null,
+        unit: factUnit
+      };
+    }
+
+    var unit = factUnit || normUnit;
+    var diff = Number((factVal - normVal).toFixed(4));
+    var deltaPct = normVal !== 0 ? Number(((diff / Math.abs(normVal)) * 100).toFixed(2)) : 0;
+    var sign = diff > 0 ? "+" : "";
+    var formattedDelta = sign + diff + (unit ? " " + unit : "");
+
+    var passed;
+    if (op === "<=") {
+      passed = factVal <= normVal + 1e-6;
+    } else if (op === "<") {
+      passed = factVal < normVal - 1e-6;
+    } else if (op === ">=") {
+      passed = factVal >= normVal - 1e-6;
+    } else if (op === ">") {
+      passed = factVal > normVal + 1e-6;
+    } else {
+      passed = Math.abs(factVal - normVal) <= 1e-6;
+    }
+
+    if (passed) {
+      return {
+        status: "PASS",
+        deltaStatus: "NOMINAL (" + factStr + ")",
+        deltaValue: diff,
+        deltaPct: deltaPct,
+        unit: unit
+      };
+    }
+
+    return {
+      status: "FAIL",
+      deltaStatus: "DEVIATION (" + formattedDelta + ")",
+      deltaValue: diff,
+      deltaPct: deltaPct,
+      unit: unit
+    };
+  }
+
+  function countBlueWetStampPixelsInBbox(rawRgbBytes, width, height, bbox) {
+    if (!rawRgbBytes || rawRgbBytes.length < width * height * 3 || !bbox) {
+      return 0;
+    }
+    var x0 = Math.max(0, bbox.x | 0);
+    var y0 = Math.max(0, bbox.y | 0);
+    var x1 = Math.min(width, (bbox.x + bbox.width) | 0);
+    var y1 = Math.min(height, (bbox.y + bbox.height) | 0);
+    var count = 0;
+    for (var py = y0; py < y1; py++) {
+      for (var px = x0; px < x1; px++) {
+        var idx = (py * width + px) * 3;
+        if (isBlueWetStampPixel(rawRgbBytes[idx], rawRgbBytes[idx + 1], rawRgbBytes[idx + 2])) {
+          count++;
+        }
+      }
+    }
+    return count;
+  }
+
+  function recognizeRasterSpecBitmap(cleanGrayOrRgbInput, widthInput, heightInput, rawRgbBeforeSuppression) {
+    var width = widthInput || SCAN_WIDTH;
+    var height = heightInput || SCAN_HEIGHT;
+    var totalPixels = width * height;
+    var cleanGrayBytes;
+    var rawRgbBytes = null;
+    var forensics;
+
+    if (
+      cleanGrayOrRgbInput instanceof Uint8Array &&
+      width > 0 &&
+      height > 0 &&
+      cleanGrayOrRgbInput.length === totalPixels
+    ) {
+      cleanGrayBytes = cleanGrayOrRgbInput;
+      if (rawRgbBeforeSuppression instanceof Uint8Array && rawRgbBeforeSuppression.length >= totalPixels * 3) {
+        rawRgbBytes = rawRgbBeforeSuppression;
+        forensics = analyzeWetStampAndSignature(rawRgbBytes, width, height);
+      } else {
+        forensics = {
+          wetStampDetected: false,
+          stampBoundingBox: { x: 0, y: 0, width: 0, height: 0, centerX: 0, centerY: 0, estimatedRadius: 0 },
+          blueInkPixelsCount: 0,
+          blueInkRatio: 0,
+          circularityScore: 0,
+          signatureDetected: false,
+          signatureBoundingBox: { x: 0, y: 0, width: 0, height: 0, strokeTransitions: 0 },
+          chromaticDropOutApplied: true,
+          overlappedTonerPixelsRecovered: 0,
+          cleanGrayBytes: cleanGrayBytes,
+          naiveGrayBytes: cleanGrayBytes
+        };
+      }
+    } else {
+      var norm = normalizeRasterInput(cleanGrayOrRgbInput, widthInput, heightInput);
+      width = norm.width;
+      height = norm.height;
+      totalPixels = width * height;
+      rawRgbBytes = norm.rgbBytes;
+      if (width <= 0 || height <= 0 || !rawRgbBytes || rawRgbBytes.length < totalPixels * 3) {
+        return {
+          headerText: "",
+          footerText: "",
+          recognizedText: "",
+          rows: [],
+          ocrAccuracyPct: 0,
+          ocrConfidenceBeforePct: 0,
+          ocrConfidenceAfterPct: 0,
+          naiveWithoutDropOutCorruptedRows: 0,
+          otsuThreshold: 128,
+          wasmOtsuTotalIntensitySum: 0,
+          totalWasmHammingCalls: 0,
+          wetStampDetected: false,
+          stampBoundingBox: { x: 0, y: 0, width: 0, height: 0, centerX: 0, centerY: 0, estimatedRadius: 0 },
+          blueInkPixelsCount: 0,
+          blueInkRatio: 0,
+          circularityScore: 0,
+          signatureDetected: false,
+          signatureBoundingBox: { x: 0, y: 0, width: 0, height: 0, strokeTransitions: 0 },
+          chromaticDropOutApplied: false,
+          wetStampForensics: {
+            wetStampDetected: false,
+            circularityScore: 0,
+            signatureDetected: false,
+            chromaticDropOutApplied: false
+          }
+        };
+      }
+      forensics = analyzeWetStampAndSignature(rawRgbBytes, width, height);
+      cleanGrayBytes = forensics.cleanGrayBytes;
+    }
+
+    var cleanBinarized = binarizeGrayscaleWithWasmOtsu(cleanGrayBytes);
     var cleanMask = cleanBinarized.binaryMask;
 
-    // 2. Also binarize Naive grayscale (without Chromatic Stamp-Drop-Out) to prove wet-stamp corruption
-    var naiveBinarized = binarizeGrayscaleWithWasmOtsu(forensics.naiveGrayBytes);
+    var naiveBinarized = binarizeGrayscaleWithWasmOtsu(
+      forensics.naiveGrayBytes && forensics.naiveGrayBytes.length === totalPixels
+        ? forensics.naiveGrayBytes
+        : cleanGrayBytes
+    );
     var naiveMask = naiveBinarized.binaryMask;
 
     var headerDecoded = decodeCellLineViaWasmHamming(cleanMask, width, 16, HEADER_Y, 64);
     var footerDecoded = decodeCellLineViaWasmHamming(cleanMask, width, 16, FOOTER_Y, 64);
 
     var rows = [];
-    var matchedRowsCount = 0;
     var totalWasmHammingCalls = headerDecoded.wasmHammingCalls + footerDecoded.wasmHammingCalls;
     var naiveWithoutDropOutCorruptedRows = 0;
+    var confidenceAfterSum = 0;
+    var confidenceBeforeSum = 0;
 
-    for (var r = 0; r < PROTOCOL_SPEC_ROWS.length; r++) {
-      var expected = PROTOCOL_SPEC_ROWS[r];
+    for (var r = 0; r < ROW_Y.length; r++) {
       var ry = ROW_Y[r];
+      var rowBbox = { page: 1, x: 12, y: ry, width: 536, height: 24 };
 
       var col0 = decodeCellLineViaWasmHamming(cleanMask, width, COL_X[0], ry, 25);
       var col1 = decodeCellLineViaWasmHamming(cleanMask, width, COL_X[1], ry, 17);
@@ -1355,30 +1586,42 @@
       var rowHammingCalls = col0.wasmHammingCalls + col1.wasmHammingCalls + col2.wasmHammingCalls;
       totalWasmHammingCalls += rowHammingCalls;
 
-      var isExactMatch =
-        col0.text === expected.parameter &&
-        col1.text === expected.normTu &&
-        col2.text === expected.factPmv;
-      if (isExactMatch) {
-        matchedRowsCount++;
-      }
-
-      // Check naive OCR (without Chromatic Drop-Out) on the same row
+      var naiveCol0 = decodeCellLineViaWasmHamming(naiveMask, width, COL_X[0], ry, 25);
       var naiveCol1 = decodeCellLineViaWasmHamming(naiveMask, width, COL_X[1], ry, 17);
       var naiveCol2 = decodeCellLineViaWasmHamming(naiveMask, width, COL_X[2], ry, 17);
-      if (naiveCol1.text !== expected.normTu || naiveCol2.text !== expected.factPmv) {
+      if (naiveCol1.text !== col1.text || naiveCol2.text !== col2.text) {
         naiveWithoutDropOutCorruptedRows++;
       }
 
+      var rowGlyphConfidence = Number(((col0.confidence + col1.confidence + col2.confidence) / 3).toFixed(4));
+      var rowAccuracyPct = Number((rowGlyphConfidence * 100).toFixed(1));
+      confidenceAfterSum += rowAccuracyPct;
+
+      var rowNaiveConfidence = (naiveCol0.confidence + naiveCol1.confidence + naiveCol2.confidence) / 3;
+      if (naiveCol1.text !== col1.text || naiveCol2.text !== col2.text) {
+        rowNaiveConfidence = Math.min(rowNaiveConfidence, 0.55);
+      }
+      confidenceBeforeSum += rowNaiveConfidence * 100;
+
+      var bluePixelsInRow = countBlueWetStampPixelsInBbox(rawRgbBytes, width, height, rowBbox);
+      var overlappedByWetStamp = bluePixelsInRow > 0;
+
+      var dynamicEval = evaluateRecognizedSpecRowDynamically(col1.text, col2.text);
+
       rows.push({
-        rowIndex: r + 1,
+        rowIndex: r,
         parameter: col0.text,
         normTu: col1.text,
         factPmv: col2.text,
-        deltaStatus: expected.deltaStatus,
-        overlappedByWetStamp: Boolean(expected.overlappedByWetStamp),
-        glyphConfidence: Number(((col0.confidence + col1.confidence + col2.confidence) / 3).toFixed(4)),
-        wasmHammingCalls: rowHammingCalls
+        deltaStatus: dynamicEval.deltaStatus,
+        status: dynamicEval.status,
+        deltaValue: dynamicEval.deltaValue,
+        deltaPct: dynamicEval.deltaPct,
+        overlappedByWetStamp: overlappedByWetStamp,
+        ocrAccuracyPct: rowAccuracyPct,
+        glyphConfidence: rowGlyphConfidence,
+        wasmHammingCalls: rowHammingCalls,
+        bbox: rowBbox
       });
     }
 
@@ -1388,7 +1631,8 @@
     }
     allLines.push(footerDecoded.text);
 
-    var ocrAccuracyPct = Number(((matchedRowsCount / PROTOCOL_SPEC_ROWS.length) * 100).toFixed(1));
+    var ocrAccuracyPct = rows.length > 0 ? Number((confidenceAfterSum / rows.length).toFixed(1)) : 0;
+    var ocrConfidenceBeforePct = rows.length > 0 ? Number((confidenceBeforeSum / rows.length).toFixed(1)) : 0;
 
     return {
       headerText: headerDecoded.text,
@@ -1396,6 +1640,8 @@
       recognizedText: allLines.join("\n"),
       rows: rows,
       ocrAccuracyPct: ocrAccuracyPct,
+      ocrConfidenceBeforePct: ocrConfidenceBeforePct,
+      ocrConfidenceAfterPct: ocrAccuracyPct,
       naiveWithoutDropOutCorruptedRows: naiveWithoutDropOutCorruptedRows,
       otsuThreshold: cleanBinarized.otsuThreshold,
       wasmOtsuTotalIntensitySum: cleanBinarized.totalIntensitySum,
@@ -1408,6 +1654,7 @@
       signatureDetected: forensics.signatureDetected,
       signatureBoundingBox: forensics.signatureBoundingBox,
       chromaticDropOutApplied: forensics.chromaticDropOutApplied,
+      overlappedTonerPixelsRecovered: forensics.overlappedTonerPixelsRecovered,
       wetStampForensics: {
         wetStampDetected: forensics.wetStampDetected,
         stampBoundingBox: forensics.stampBoundingBox,
@@ -1424,54 +1671,140 @@
   // ============================================================================
   // 8. END-TO-END PIPELINE RUNNER & CLI SELF-TEST
   // ============================================================================
-  function runFullStampedPdfOcrPipeline(customPdfBytes) {
-    var probe = simdPopcntProbe();
-    var pdfBytes = customPdfBytes || buildStampedRasterScanPdfBytes();
+  function makeRejectedScanResponse() {
+    return {
+      verdict: "REJECTED_UNSUPPORTED_OR_CORRUPTED_SCAN",
+      status: "UNVERIFIED",
+      xmlError: true,
+      error: "Непідтримуваний або пошкоджений PDF-скан: відсутній валідний растровий потік сторінки /FlateDecode",
+      rows: [],
+      records: [],
+      dataRowsCount: 0
+    };
+  }
+
+  function toUint8ArraySafe(input) {
+    if (input instanceof Uint8Array) return input;
+    if (typeof ArrayBuffer !== "undefined" && input instanceof ArrayBuffer) return new Uint8Array(input);
+    if (ArrayBuffer.isView && ArrayBuffer.isView(input)) {
+      return new Uint8Array(input.buffer, input.byteOffset, input.byteLength);
+    }
+    if (Array.isArray(input)) return new Uint8Array(input);
+    return null;
+  }
+
+  function hasValidPdfHeader(bytes) {
+    if (!bytes || bytes.byteLength < 64) return false;
+    // Must start with "%PDF-" (0x25 0x50 0x44 0x46 0x2d)
+    return (
+      bytes[0] === 0x25 &&
+      bytes[1] === 0x50 &&
+      bytes[2] === 0x44 &&
+      bytes[3] === 0x46 &&
+      bytes[4] === 0x2d
+    );
+  }
+
+  function runFullStampedPdfOcrPipeline(customPdfBytes, filenameArg) {
+    var tStart = nowPerfMs();
+    var hasCustomArg = arguments.length > 0 && customPdfBytes !== undefined && customPdfBytes !== null;
+    var pdfBytes;
+
+    if (hasCustomArg) {
+      pdfBytes = toUint8ArraySafe(customPdfBytes);
+      if (!hasValidPdfHeader(pdfBytes)) {
+        return makeRejectedScanResponse();
+      }
+    } else {
+      pdfBytes = buildStampedRasterScanPdfBytes();
+    }
+
     var decompiled = extractPdfRasterXObjects(pdfBytes);
     var primaryImage = decompiled.images[0] || null;
-    if (!decompiled.isScanOnlyPdf || decompiled.textOperatorsCount > 0 || !primaryImage || !primaryImage.rgbBytes) {
-      return {
-        verdict: decompiled.textOperatorsCount > 0 ? "SKIPPED_VECTOR_PDF_HAS_TEXT_LAYER" : "SKIPPED_NO_RASTER_IMAGE",
-        wasmProbe: probe,
-        pdfByteLength: pdfBytes.byteLength,
-        textOperatorsCount: decompiled.textOperatorsCount,
-        isScanOnlyPdf: false,
-        imageXObjectsCount: decompiled.imageXObjectsCount,
-        imageMeta: primaryImage ? {
-          width: primaryImage.width,
-          height: primaryImage.height,
-          colorSpace: primaryImage.colorSpace,
-          bitsPerComponent: primaryImage.bitsPerComponent,
-          filter: primaryImage.filter
-        } : { width: 0, height: 0, colorSpace: "NONE", bitsPerComponent: 0, filter: "NONE" },
-        wetStampDetected: false,
-        stampBoundingBox: { x: 0, y: 0, width: 0, height: 0, centerX: 0, centerY: 0, estimatedRadius: 0 },
-        blueInkPixelsCount: 0,
-        blueInkRatio: 0,
-        circularityScore: 0,
-        signatureDetected: false,
-        signatureBoundingBox: { x: 0, y: 0, width: 0, height: 0, strokeTransitions: 0 },
-        chromaticDropOutApplied: false,
-        ocrAccuracyPct: 0,
-        naiveWithoutDropOutCorruptedRows: 0,
-        rows: [],
-        recognizedText: "",
-        totalWasmHammingCalls: 0
-      };
+
+    if (
+      decompiled.flateError ||
+      !primaryImage ||
+      primaryImage.filter !== "/FlateDecode" ||
+      !primaryImage.rgbBytes ||
+      primaryImage.width !== SCAN_WIDTH ||
+      primaryImage.height !== SCAN_HEIGHT ||
+      primaryImage.rgbBytes.byteLength < SCAN_WIDTH * SCAN_HEIGHT * 3
+    ) {
+      return makeRejectedScanResponse();
     }
+
+    var probe = simdPopcntProbe();
     var stampAnalysis = analyzeWetStampAndSignature(
       primaryImage.rgbBytes,
       primaryImage.width,
       primaryImage.height
     );
     var ocrResult = recognizeRasterSpecBitmap(
-      primaryImage.rgbBytes,
+      stampAnalysis.cleanGrayBytes,
       primaryImage.width,
-      primaryImage.height
+      primaryImage.height,
+      primaryImage.rgbBytes
     );
 
+    var records = [
+      {
+        row: 1,
+        syntheticHeader: true,
+        isHeader: true,
+        location: "PDF-OCR стор. 1, шапка таблиці",
+        cells: ["Параметр", "Норма ТУ", "Факт ПМВ"]
+      }
+    ];
+
+    var hasFailRow = false;
+    var hasUnverifiedRow = false;
+    for (var i = 0; i < ocrResult.rows.length; i++) {
+      var r = ocrResult.rows[i];
+      if (r.status === "FAIL") hasFailRow = true;
+      if (r.status === "UNVERIFIED") hasUnverifiedRow = true;
+      records.push({
+        row: i + 2,
+        rowIndex: r.rowIndex,
+        syntheticHeader: false,
+        isHeader: false,
+        location: "PDF-OCR стор. 1, рядок " + (i + 1) + (r.overlappedByWetStamp ? " (під мокрою печаткою)" : ""),
+        cells: [r.parameter, r.normTu, r.factPmv],
+        status: r.status,
+        deltaStatus: r.deltaStatus,
+        overlappedByWetStamp: r.overlappedByWetStamp,
+        ocrAccuracyPct: r.ocrAccuracyPct,
+        bbox: r.bbox
+      });
+    }
+
+    var tEnd = nowPerfMs();
+    var elapsedMs = Number(Math.max(0.1, tEnd - tStart).toFixed(2));
+    var resolvedFilename =
+      typeof filenameArg === "string" && filenameArg.trim().length > 0
+        ? filenameArg.trim()
+        : "Stamped_PMV_Protocol_Scan_VP_MOU.pdf";
+    var stampMetadata =
+      "Кругла печатка ВП МОУ (R=" +
+      stampAnalysis.stampBoundingBox.estimatedRadius +
+      " px, C=" +
+      stampAnalysis.circularityScore +
+      ", синій спектр B > R + 25)";
+
+    var overallStatus = hasUnverifiedRow ? "UNVERIFIED" : hasFailRow ? "FAIL" : "PASS";
+
     return {
-      verdict: "PASS_100_PCT_RASTER_OCR",
+      verdict: overallStatus === "PASS" ? "PASS_RASTER_OCR_SAMPLE" : overallStatus === "FAIL" ? "FAIL_RASTER_OCR_CONFLICT" : "UNVERIFIED_RASTER_OCR",
+      status: overallStatus,
+      xmlError: false,
+      filename: resolvedFilename,
+      stampMetadata: stampMetadata,
+      wasmSimdActive: Boolean(probe.wasmCompiled && probe.simd128Supported),
+      droppedStampPixels: stampAnalysis.blueInkPixelsCount,
+      preservedGlyphPixels: stampAnalysis.overlappedTonerPixelsRecovered,
+      ocrConfidenceBeforePct: ocrResult.ocrConfidenceBeforePct,
+      ocrConfidenceAfterPct: ocrResult.ocrConfidenceAfterPct,
+      elapsedMs: elapsedMs,
       wasmProbe: probe,
       pdfByteLength: pdfBytes.byteLength,
       textOperatorsCount: decompiled.textOperatorsCount,
@@ -1492,31 +1825,45 @@
       signatureDetected: stampAnalysis.signatureDetected,
       signatureBoundingBox: stampAnalysis.signatureBoundingBox,
       chromaticDropOutApplied: stampAnalysis.chromaticDropOutApplied,
+      overlappedTonerPixelsRecovered: stampAnalysis.overlappedTonerPixelsRecovered,
       ocrAccuracyPct: ocrResult.ocrAccuracyPct,
       naiveWithoutDropOutCorruptedRows: ocrResult.naiveWithoutDropOutCorruptedRows,
+      headerText: ocrResult.headerText,
+      footerText: ocrResult.footerText,
       rows: ocrResult.rows,
+      dataRowsCount: ocrResult.rows.length,
+      records: records,
       recognizedText: ocrResult.recognizedText,
+      paragraphs: [
+        ocrResult.headerText,
+        ocrResult.footerText
+      ],
       totalWasmHammingCalls: ocrResult.totalWasmHammingCalls
     };
   }
 
   var api = {
     WASM_KERNEL_BYTES: WASM_KERNEL_BYTES,
+    PROTOCOL_SPEC_ROWS: PROTOCOL_SPEC_ROWS,
     memory: wasmRuntime.exports ? wasmRuntime.exports.memory : null,
     wasmExports: wasmRuntime.exports,
     otsuThresholdSum: otsuThresholdSum,
     hammingDistance64: hammingDistance64,
     simdPopcntProbe: simdPopcntProbe,
-    validateWasmSimd128: simdPopcntProbe,
+    validateWasmSimd128: function () {
+      return Boolean(simdPopcntProbe().simd128Supported);
+    },
     computeOtsuThresholdWasm: computeOtsuThresholdWasm,
     rgbToHsv: rgbToHsv,
     connectedComponentsBfs: connectedComponentsBfs,
     extractPdfRasterXObjects: extractPdfRasterXObjects,
     analyzeWetStampAndSignature: analyzeWetStampAndSignature,
     recognizeRasterSpecBitmap: recognizeRasterSpecBitmap,
+    renderStampedProtocolRgbBitmap: renderStampedProtocolRgbBitmap,
     buildStampedRasterScanPdfBytes: buildStampedRasterScanPdfBytes,
     runFullStampedPdfOcrPipeline: runFullStampedPdfOcrPipeline,
-    runRasterOcrPipeline: runFullStampedPdfOcrPipeline
+    runRasterOcrPipeline: runFullStampedPdfOcrPipeline,
+    analyzeScannedPdfBytes: runFullStampedPdfOcrPipeline
   };
 
   if (typeof window !== "undefined") {
@@ -1526,7 +1873,6 @@
     globalThis.SHMLV_WASM_RASTER_OCR = api;
   }
 
-  // CLI `--self-test` mode
   if (
     typeof process !== "undefined" &&
     Array.isArray(process.argv) &&
@@ -1540,6 +1886,9 @@
       report.signatureDetected === true &&
       Array.isArray(report.rows) &&
       report.rows.length === 5 &&
+      report.dataRowsCount === 5 &&
+      Array.isArray(report.records) &&
+      report.records.length === 6 &&
       report.ocrAccuracyPct === 100 &&
       report.naiveWithoutDropOutCorruptedRows >= 2;
 
@@ -1555,9 +1904,13 @@
       circularityScore: report.circularityScore,
       signatureDetected: report.signatureDetected,
       rowsCount: report.rows.length,
+      dataRowsCount: report.dataRowsCount,
+      recordsCount: report.records.length,
       ocrAccuracyPct: report.ocrAccuracyPct,
       naiveWithoutDropOutCorruptedRows: report.naiveWithoutDropOutCorruptedRows,
       totalWasmHammingCalls: report.totalWasmHammingCalls,
+      headerText: report.headerText,
+      footerText: report.footerText,
       rows: report.rows
     };
 

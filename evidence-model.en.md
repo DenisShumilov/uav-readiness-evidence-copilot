@@ -16,17 +16,23 @@ If there is no proof, the system must block the claim instead of guessing.
 
 Artifact means a file we receive or generate.
 
-Active parsed input examples:
+Active parsed input formats across the three system contours (`v2.5.0`):
 
-- `BOM.csv` = list of parts;
-- `demo_manual.md` = instruction text;
-- `test_log.csv` = test table;
-- `qa_notes.md` = quality notes.
+1. **TypeScript Core & CLI Contour (`packages/*` — strict 4-file evidence bundle contract)**:
+   - `BOM.csv` = bill of materials and component revision list;
+   - `demo_manual.md` = technical manual and instruction text;
+   - `test_log.csv` = bench and laboratory test table;
+   - `qa_notes.md` = quality assurance notes and revision records.
+2. **Browser Local UI (`docs/*.js`) and Python CLI Engines (`engines/*`) Contours**:
+   - Office & tabular documents: `.docx` (Technical Specifications / Passport), `.xlsx` (PMV Test Protocols), `.csv`, `.tsv`, `.md`, `.txt`;
+   - Scanned & vector PDFs: `.pdf` (including wet-stamped raster protocol scans);
+   - Digital signature containers: `.p7s` (`ASN.1 DER` / `CMS SignedData` — structural inspection with explicit `UNVERIFIED_CRYPTO` boundary in browser offline mode);
+   - Flight & navigation telemetry logs: `.bin` (ArduPilot DataFlash), `.ulg` (PX4 ULog), `.tlog` (MAVLink v1/v2), `.ubx` (u-blox), `.nmea` (NMEA 0183).
 
-Planned future fixtures, not read by the current MVP:
+Planned future fixtures for expanding the TypeScript bundle contract:
 
 - `future-fixtures/wiring_notes.yaml` = documentation-only wiring notes;
-- `future-fixtures/config_dump.txt` = fake settings text.
+- `future-fixtures/config_dump.txt` = synthetic configuration dump text.
 
 ## Evidence Source
 
