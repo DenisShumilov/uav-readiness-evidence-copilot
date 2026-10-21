@@ -1440,9 +1440,9 @@
       : "";
     var isSignedDataContent = contentTypeOid === "1.2.840.113549.1.7.2";
     var signedDataSeq = null;
-    if (isSignedDataContent && rootSeq.children.length >= 2) {
+    if (isSignedDataContent && rootSeq.children && rootSeq.children.length === 2) {
       var explicit0 = rootSeq.children[1];
-      if (explicit0 && explicit0.children && explicit0.children[0] && explicit0.children[0].tag === 0x30) {
+      if (explicit0 && explicit0.tag === 0xa0 && explicit0.children && explicit0.children.length === 1 && explicit0.children[0].tag === 0x30) {
         signedDataSeq = explicit0.children[0];
       }
     }
@@ -3291,12 +3291,114 @@
       var b = window.getRealSampleBytes(sampleKey);
       if (b && b.length > 0) return b;
     }
+    if (typeof global !== "undefined" && typeof global.getRealSampleBytes === "function") {
+      var bg = global.getRealSampleBytes(sampleKey);
+      if (bg && bg.length > 0) return bg;
+    }
     return new Uint8Array(0);
   }
 
-  function runPreset1RealProzorroMatrice4T() {
-    var docxBytes = getSampleBytesSafe("prozorro_matrice4t_docx");
-    var xlsxBytes = getSampleBytesSafe("prozorro_protocol_xlsx");
+  function crc32Bytes(u8) {
+    var crc = -1;
+    for (var i = 0; i < u8.length; i++) {
+      crc ^= u8[i];
+      for (var bit = 0; bit < 8; bit++) {
+        crc = (crc >>> 1) ^ ((crc & 1) ? 0xedb88320 : 0);
+      }
+    }
+    return (crc ^ -1) >>> 0;
+  }
+
+  function packStoredZipEntriesSync(entries) {
+    var safeEntries = (entries || []).map(function (e) {
+      var nameBytes = encodeUtf8(String(e.name || "entry.bin"));
+      var dataBytes = e.data instanceof Uint8Array ? e.data : encodeUtf8(String(e.data || ""));
+      return {
+        nameBytes: nameBytes,
+        dataBytes: dataBytes,
+        crc32: crc32Bytes(dataBytes)
+      };
+    });
+    var localTotal = 0;
+    var cdTotal = 0;
+    for (var i = 0; i < safeEntries.length; i++) {
+      localTotal += 30 + safeEntries[i].nameBytes.length + safeEntries[i].dataBytes.length;
+      cdTotal += 46 + safeEntries[i].nameBytes.length;
+    }
+    var out = new Uint8Array(localTotal + cdTotal + 22);
+    var dv = new DataView(out.buffer);
+    var localOff = 0;
+    var cdOff = localTotal;
+    for (var j = 0; j < safeEntries.length; j++) {
+      var item = safeEntries[j];
+      var nLen = item.nameBytes.length;
+      var dLen = item.dataBytes.length;
+      // Local file header (PK\x03\x04)
+      dv.setUint32(localOff, 0x04034b50, true);
+      dv.setUint16(localOff + 4, 20, true);
+      dv.setUint16(localOff + 6, 0, true);
+      dv.setUint16(localOff + 8, 0, true); // method 0 = Stored
+      dv.setUint32(localOff + 14, item.crc32, true);
+      dv.setUint32(localOff + 18, dLen, true);
+      dv.setUint32(localOff + 22, dLen, true);
+      dv.setUint16(localOff + 26, nLen, true);
+      dv.setUint16(localOff + 28, 0, true);
+      out.set(item.nameBytes, localOff + 30);
+      out.set(item.dataBytes, localOff + 30 + nLen);
+      // Central directory header (PK\x01\x02)
+      dv.setUint32(cdOff, 0x02014b50, true);
+      dv.setUint16(cdOff + 4, 20, true);
+      dv.setUint16(cdOff + 6, 20, true);
+      dv.setUint16(cdOff + 8, 0, true);
+      dv.setUint16(cdOff + 10, 0, true);
+      dv.setUint32(cdOff + 16, item.crc32, true);
+      dv.setUint32(cdOff + 20, dLen, true);
+      dv.setUint32(cdOff + 24, dLen, true);
+      dv.setUint16(cdOff + 28, nLen, true);
+      dv.setUint16(cdOff + 30, 0, true);
+      dv.setUint16(cdOff + 32, 0, true);
+      dv.setUint32(cdOff + 42, localOff, true);
+      out.set(item.nameBytes, cdOff + 46);
+      localOff += 30 + nLen + dLen;
+      cdOff += 46 + nLen;
+    }
+    var eocdOff = localTotal + cdTotal;
+    dv.setUint32(eocdOff, 0x06054b50, true);
+    dv.setUint16(eocdOff + 8, safeEntries.length, true);
+    dv.setUint16(eocdOff + 10, safeEntries.length, true);
+    dv.setUint32(eocdOff + 12, cdTotal, true);
+    dv.setUint32(eocdOff + 16, localTotal, true);
+    return out;
+  }
+
+  function buildRemediatedProtocolMatrice4TXlsxBytes(explicitXlsxBytes) {
+    var baseXlsx = (explicitXlsxBytes && explicitXlsxBytes.length > 0)
+      ? explicitXlsxBytes
+      : getSampleBytesSafe("prozorro_protocol_xlsx");
+    if (!baseXlsx || baseXlsx.length === 0) return new Uint8Array(0);
+    var entries = unpackZipEntriesSync(baseXlsx);
+    var patchedEntries = entries.map(function (e) {
+      if (e.name === "xl/worksheets/sheet1.xml") {
+        var sheetXml = decodeUtf8(e.data)
+          .replace('<c r="C31" t="s"><v>64</v></c>', '<c r="C31" t="s"><v>63</v></c>')
+          .replace('<c r="C48" t="s"><v>23</v></c>', '<c r="C48" t="s"><v>95</v></c>');
+        return { name: e.name, data: encodeUtf8(sheetXml) };
+      }
+      if (e.name === "xl/sharedStrings.xml") {
+        var xmlStr = decodeUtf8(e.data)
+          .replace(">15.4 В<", ">14.76 В<")
+          .replace(">НЕВІДПОВІДНІСТЬ (АКБ 4S HV 4.35V замість Li-Ion 4S 4.2V)<", ">ВІДПОВІДАЄ<")
+          .replace(">КРИТИЧНЕ ВІДХИЛЕННЯ: не витримує мороз -20°C за ТУ<", ">ВІДПОВІДАЄ<");
+        return { name: e.name, data: encodeUtf8(xmlStr) };
+      }
+      return { name: e.name, data: e.data };
+    });
+    return packStoredZipEntriesSync(patchedEntries);
+  }
+
+  function runPreset1RealProzorroMatrice4T(explicitDocxBytes, explicitXlsxBytes) {
+    var docxBytes = (explicitDocxBytes && explicitDocxBytes.length > 0) ? explicitDocxBytes : getSampleBytesSafe("prozorro_matrice4t_docx");
+    var xlsxBytes = (explicitXlsxBytes && explicitXlsxBytes.length > 0) ? explicitXlsxBytes : getSampleBytesSafe("prozorro_protocol_xlsx");
     var files = [];
     if (docxBytes.length > 0) {
       files.push({ filename: "06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx", bytes: docxBytes });
@@ -3305,6 +3407,19 @@
       files.push({ filename: "07_Prozorro_UAV_Protocol_DJI_Matrice_4T.xlsx", bytes: xlsxBytes });
     }
     return analyzeFileBatchSync(files, "preset_1_real_prozorro_matrice4t");
+  }
+
+  function runPreset1RemediatedProzorroMatrice4T(explicitDocxBytes, explicitXlsxBytes) {
+    var docxBytes = (explicitDocxBytes && explicitDocxBytes.length > 0) ? explicitDocxBytes : getSampleBytesSafe("prozorro_matrice4t_docx");
+    var fixedXlsxBytes = buildRemediatedProtocolMatrice4TXlsxBytes(explicitXlsxBytes);
+    var files = [];
+    if (docxBytes.length > 0) {
+      files.push({ filename: "06_Prozorro_UAV_TechVymogy_DJI_Matrice_4T.docx", bytes: docxBytes });
+    }
+    if (fixedXlsxBytes.length > 0) {
+      files.push({ filename: "07_Prozorro_UAV_Protocol_DJI_Matrice_4T_FIXED.xlsx", bytes: fixedXlsxBytes });
+    }
+    return analyzeFileBatchSync(files, "preset_1_remediated_prozorro_matrice4t");
   }
 
   function runPreset2RealUkrainianProseAndKep() {
@@ -3816,11 +3931,15 @@
 
     // Bind Preset buttons
     var btn1 = document.getElementById("btnWow11Preset1");
+    var btn1Fixed = document.getElementById("btnWow11Preset1Fixed");
+    var btnFastFixed = document.getElementById("btnRunFixedProtocolAfterRemediation");
     var btn2 = document.getElementById("btnWow11Preset2");
     var btn3 = document.getElementById("btnWow11Preset3");
     var btn4 = document.getElementById("btnWow11Preset4");
 
-    if (btn1) btn1.addEventListener("click", function () { COCKPIT_ASYNC_RUN_ID++; applyStateToDom(runPreset1RealProzorroMatrice4T()); });
+    if (btn1) btn1.addEventListener("click", function () { COCKPIT_ASYNC_RUN_ID++; ALIGNMENT_FILTER_PROBLEMS_ONLY = false; applyStateToDom(runPreset1RealProzorroMatrice4T()); });
+    if (btn1Fixed) btn1Fixed.addEventListener("click", function () { COCKPIT_ASYNC_RUN_ID++; ALIGNMENT_FILTER_PROBLEMS_ONLY = false; applyStateToDom(runPreset1RemediatedProzorroMatrice4T()); });
+    if (btnFastFixed) btnFastFixed.addEventListener("click", function () { COCKPIT_ASYNC_RUN_ID++; ALIGNMENT_FILTER_PROBLEMS_ONLY = false; applyStateToDom(runPreset1RemediatedProzorroMatrice4T()); });
     if (btn2) btn2.addEventListener("click", function () { COCKPIT_ASYNC_RUN_ID++; applyStateToDom(runPreset2RealUkrainianProseAndKep()); });
     if (btn3) btn3.addEventListener("click", function () { COCKPIT_ASYNC_RUN_ID++; applyStateToDom(runPreset3FiveFormatOmnivoreBundle()); });
     if (btn4) btn4.addEventListener("click", function () { COCKPIT_ASYNC_RUN_ID++; applyStateToDom(runPreset4SiPhysicsAntiHallucination()); });
@@ -3969,10 +4088,11 @@
       });
     }
 
-    // Run Preset 1 by default on page load ONLY if there is no incoming #diag= hash
+    // Run Preset 1 (or remediated Preset 1 if ?preset=fixed) by default on page load ONLY if there is no incoming #diag= hash
     var hasIncomingDiagHash = (typeof window !== "undefined" && window.location && typeof window.location.hash === "string" && window.location.hash.indexOf("#diag=") === 0);
+    var wantsFixedPreset = (typeof window !== "undefined" && window.location && typeof window.location.search === "string" && window.location.search.indexOf("preset=fixed") >= 0);
     if (!hasIncomingDiagHash) {
-      applyStateToDom(runPreset1RealProzorroMatrice4T());
+      applyStateToDom(wantsFixedPreset ? runPreset1RemediatedProzorroMatrice4T() : runPreset1RealProzorroMatrice4T());
     }
   }
 
@@ -4000,6 +4120,7 @@
     decompressDeflateRawAsync: decompressDeflateRawAsync,
     detectFileMagicAndFormat: detectFileMagicAndFormat,
     unpackZipEntriesSync: unpackZipEntriesSync,
+    packStoredZipEntriesSync: packStoredZipEntriesSync,
     parseDocxFromEntries: parseDocxFromEntries,
     parseXlsxFromEntries: parseXlsxFromEntries,
     parsePdfBufferSync: parsePdfBufferSync,
@@ -4021,6 +4142,7 @@
     buildSyntheticIntelHexBytes: buildSyntheticIntelHexBytes,
     buildSyntheticElfBytes: buildSyntheticElfBytes,
     buildSyntheticZipBundleBytes: buildSyntheticZipBundleBytes,
+    buildRemediatedProtocolMatrice4TXlsxBytes: buildRemediatedProtocolMatrice4TXlsxBytes,
     analyzeFileBatchSync: analyzeFileBatchSync,
     applyStateToDom: applyStateToDom,
     renderModuleBAlignmentMatrix: renderModuleBAlignmentMatrix,
@@ -4028,6 +4150,7 @@
     openSourceExcerptModal: openSourceExcerptModal,
     closeSourceExcerptModal: closeSourceExcerptModal,
     runPreset1RealProzorroMatrice4T: runPreset1RealProzorroMatrice4T,
+    runPreset1RemediatedProzorroMatrice4T: runPreset1RemediatedProzorroMatrice4T,
     runPreset2RealUkrainianProseAndKep: runPreset2RealUkrainianProseAndKep,
     runPreset3FiveFormatOmnivoreBundle: runPreset3FiveFormatOmnivoreBundle,
     runPreset4SiPhysicsAntiHallucination: runPreset4SiPhysicsAntiHallucination

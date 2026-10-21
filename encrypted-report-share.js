@@ -315,8 +315,24 @@
   }
 
   // ---------- 4. Submodule 14.1: OPSEC-Safe Zero-Knowledge Sanitizer ----------
+  var CYR_LEFT_BOUNDARY = "(?:^|(?<![А-Яа-яІіЇїЄєҐґ'’A-Za-z0-9_]))";
+  var CYR_RIGHT_BOUNDARY = "(?![А-Яа-яІіЇїЄєҐґ'’A-Za-z0-9_])";
+  var UKR_SURNAME_SUFFIX = "(?:енко|єнко|чук|щук|юк|ук|ський|зький|цький|ська|зька|цька|ович|евич|йович|івна|ївна|шин|ишин|ів|їв|єв|ов|єва|ова|ко|ак|як|ей|ій|ач|ич|ець|єць|ун|ин|ін|ник|ар|яр|аш|яш|ус|юс|ан|ян|ало|яло)";
+  var UKR_COMMON_FIRST_NAMES = "(?:Петро|Іван|Олександр|Сергій|Андрій|Володимир|Микола|Василь|Михайло|Олексій|Дмитро|Максим|Євген|Юрій|Тарас|Богдан|Роман|Ігор|Віктор|Віталій|Олег|Денис|Павло|Артем|Антон|Руслан|Ярослав|Вадим|Анатолій|Валерій|Григорій|Степан|Федір|Олена|Марія|Наталія|Оксана|Тетяна|Ірина|Ганна|Світлана|Ольга|Юлія|Катерина|Людмила|Вікторія|Надія|Галина|Дарина|Софія|Анастасія)";
+
   var PIB_UKR_PATTERN_SOURCE =
-    "(?:(?:ПІБ|Контакт|Автор|Підписант|Виконавець|Інженер|Керівник|Директор|Особа)\\s*[:—-]?\\s*[А-ЯІЇЄҐ][а-яіїєґ']{1,22}\\s+[А-ЯІЇЄҐ][а-яіїєґ']{1,22}(?:\\s+[А-ЯІЇЄҐ][а-яіїєґ']{2,22})?|[А-ЯІЇЄҐ][а-яіїєґ']{2,22}\\s+(?:[А-ЯІЇЄҐ]\\.\\s*[А-ЯІЇЄҐ]\\.🔥|[А-ЯІЇЄҐ][а-яіїєґ']{2,18}\\s+[А-ЯІЇЄҐ][а-яіїєґ']{3,22})|[А-ЯІЇЄҐ][а-яіїєґ']{1,20}\\s+[А-ЯІЇЄҐ][а-яіїєґ']{1,18}(?:енко|єнко|чук|щук|юк|ук|ський|зький|цький|ська|зька|цька|ович|евич|йович|івна|ївна|шин|ишин|ів|їв|єв|ов|єва|ова|ко|ак|як|ей|ій|ач|ич|ець|єць|ун|ин|ін)\\b|[А-ЯІЇЄҐ][а-яіїєґ']{1,18}(?:енко|єнко|чук|щук|юк|ук|ський|зький|цький|ська|зька|цька|шин|ишин|ів|їв|єв|ов|єва|ова|ко)\\s+[А-ЯІЇЄҐ][а-яіїєґ']{2,20}\\b)".replace("🔥", "");
+    CYR_LEFT_BOUNDARY +
+    "(?:" +
+      "(?:ПІБ|Контакт|Автор|Підписант|Виконавець|Інженер|Керівник|Директор|Особа)\\s*[:—-]?\\s*[А-ЯІЇЄҐ][а-яіїєґ'’]{1,22}\\s+[А-ЯІЇЄҐ][а-яіїєґ'’]{1,22}(?:\\s+[А-ЯІЇЄҐ][а-яіїєґ'’]{2,22})?" +
+      "|[А-ЯІЇЄҐ][а-яіїєґ'’]{2,22}\\s+(?:[А-ЯІЇЄҐ]\\.\\s*[А-ЯІЇЄҐ]\\.|[А-ЯІЇЄҐ][а-яіїєґ'’]{2,18}\\s+[А-ЯІЇЄҐ][а-яіїєґ'’]{3,22})" +
+      "|[А-ЯІЇЄҐ][а-яіїєґ'’]{1,20}\\s+[А-ЯІЇЄҐ][а-яіїєґ'’]{1,18}" + UKR_SURNAME_SUFFIX +
+      "|[А-ЯІЇЄҐ][а-яіїєґ'’]{1,18}" + UKR_SURNAME_SUFFIX + "\\s+[А-ЯІЇЄҐ][а-яіїєґ'’]{2,20}" +
+      "|" + UKR_COMMON_FIRST_NAMES + "\\s+[А-ЯІЇЄҐ][а-яіїєґ'’]{2,22}" +
+      "|[А-ЯІЇЄҐ][а-яіїєґ'’]{2,22}\\s+" + UKR_COMMON_FIRST_NAMES +
+    ")" +
+    CYR_RIGHT_BOUNDARY;
+
+  var MIL_UNIT_PATTERN_SOURCE = "(?<![0-9a-zA-Zа-яіїєґА-ЯІЇЄҐ_:])(?:(?:[вВ]\\/[чЧ]|[вВ]\\.[чЧ]\\.)\\s*[АAаa]|(?:[вВ]\\/[чЧ]\\s*)?[АA])\\d{4}(?![0-9a-zA-Zа-яіїєґА-ЯІЇЄҐ_])";
 
   var OPSEC_PATTERNS = {
     wgs84_pair: /[+-]?\b\d{1,2}\.\d{3,8}\s*[,;/\s]\s*[+-]?\d{1,3}\.\d{3,8}\b/g,
@@ -325,7 +341,7 @@
     pib_ukr: new RegExp(PIB_UKR_PATTERN_SOURCE, "g"),
     contact_pii: /(?:\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b|(?:\+?38[\s.-]*)?\(?0\d{2}\)?[\s.-]*\d{3}[\s.-]*\d{2}[\s.-]*\d{2}\b)/g,
     edrpou_code: /(?:(?:ЄДРПОУ|ІПН|РНОКПП)\s*[:№#]?\s*\d{8,10}|\b\d{10}\b|\b\d{8}\b)/gi,
-    mil_unit: /(?:в\/ч\s*)?[АA]\d{4}\b/gi,
+    mil_unit: new RegExp(MIL_UNIT_PATTERN_SOURCE, "g"),
     product_codename: /(?:«[^»]{2,40}»|(?:Комплекс|БпАК|БпЛА|Виріб)\s+"[^"]{2,40}")/gi,
     unc_or_ip: /(?:\\\\[0-9a-zA-Z._-]+\\[0-9a-zA-Z._$\\-]+|\b(?:\d{1,3}\.){3}\d{1,3}\b)/g
   };
@@ -348,6 +364,14 @@
       commitments: []
     };
 
+    var protectedSlots = [];
+    // Protect any already-generated [zk_...] commitment tags from subsequent regex passes
+    text = text.replace(/\[zk_[a-z0-9_]+:[0-9a-f]{8,64}\]/gi, function (existingTag) {
+      var idx = protectedSlots.length;
+      protectedSlots.push(existingTag);
+      return "@@ZKSLOT_" + idx + "_END@@";
+    });
+
     function replaceWithStat(regex, category, statKey) {
       text = text.replace(regex, function (match) {
         stats[statKey] = (stats[statKey] || 0) + 1;
@@ -355,7 +379,9 @@
         if (stats.commitments.length < 32) {
           stats.commitments.push(tag);
         }
-        return "[" + tag + "]";
+        var slotIdx = protectedSlots.length;
+        protectedSlots.push("[" + tag + "]");
+        return "@@ZKSLOT_" + slotIdx + "_END@@";
       });
     }
 
@@ -368,6 +394,12 @@
     replaceWithStat(OPSEC_PATTERNS.mil_unit, "mil_unit", "mil_units_stripped");
     replaceWithStat(OPSEC_PATTERNS.product_codename, "uav_product", "product_names_stripped");
     replaceWithStat(OPSEC_PATTERNS.edrpou_code, "org_edrpou", "edrpou_stripped");
+
+    if (protectedSlots.length > 0) {
+      text = text.replace(/@@ZKSLOT_(\d+)_END@@/g, function (_m, idxStr) {
+        return protectedSlots[parseInt(idxStr, 10)] || "";
+      });
+    }
 
     return text;
   }
@@ -416,7 +448,10 @@
   }
 
   function verifyZeroOpsecLeakage(serializedString) {
-    var s = String(serializedString || "");
+    // Strip our own [zk_<category>:<hex>] commitment tags and 32..64-char hex digests before scanning for leaks
+    var s = String(serializedString || "")
+      .replace(/\[?zk_[a-z0-9_]+:[0-9a-f]{8,64}\]?/gi, " ")
+      .replace(/\b[0-9a-f]{32,64}\b/gi, " ");
     var checks = [
       { name: "wgs84_pair", regex: /[+-]?\b\d{1,2}\.\d{3,8}\s*[,;/\s]\s*[+-]?\d{1,3}\.\d{3,8}\b/g },
       { name: "int1e7_coord", regex: /[+-]?\b(?:[1-8]\d{8}|1[0-7]\d{8})\b/g },
@@ -424,7 +459,7 @@
       { name: "pib_ukr", regex: new RegExp(PIB_UKR_PATTERN_SOURCE, "g") },
       { name: "contact_pii", regex: /(?:\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b|(?:\+?38[\s.-]*)?\(?0\d{2}\)?[\s.-]*\d{3}[\s.-]*\d{2}[\s.-]*\d{2}\b)/g },
       { name: "edrpou_or_ipn", regex: /(?:(?:ЄДРПОУ|ІПН|РНОКПП)\s*[:№#]?\s*\d{8,10}|\b\d{10}\b|\b\d{8}\b)/gi },
-      { name: "mil_unit", regex: /(?:в\/ч\s*)?[АA]\d{4}\b/gi },
+      { name: "mil_unit", regex: new RegExp(MIL_UNIT_PATTERN_SOURCE, "g") },
       { name: "product_codename", regex: /«[^»]{2,40}»/g },
       { name: "unc_or_ip", regex: /(?:\\\\[0-9a-zA-Z._-]+\\[0-9a-zA-Z._$\\-]+|\b(?:\d{1,3}\.){3}\d{1,3}\b)/g }
     ];
@@ -676,6 +711,7 @@
     var leakAudit = verifyZeroOpsecLeakage(serializedCheck);
     zkGraph.opsec_redaction_proof.leaked_category_count = leakAudit.leaked_category_count;
     zkGraph.opsec_redaction_proof.leaked_pii_tokens_remaining = leakAudit.leaked_pii_tokens_remaining;
+    zkGraph.opsec_redaction_proof.opsec_clean = leakAudit.opsec_clean;
     zkGraph.opsec_redaction_proof.opsec_clean_verified = leakAudit.opsec_clean;
     zkGraph.opsec_redaction_proof.redaction_scope = "PATTERN_BASED_KNOWN_CATEGORIES";
     zkGraph.opsec_redaction_proof.human_review_required = true;
