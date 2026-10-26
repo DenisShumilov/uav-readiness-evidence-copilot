@@ -18,6 +18,6 @@
     "@uav-readiness/parsers": "2.5.0",
     "@uav-readiness/reports": "2.5.0",
     "@uav-readiness/rules": "2.5.0",
-    "tsx": "^4.22.4"
+    "tsx": "^4.23.15"
   }
 }
