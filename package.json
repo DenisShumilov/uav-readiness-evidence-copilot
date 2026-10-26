@@ -74,7 +74,7 @@
     "@uav-readiness/parsers": "file:packages/parsers",
     "@uav-readiness/reports": "file:packages/reports",
     "@uav-readiness/rules": "file:packages/rules",
-    "tsx": "^4.22.4",
+    "tsx": "^4.23.15",
     "zod": "^4.0.0"
   },
   "devDependencies": {
